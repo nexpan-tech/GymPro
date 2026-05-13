@@ -1,0 +1,273 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//////////////////////////////////////////////////////
+// ENUMS
+//////////////////////////////////////////////////////
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  RECEPTIONIST
+  TRAINER
+  MEMBER
+}
+
+enum MembershipPlan {
+  MONTHLY
+  QUARTERLY
+  HALF_YEARLY
+  YEARLY
+}
+
+enum PaymentStatus {
+  PAID
+  PENDING
+  OVERDUE
+}
+
+enum NotificationType {
+  MEMBERSHIP_RENEWAL
+  PAYMENT_REMINDER
+  ATTENDANCE_REMINDER
+  DIET_PLAN_UPDATED
+  WORKOUT_PLAN_UPDATED
+  GENERAL
+}
+
+//////////////////////////////////////////////////////
+// GYM (TENANT)
+//////////////////////////////////////////////////////
+
+model Gym {
+  id       String  @id @default(cuid())
+  name     String
+  email    String  @unique
+  phone    String?
+  address  String?
+  logo     String?
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users         User[]
+  members       Member[]
+  memberships   Membership[]
+  attendances   Attendance[]
+  dietPlans     DietPlan[]
+  workoutPlans  WorkoutPlan[]
+  notifications Notification[]
+  payments      Payment[]
+}
+
+//////////////////////////////////////////////////////
+// USERS (ALL ROLES)
+//////////////////////////////////////////////////////
+
+model User {
+  id           String  @id @default(uuid())
+  name         String
+  email        String  @unique
+  passwordHash String
+  role         Role    @default(MEMBER)
+  isActive     Boolean @default(true)
+
+  gymId String?
+  gym   Gym?    @relation(fields: [gymId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // relations
+  memberProfile Member?
+
+  // trainer → members mapping
+  trainedMembers Member[] @relation("TrainerMembers")
+}
+
+//////////////////////////////////////////////////////
+// MEMBER PROFILE
+//////////////////////////////////////////////////////
+
+model Member {
+  id String @id @default(uuid())
+
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id])
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  phone       String
+  gender      String?
+  dateOfBirth DateTime?
+  address     String?
+
+  height      Float?
+  weight      Float?
+  fitnessGoal String?
+
+  trainerId String?
+  trainer   User?   @relation("TrainerMembers", fields: [trainerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships   Membership[]
+  attendances   Attendance[]
+  dietPlan      DietPlan?
+  workoutPlan   WorkoutPlan?
+  notifications Notification[]
+  payments      Payment[]
+}
+
+//////////////////////////////////////////////////////
+// MEMBERSHIP / BILLING
+//////////////////////////////////////////////////////
+
+model Membership {
+  id String @id @default(uuid())
+
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id])
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id])
+
+  plan          MembershipPlan
+  startDate     DateTime
+  endDate       DateTime
+  amount        Float
+  paymentStatus PaymentStatus  @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//////////////////////////////////////////////////////
+// ATTENDANCE
+//////////////////////////////////////////////////////
+
+model Attendance {
+  id String @id @default(uuid())
+
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id])
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id])
+
+  checkInAt DateTime @default(now())
+  date      DateTime
+
+  createdAt DateTime @default(now())
+
+  @@unique([gymId, memberId, date])
+}
+
+//////////////////////////////////////////////////////
+// DIET PLAN
+//////////////////////////////////////////////////////
+
+model DietPlan {
+  id String @id @default(uuid())
+
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id])
+
+  memberId String @unique
+  member   Member @relation(fields: [memberId], references: [id])
+
+  goal  String?
+  notes String?
+
+  monday    String?
+  tuesday   String?
+  wednesday String?
+  thursday  String?
+  friday    String?
+  saturday  String?
+  sunday    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//////////////////////////////////////////////////////
+// WORKOUT PLAN
+//////////////////////////////////////////////////////
+
+model WorkoutPlan {
+  id String @id @default(uuid())
+
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id])
+
+  memberId String @unique
+  member   Member @relation(fields: [memberId], references: [id])
+
+  goal  String?
+  notes String?
+
+  monday    String?
+  tuesday   String?
+  wednesday String?
+  thursday  String?
+  friday    String?
+  saturday  String?
+  sunday    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//////////////////////////////////////////////////////
+// NOTIFICATIONS
+//////////////////////////////////////////////////////
+
+model Notification {
+  id String @id @default(uuid())
+
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id])
+
+  memberId String?
+  member   Member? @relation(fields: [memberId], references: [id])
+
+  type    NotificationType
+  title   String
+  message String
+
+  isSent Boolean   @default(false)
+  sentAt DateTime?
+
+  createdAt DateTime @default(now())
+}
+
+//////////////////////////////////////////////////////
+// PAYMENT
+//////////////////////////////////////////////////////
+
+model Payment {
+  id    String @id @default(cuid())
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id])
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id])
+
+  amount Float
+  method String // UPI, CASH, CARD, etc
+  status PaymentStatus
+  paidAt DateTime      @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -1,0 +1,8 @@
+{
+  "name": "gympro",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
