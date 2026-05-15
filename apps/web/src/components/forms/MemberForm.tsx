@@ -1,74 +1,113 @@
-import { useState } from "react";
-import api from "../../lib/api";
+import { useState, type ChangeEvent, type FormEvent } from "react";
+import { memberService } from "../../services/member.service";
+import type { Member } from "../../types/member.types";
 
-type Props = {
-  onSuccess: () => void;
-  onClose: () => void;
+interface Props {
+  initialData?: Partial<Member>;
+  onSuccess?: () => void;
+}
+
+type MemberFormState = {
+  name: string;
+  email: string;
+  phone: string;
+  age: string;
+  gender: "male" | "female" | "other";
 };
 
-export default function MemberForm({ onSuccess, onClose }: Props) {
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    fitnessGoal: "",
-    password: "",
+export default function MemberForm({ initialData, onSuccess }: Props) {
+  const [form, setForm] = useState<MemberFormState>({
+    name: initialData?.name || "",
+    email: initialData?.email || "",
+    phone: initialData?.phone || "",
+    age: initialData?.age?.toString() || "",
+    gender: initialData?.gender || "male",
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setLoading(true);
+
+    const ageValue = form.age.trim();
+    const parsedAge = ageValue ? Number(form.age) : undefined;
+
+    const payload: Partial<Member> = {
+      name: form.name,
+      email: form.email,
+      phone: form.phone,
+      age: parsedAge && !Number.isNaN(parsedAge) ? parsedAge : undefined,
+      gender: form.gender,
+    };
 
     try {
-      await api.post("/members", form);
-      onSuccess();
-      onClose();
-    } catch (err) {
-      alert("Failed to create member");
+      if (initialData?.id) {
+        await memberService.update(initialData.id, payload);
+      } else {
+        await memberService.create(payload);
+      }
+
+      onSuccess?.();
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h3 style={{ marginBottom: 14 }}>Create Member</h3>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <input
+        name="name"
+        placeholder="Name"
+        value={form.name}
+        onChange={handleChange}
+        className="input"
+      />
 
-      {Object.entries(form).map(([key, value]) => (
-        <input
-          key={key}
-          name={key}
-          value={value}
-          onChange={handleChange}
-          placeholder={key}
-          type={key === "password" ? "password" : "text"}
-          style={inputStyle}
-        />
-      ))}
+      <input
+        name="email"
+        placeholder="Email"
+        value={form.email}
+        onChange={handleChange}
+        className="input"
+      />
 
-      <button style={btn}>Create Member</button>
+      <input
+        name="phone"
+        placeholder="Phone"
+        value={form.phone}
+        onChange={handleChange}
+        className="input"
+      />
+
+      <input
+        name="age"
+        placeholder="Age"
+        value={form.age}
+        onChange={handleChange}
+        className="input"
+      />
+
+      <select
+        name="gender"
+        value={form.gender}
+        onChange={handleChange}
+        className="input"
+      >
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+        <option value="other">Other</option>
+      </select>
+
+      <button disabled={loading} className="btn">
+        {loading ? "Saving..." : "Save Member"}
+      </button>
     </form>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: 10,
-  marginBottom: 10,
-  borderRadius: 10,
-  border: "1px solid var(--border)",
-  background: "var(--surface-2)",
-  color: "var(--text)",
-};
-
-const btn: React.CSSProperties = {
-  width: "100%",
-  padding: 10,
-  borderRadius: 10,
-  border: "none",
-  background: "var(--primary)",
-  color: "white",
-  fontWeight: 600,
-  cursor: "pointer",
-};

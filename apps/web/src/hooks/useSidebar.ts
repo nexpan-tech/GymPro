@@ -1,19 +1,7 @@
-import { useState, useEffect } from "react";
+// src/hooks/useSidebar.ts
 
-export function useSidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+import { useSidebarContext } from "@/context/SidebarContext";
 
-  useEffect(() => {
-    const saved = localStorage.getItem("sidebar");
-    if (saved) setCollapsed(saved === "true");
-  }, []);
+export const useSidebar = () => useSidebarContext();
 
-  const toggle = () => {
-    setCollapsed((prev) => {
-      localStorage.setItem("sidebar", String(!prev));
-      return !prev;
-    });
-  };
-
-  return { collapsed, toggle };
-}
+export default useSidebar;
