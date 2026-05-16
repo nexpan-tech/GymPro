@@ -5,9 +5,12 @@ import App from "./App";
 import "@/styles/tailwind.css";
 import "@/styles/variables.css";
 import "@/styles/globals.css";
+import { ThemeProvider } from "@/context/ThemeContext";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
+    <ThemeProvider>
     <App />
+    </ThemeProvider>
   </React.StrictMode>
 );
