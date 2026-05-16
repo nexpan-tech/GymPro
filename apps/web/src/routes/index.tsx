@@ -47,6 +47,17 @@ import TrainerWorkoutsPage from "@/pages/trainer/WorkoutPlansPage";
 import TrainerDietsPage from "@/pages/trainer/DietPlansPage";
 import TrainerProgressPage from "@/pages/trainer/ProgressPage";
 
+// Member
+import MemberLayout from "@/layouts/MemberLayout";
+
+import MemberDashboardPage from "@/pages/member/DashboardPage";
+import AttendanceHistoryPage from "@/pages/member/AttendanceHistoryPage";
+import MembershipDetailsPage from "@/pages/member/MembershipDetailsPage";
+import PaymentHistoryPage from "@/pages/member/PaymentHistoryPage";
+import WorkoutPlanPage from "@/pages/member/WorkoutPlanPage";
+import DietPlanPage from "@/pages/member/DietPlanPage";
+import ProgressPage from "@/pages/member/ProgressPage";
+
 const router = createBrowserRouter([
   {
     element: <PublicRoute />,
@@ -116,6 +127,25 @@ const router = createBrowserRouter([
               { path: "workout-plans", element: <TrainerWorkoutsPage /> },
               { path: "diet-plans", element: <TrainerDietsPage /> },
               { path: "progress", element: <TrainerProgressPage /> },
+            ],
+          },
+        ],
+      },
+      {
+        path: "/member",
+        element: <RoleRoute allowedRoles={["MEMBER"]} />,
+        children: [
+          {
+            element: <MemberLayout />,
+            children: [
+              { index: true, element: <MemberDashboardPage /> },
+              { path: "dashboard", element: <MemberDashboardPage /> },
+              { path: "attendance-history", element: <AttendanceHistoryPage /> },
+              { path: "membership-details", element: <MembershipDetailsPage /> },
+              { path: "payment-history", element: <PaymentHistoryPage /> },
+              { path: "workout-plan", element: <WorkoutPlanPage /> },
+              { path: "diet-plan", element: <DietPlanPage /> },
+              { path: "progress", element: <ProgressPage /> },
             ],
           },
         ],

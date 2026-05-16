@@ -24,6 +24,8 @@ export default function PublicRoute() {
         );
       case "TRAINER":
         return <Navigate to="/trainer/dashboard" replace />;
+      case "MEMBER":
+        return <Navigate to="/member/dashboard" replace />;
       default:
         return <Navigate to="/" replace />;
     }

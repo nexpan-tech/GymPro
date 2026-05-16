@@ -1,9 +1,10 @@
-import Page from "@/components/ui/Page";
-
-export default function WorkoutPlansPage() {
-	return (
-		<Page title="Workout Plans" description="Create and assign workout plans.">
-			<div className="rounded-lg border bg-white p-6">Workout plans placeholder.</div>
-		</Page>
-	);
+export default function TrainerWorkoutPlansPage() {
+  return (
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold">Workout Plans</h1>
+      <p className="text-gray-600 dark:text-gray-400">
+        Create and assign workout plans.
+      </p>
+    </div>
+  );
 }

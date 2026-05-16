@@ -1,113 +1,126 @@
-import { useState, type ChangeEvent, type FormEvent } from "react";
-import { memberService } from "../../services/member.service";
-import type { Member } from "../../types/member.types";
+import { useEffect, useState } from "react";
+import Modal from "@/components/ui/Modal";
+import Button from "@/components/ui/Button";
+import type { Member } from "@/pages/gym-admin/MembersPage";
 
-interface Props {
-  initialData?: Partial<Member>;
-  onSuccess?: () => void;
+interface MemberFormProps {
+  open: boolean;
+  member?: Member | null;
+  onClose: () => void;
+  onSubmit: (data: Partial<Member>) => void;
 }
 
-type MemberFormState = {
-  name: string;
-  email: string;
-  phone: string;
-  age: string;
-  gender: "male" | "female" | "other";
-};
-
-export default function MemberForm({ initialData, onSuccess }: Props) {
-  const [form, setForm] = useState<MemberFormState>({
-    name: initialData?.name || "",
-    email: initialData?.email || "",
-    phone: initialData?.phone || "",
-    age: initialData?.age?.toString() || "",
-    gender: initialData?.gender || "male",
+export default function MemberForm({
+  open,
+  member,
+  onClose,
+  onSubmit,
+}: MemberFormProps) {
+  const [form, setForm] = useState({
+    fullName: "",
+    phone: "",
+    email: "",
+    gender: "Male",
   });
 
-  const [loading, setLoading] = useState(false);
-
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
-
-    const ageValue = form.age.trim();
-    const parsedAge = ageValue ? Number(form.age) : undefined;
-
-    const payload: Partial<Member> = {
-      name: form.name,
-      email: form.email,
-      phone: form.phone,
-      age: parsedAge && !Number.isNaN(parsedAge) ? parsedAge : undefined,
-      gender: form.gender,
-    };
-
-    try {
-      if (initialData?.id) {
-        await memberService.update(initialData.id, payload);
-      } else {
-        await memberService.create(payload);
-      }
-
-      onSuccess?.();
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (member) {
+      setForm({
+        fullName: member.fullName || "",
+        phone: member.phone || "",
+        email: member.email || "",
+        gender: member.gender || "Male",
+      });
+    } else {
+      setForm({
+        fullName: "",
+        phone: "",
+        email: "",
+        gender: "Male",
+      });
     }
-  };
+  }, [member, open]);
+
+  function handleChange(
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement
+    >
+  ) {
+    setForm((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    onSubmit(form);
+  }
+
+  if (!open) return null;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <input
-        name="name"
-        placeholder="Name"
-        value={form.name}
-        onChange={handleChange}
-        className="input"
-      />
-
-      <input
-        name="email"
-        placeholder="Email"
-        value={form.email}
-        onChange={handleChange}
-        className="input"
-      />
-
-      <input
-        name="phone"
-        placeholder="Phone"
-        value={form.phone}
-        onChange={handleChange}
-        className="input"
-      />
-
-      <input
-        name="age"
-        placeholder="Age"
-        value={form.age}
-        onChange={handleChange}
-        className="input"
-      />
-
-      <select
-        name="gender"
-        value={form.gender}
-        onChange={handleChange}
-        className="input"
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={member ? "Edit Member" : "Add Member"}
+    >
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4"
       >
-        <option value="male">Male</option>
-        <option value="female">Female</option>
-        <option value="other">Other</option>
-      </select>
+        <input
+          name="fullName"
+          value={form.fullName}
+          onChange={handleChange}
+          placeholder="Full Name"
+          className="w-full rounded-lg border px-4 py-2"
+          required
+        />
 
-      <button disabled={loading} className="btn">
-        {loading ? "Saving..." : "Save Member"}
-      </button>
-    </form>
+        <input
+          name="phone"
+          value={form.phone}
+          onChange={handleChange}
+          placeholder="Phone Number"
+          className="w-full rounded-lg border px-4 py-2"
+          required
+        />
+
+        <input
+          type="email"
+          name="email"
+          value={form.email}
+          onChange={handleChange}
+          placeholder="Email Address"
+          className="w-full rounded-lg border px-4 py-2"
+        />
+
+        <select
+          name="gender"
+          value={form.gender}
+          onChange={handleChange}
+          className="w-full rounded-lg border px-4 py-2"
+        >
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+        </select>
+
+        <div className="flex justify-end gap-3 pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
+
+          <Button type="submit">
+            {member ? "Update Member" : "Create Member"}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }

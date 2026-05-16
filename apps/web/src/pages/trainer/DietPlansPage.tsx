@@ -1,9 +1,10 @@
-import Page from "@/components/ui/Page";
-
-export default function DietPlansPage() {
-	return (
-		<Page title="Diet Plans" description="Create and assign diet plans.">
-			<div className="rounded-lg border bg-white p-6">Diet plans placeholder.</div>
-		</Page>
-	);
+export default function TrainerDietPlansPage() {
+  return (
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold">Diet Plans</h1>
+      <p className="text-gray-600 dark:text-gray-400">
+        Create and assign diet plans.
+      </p>
+    </div>
+  );
 }

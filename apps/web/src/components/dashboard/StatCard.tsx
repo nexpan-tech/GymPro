@@ -3,25 +3,21 @@ import { Card } from "@/components/ui/Card";
 interface Props {
   title: string;
   value: string | number;
-  change?: number;
+  subtitle?: string;
 }
 
-export default function StatCard({ title, value, change }: Props) {
+export default function StatCard({
+  title,
+  value,
+  subtitle,
+}: Props) {
   return (
-    <Card className="p-4 flex flex-col gap-2">
-      <div className="text-sm text-gray-500">{title}</div>
-      <div className="text-2xl font-bold">{value}</div>
-
-      {typeof change === "number" && (
-        <div
-          className={`text-sm ${
-            change >= 0 ? "text-green-500" : "text-red-500"
-          }`}
-        >
-          {change >= 0 ? "+" : ""}
-          {change}%
-        </div>
+    <div className="rounded-2xl border bg-white p-6 shadow-sm dark:bg-gray-900">
+      <p className="text-sm text-gray-500">{title}</p>
+      <h3 className="mt-2 text-3xl font-bold">{value}</h3>
+      {subtitle && (
+        <p className="mt-1 text-xs text-gray-400">{subtitle}</p>
       )}
-    </Card>
+    </div>
   );
 }

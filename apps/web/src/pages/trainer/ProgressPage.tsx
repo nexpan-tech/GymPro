@@ -1,9 +1,10 @@
-import Page from "@/components/ui/Page";
-
-export default function ProgressPage() {
-	return (
-		<Page title="Progress" description="Track member progress.">
-			<div className="rounded-lg border bg-white p-6">Progress charts placeholder.</div>
-		</Page>
-	);
+export default function TrainerProgressPage() {
+  return (
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold">Progress Tracking</h1>
+      <p className="text-gray-600 dark:text-gray-400">
+        Monitor member transformation and measurements.
+      </p>
+    </div>
+  );
 }

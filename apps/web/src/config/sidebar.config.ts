@@ -23,6 +23,7 @@ export interface SidebarConfig {
   super_admin: SidebarItem[];
   gym_admin: SidebarItem[];
   trainer: SidebarItem[];
+  member: SidebarItem[];
 }
 
 export const sidebarConfig: SidebarConfig = {
@@ -56,5 +57,14 @@ export const sidebarConfig: SidebarConfig = {
     { label: "Workout Plans", path: "/trainer/workout-plans", icon: Dumbbell },
     { label: "Diet Plans", path: "/trainer/diet-plans", icon: ClipboardList },
     { label: "Progress", path: "/trainer/progress", icon: BarChart3 },
+  ],
+  member: [
+    { label: "Dashboard", path: "/member/dashboard", icon: LayoutDashboard },
+    { label: "Attendance History", path: "/member/attendance-history", icon: CalendarCheck },
+    { label: "Membership Details", path: "/member/membership-details", icon: CreditCard },
+    { label: "Payment History", path: "/member/payment-history", icon: FileText },
+    { label: "Workout Plan", path: "/member/workout-plan", icon: Dumbbell },
+    { label: "Diet Plan", path: "/member/diet-plan", icon: ClipboardList },
+    { label: "Progress", path: "/member/progress", icon: BarChart3 },
   ],
 };
