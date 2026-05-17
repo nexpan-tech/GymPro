@@ -9,9 +9,15 @@ export default function Sidebar() {
   const { user } = useAuth();
   const { isOpen } = useSidebar();
 
-  const rawRole = user?.role || "GYM_ADMIN";
-  const roleKey = rawRole.toLowerCase() as keyof typeof sidebarConfig;
-  const items = sidebarConfig[roleKey] || [];
+  const rawRole = user?.role || "ADMIN";
+
+  const roleKey =
+    rawRole === "ADMIN"
+      ? "gym_admin"
+      : rawRole.toLowerCase();
+
+  const items =
+    sidebarConfig[roleKey as keyof typeof sidebarConfig] || [];
 
   return (
     <aside

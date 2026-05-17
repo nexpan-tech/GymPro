@@ -54,7 +54,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }
 
   async function login(payload: LoginPayload) {
-    const { token: authToken, user: authUser } = await authService.login(payload);
+    const response = await authService.login(payload);
+
+    const authToken = response.data.token;
+    const authUser = response.data.user;
 
     storage.setToken(authToken);
     setToken(authToken);
@@ -89,3 +92,4 @@ export function AuthProvider({ children }: PropsWithChildren) {
     </AuthContext.Provider>
   );
 }
+

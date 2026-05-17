@@ -1,6 +1,7 @@
 export type UserRole =
   | "SUPER_ADMIN"
   | "GYM_ADMIN"
+  | "ADMIN"
   | "TRAINER"
   | "RECEPTIONIST"
   | "MEMBER";

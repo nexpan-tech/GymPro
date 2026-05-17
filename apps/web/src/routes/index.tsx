@@ -72,9 +72,9 @@ const router = createBrowserRouter([
   {
     element: <ProtectedRoute />,
     children: [
-      {
+        {
         path: "/gym-admin",
-        element: <RoleRoute allowedRoles={["GYM_ADMIN"]} />,
+        element: <RoleRoute allowedRoles={["ADMIN", "GYM_ADMIN"]} />,
         children: [
           {
             element: <GymAdminLayout />,
@@ -167,3 +167,5 @@ const router = createBrowserRouter([
 export function AppRouter() {
   return <RouterProvider router={router} />;
 }
+
+

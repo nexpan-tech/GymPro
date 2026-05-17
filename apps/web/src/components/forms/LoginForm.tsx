@@ -25,10 +25,12 @@ export default function LoginForm() {
 
       if (role === "SUPER_ADMIN") {
         navigate("/super-admin/dashboard", { replace: true });
-      } else if (role === "GYM_ADMIN") {
+      } else if (role === "ADMIN" || role === "GYM_ADMIN") {
         navigate("/gym-admin/dashboard", { replace: true });
       } else if (role === "TRAINER") {
         navigate("/trainer/dashboard", { replace: true });
+      } else if (role === "MEMBER") {
+        navigate("/member/dashboard", { replace: true });
       } else {
         navigate("/", { replace: true });
       }
@@ -85,3 +87,4 @@ export default function LoginForm() {
     </form>
   );
 }
+

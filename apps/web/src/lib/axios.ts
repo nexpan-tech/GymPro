@@ -3,8 +3,7 @@ import { storage } from "./storage";
 import { API_BASE } from "@/constants/api";
 
 const apiInstance = axios.create({
-  baseURL: API_BASE || "http://localhost:5000/api",
-  withCredentials: true,
+  baseURL: API_BASE || "http://localhost:5050/api",
 });
 
 apiInstance.interceptors.request.use((config) => {
@@ -32,3 +31,4 @@ apiInstance.interceptors.response.use(
 
 export const api = apiInstance;
 export default apiInstance;
+

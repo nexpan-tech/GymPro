@@ -12,13 +12,13 @@ export const authService = {
   },
 
   getProfile: async () => {
-    const res = await api.get("/auth/profile");
-    return res.data;
+    const res = await api.get("/auth/me");
+    return res.data.data;
   },
 
-  // ✅ ADD THIS
   forgotPassword: async (email: string) => {
     const res = await api.post("/auth/forgot-password", { email });
     return res.data;
   },
 };
+
