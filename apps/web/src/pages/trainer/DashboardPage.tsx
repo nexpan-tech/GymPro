@@ -1,85 +1,81 @@
-import StatCard from "@/components/dashboard/StatCard";
-import AttendanceChart from "@/components/dashboard/AttendanceChart";
+// apps/web/src/pages/trainer/DashboardPage.tsx
+
+import {
+  Users,
+  CalendarCheck,
+  Dumbbell,
+  TrendingUp,
+} from "lucide-react";
+
+import PageHeader from "@/components/common/PageHeader";
+import KPICard from "@/components/dashboard/KPICard";
+import AttendanceHeatmap from "@/components/dashboard/AttendanceHeatmap";
+import GoalProgressCard from "@/components/dashboard/GoalProgressCard";
+import TopTrainers from "@/components/dashboard/TopTrainers";
 import RecentActivity from "@/components/dashboard/RecentActivity";
-import { useEffect, useState } from "react";
-import { analyticsService } from "@/services/analytics.service";
+import QuickActions from "@/components/dashboard/QuickActions";
 
-interface TrainerDashboardData {
-  assignedMembers: number;
-  todayAttendance: number;
-  activeWorkoutPlans: number;
-  activeDietPlans: number;
-  attendanceTrend: any[];
-  recentActivity: any[];
-}
-
-export default function TrainerDashboardPage() {
-  const [data, setData] = useState<TrainerDashboardData>({
-    assignedMembers: 0,
-    todayAttendance: 0,
-    activeWorkoutPlans: 0,
-    activeDietPlans: 0,
-    attendanceTrend: [],
-    recentActivity: [],
-  });
-
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadDashboard();
-  }, []);
-
-  async function loadDashboard() {
-    try {
-      const res = await analyticsService.getTrainerAnalytics();
-
-      setData({
-        assignedMembers: (res as any)?.assignedMembers ?? 0,
-        todayAttendance: (res as any)?.todayAttendance ?? 0,
-        activeWorkoutPlans: (res as any)?.activeWorkoutPlans ?? 0,
-        activeDietPlans: (res as any)?.activeDietPlans ?? 0,
-        attendanceTrend: Array.isArray((res as any)?.attendance)
-          ? (res as any).attendance
-          : [],
-        recentActivity: Array.isArray((res as any)?.recentActivity)
-          ? (res as any).recentActivity
-          : [],
-      });
-    } catch (error) {
-      console.error("Failed to load trainer dashboard", error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  if (loading) {
-    return <div>Loading dashboard...</div>;
-  }
-
+export default function DashboardPage() {
   return (
-    <div className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard
+    <div className="space-y-8">
+      <PageHeader
+        title="Trainer Dashboard"
+        description="Track assigned members, workouts, attendance, and performance."
+      />
+
+      {/* KPI Cards */}
+      <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+        <KPICard
           title="Assigned Members"
-          value={data.assignedMembers}
+          value={42}
+          subtitle="8 new this month"
+          icon={Users}
+          trend={11.2}
+          color="blue"
         />
-        <StatCard
+
+        <KPICard
           title="Today's Attendance"
-          value={data.todayAttendance}
+          value={28}
+          subtitle="Members checked in"
+          icon={CalendarCheck}
+          trend={4.8}
+          color="emerald"
         />
-        <StatCard
+
+        <KPICard
           title="Workout Plans"
-          value={data.activeWorkoutPlans}
+          value={36}
+          subtitle="12 updated recently"
+          icon={Dumbbell}
+          trend={9.4}
+          color="violet"
         />
-        <StatCard
-          title="Diet Plans"
-          value={data.activeDietPlans}
+
+        <KPICard
+          title="Client Progress"
+          value="87%"
+          subtitle="Average goal completion"
+          icon={TrendingUp}
+          trend={6.3}
+          color="amber"
         />
       </div>
 
-      <AttendanceChart data={data.attendanceTrend} />
+      {/* Charts */}
+      <div className="grid gap-6 xl:grid-cols-2">
+        <AttendanceHeatmap />
+        <GoalProgressCard />
+      </div>
 
-      <RecentActivity data={data.recentActivity} />
+      {/* Performance + Activity */}
+      <div className="grid gap-6 xl:grid-cols-2">
+        <TopTrainers />
+        <RecentActivity />
+      </div>
+
+      {/* Quick Actions */}
+      <QuickActions />
     </div>
   );
 }

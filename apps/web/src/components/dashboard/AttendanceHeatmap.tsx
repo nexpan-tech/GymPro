@@ -1,0 +1,111 @@
+// apps/web/src/components/dashboard/AttendanceHeatmap.tsx
+
+import { Card } from "@/components/ui/Card";
+
+interface HeatmapDay {
+  day: string;
+  value: number; // 0 - 4 intensity
+}
+
+interface AttendanceTrendDay {
+  date: string;
+  present: number;
+  absent?: number;
+}
+
+interface AttendanceHeatmapProps {
+  data?: Array<HeatmapDay | AttendanceTrendDay>;
+}
+
+const defaultData: HeatmapDay[] = [
+  { day: "Mon", value: 4 },
+  { day: "Tue", value: 3 },
+  { day: "Wed", value: 4 },
+  { day: "Thu", value: 2 },
+  { day: "Fri", value: 4 },
+  { day: "Sat", value: 3 },
+  { day: "Sun", value: 1 },
+];
+
+function getIntensityClass(value: number) {
+  const classes = [
+    "bg-slate-200 dark:bg-slate-800",
+    "bg-emerald-100 dark:bg-emerald-950",
+    "bg-emerald-200 dark:bg-emerald-900",
+    "bg-emerald-400 dark:bg-emerald-700",
+    "bg-emerald-500 dark:bg-emerald-500",
+  ];
+
+  return classes[Math.max(0, Math.min(value, 4))];
+}
+
+function isHeatmapDay(
+  item: HeatmapDay | AttendanceTrendDay
+): item is HeatmapDay {
+  return "day" in item && typeof item.day === "string";
+}
+
+function normalizeAttendanceData(
+  item: HeatmapDay | AttendanceTrendDay
+): HeatmapDay {
+  if (isHeatmapDay(item)) {
+    return item;
+  }
+
+  const label = item.date ? item.date.slice(0, 3) : "Day";
+  const value = Math.max(0, Math.min(4, Math.round(item.present ?? 0)));
+
+  return {
+    day: label,
+    value,
+  };
+}
+
+export default function AttendanceHeatmap({
+  data = defaultData,
+}: AttendanceHeatmapProps) {
+  const chartData = Array.isArray(data)
+    ? data.map(normalizeAttendanceData)
+    : defaultData;
+
+  return (
+    <Card className="rounded-3xl border border-slate-200/70 bg-white/95 p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900/95">
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+          Attendance Heatmap
+        </h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Weekly attendance intensity
+        </p>
+      </div>
+
+      <div className="grid grid-cols-7 gap-3">
+        {chartData.map((item) => (
+          <div key={item.day} className="text-center">
+            <div
+              className={`h-12 rounded-2xl shadow-sm ${getIntensityClass(
+                item.value
+              )}`}
+            />
+            <p className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+              {item.day}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-6 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+        <span>Low</span>
+        <div className="flex gap-1">
+          {[0, 1, 2, 3, 4].map((level) => (
+            <div
+              key={level}
+              className={`h-3 w-6 rounded ${getIntensityClass(level)}`}
+            />
+          ))}
+        </div>
+        <span>High</span>
+      </div>
+    </Card>
+  );
+}

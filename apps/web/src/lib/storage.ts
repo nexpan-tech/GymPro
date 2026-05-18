@@ -13,3 +13,4 @@ export const storage = {
     localStorage.removeItem(TOKEN_KEY);
   },
 };
+

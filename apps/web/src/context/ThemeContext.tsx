@@ -1,10 +1,12 @@
+/* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
-  ReactNode,
+  type ReactNode,
 } from "react";
 
 export type ThemeMode = "light" | "dark" | "system";
@@ -33,12 +35,8 @@ function applyTheme(theme: ResolvedTheme) {
   const root = document.documentElement;
 
   root.classList.remove("light", "dark");
-
-  if (theme === "dark") {
-    root.classList.add("dark");
-  } else {
-    root.classList.add("light");
-  }
+  root.classList.add(theme);
+  root.style.colorScheme = theme;
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -47,11 +45,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     const saved = localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
 
-    if (
-      saved === "light" ||
-      saved === "dark" ||
-      saved === "system"
-    ) {
+    if (saved === "light" || saved === "dark" || saved === "system") {
       return saved;
     }
 
@@ -72,7 +66,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     };
 
     handler();
-
     media.addEventListener("change", handler);
 
     return () => media.removeEventListener("change", handler);
@@ -86,16 +79,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     applyTheme(resolvedTheme);
   }, [resolvedTheme]);
 
-  const setTheme = (newTheme: ThemeMode) => {
+  const setTheme = useCallback((newTheme: ThemeMode) => {
     setThemeState(newTheme);
-  };
+  }, []);
 
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     setThemeState((prev) => {
       const current = prev === "system" ? systemTheme : prev;
       return current === "dark" ? "light" : "dark";
     });
-  };
+  }, [systemTheme]);
 
   const value = useMemo(
     () => ({
@@ -104,13 +97,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setTheme,
       toggleTheme,
     }),
-    [theme, resolvedTheme]
+    [theme, resolvedTheme, setTheme, toggleTheme]
   );
 
   return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
   );
 }
 
@@ -118,9 +109,7 @@ export function useThemeContext() {
   const context = useContext(ThemeContext);
 
   if (!context) {
-    throw new Error(
-      "useThemeContext must be used within ThemeProvider"
-    );
+    throw new Error("useThemeContext must be used within ThemeProvider");
   }
 
   return context;

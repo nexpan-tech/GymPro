@@ -7,17 +7,16 @@ interface MembershipItem {
 }
 
 interface MembershipChartProps {
-  data?: unknown;
+  data?: MembershipItem[] | { data?: MembershipItem[] };
 }
 
 export default function MembershipChart({
   data,
 }: MembershipChartProps) {
-  // Normalize incoming data
   const safeData: MembershipItem[] = Array.isArray(data)
     ? data
-    : Array.isArray((data as any)?.data)
-    ? (data as any).data
+    : Array.isArray(data?.data)
+    ? data.data ?? []
     : [];
 
   // Empty state

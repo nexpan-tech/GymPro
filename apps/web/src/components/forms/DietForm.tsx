@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { dietService } from "@/services/diet.service";
 
-export default function DietForm({ onSuccess }: any) {
+interface DietFormProps {
+  onSuccess?: () => void;
+}
+
+export default function DietForm({ onSuccess }: DietFormProps) {
   const [form, setForm] = useState({
     name: "",
     calories: "",
@@ -10,7 +14,9 @@ export default function DietForm({ onSuccess }: any) {
     fats: "",
   });
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
     await dietService.create({
       ...form,

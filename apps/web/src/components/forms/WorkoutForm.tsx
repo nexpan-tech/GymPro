@@ -1,14 +1,20 @@
 import { useState } from "react";
 import { workoutService } from "@/services/workout.service";
 
-export default function WorkoutForm({ onSuccess }: any) {
+interface WorkoutFormProps {
+  onSuccess?: () => void;
+}
+
+export default function WorkoutForm({ onSuccess }: WorkoutFormProps) {
   const [form, setForm] = useState({
     name: "",
     level: "beginner",
     duration: "",
   });
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
     await workoutService.create({
       ...form,

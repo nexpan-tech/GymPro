@@ -3,12 +3,13 @@ import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { attendanceService } from "@/services/attendance.service";
+import type { Attendance } from "@/types/attendance.types";
 
 interface AttendanceFormProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  attendance?: any;
+  attendance?: Attendance | null;
 }
 
 export default function AttendanceForm({

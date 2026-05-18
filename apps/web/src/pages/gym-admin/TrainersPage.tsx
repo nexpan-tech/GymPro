@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { trainerService } from "../../services/trainer.service";
 import { Trainer } from "../../types/user.types";
 import TrainersTable from "../../components/tables/TrainersTable";
@@ -8,14 +8,15 @@ export default function TrainersPage() {
   const [data, setData] = useState<Trainer[]>([]);
   const [selected, setSelected] = useState<Trainer | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const res = await trainerService.getAll();
     setData(res);
-  };
+  }, []);
 
   useEffect(() => {
-    load();
-  }, []);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load();
+  }, [load]);
 
   return (
     <div className="p-4 space-y-4">

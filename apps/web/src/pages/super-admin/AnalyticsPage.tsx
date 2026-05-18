@@ -1,12 +1,19 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { analyticsService } from "@/services/analytics.service";
+import type { DashboardAnalytics } from "@/types/analytics.types";
 
 export default function AnalyticsPage() {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<DashboardAnalytics | null>(null);
+
+  const loadDashboardAnalytics = useCallback(async () => {
+    const response = await analyticsService.getDashboardAnalytics();
+    setData(response ?? null);
+  }, []);
 
   useEffect(() => {
-    analyticsService.getDashboardAnalytics().then(setData);
-  }, []);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadDashboardAnalytics();
+  }, [loadDashboardAnalytics]);
 
   if (!data) return <div className="p-6">Loading...</div>;
 

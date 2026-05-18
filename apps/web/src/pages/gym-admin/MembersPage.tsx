@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import SearchInput from "@/components/common/SearchInput";
@@ -52,11 +52,7 @@ export default function MembersPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
-  useEffect(() => {
-    loadMembers();
-  }, []);
-
-  async function loadMembers() {
+  const loadMembers = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -65,10 +61,8 @@ export default function MembersPage() {
           ? await memberService.getAll()
           : null;
 
-      const data = response;
-
-      if (Array.isArray(data)) {
-        setMembers(data as any);
+      if (Array.isArray(response)) {
+        setMembers(response as unknown as Member[]);
       } else {
         setMembers(mockMembers);
       }
@@ -78,7 +72,12 @@ export default function MembersPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadMembers();
+  }, [loadMembers]);
 
   const filteredMembers = useMemo(() => {
     const query = search.toLowerCase();
@@ -175,8 +174,8 @@ export default function MembersPage() {
         <SearchInput
           placeholder="Search by name, phone, email, or member ID"
           value={search}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            setSearch(e.target.value);
+          onChange={(value: string) => {
+            setSearch(value);
             setPage(1);
           }}
         />
@@ -199,6 +198,7 @@ export default function MembersPage() {
 
       {/* Modal Form */}
       <MemberForm
+        key={selectedMember?.id ?? `new-member-${formOpen}`}
         open={formOpen}
         member={selectedMember}
         onClose={() => {

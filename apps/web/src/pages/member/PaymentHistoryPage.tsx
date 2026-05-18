@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "@/constants/api";
 import type { Payment } from "@/types/payment.types";
 
@@ -6,11 +6,7 @@ export default function PaymentHistoryPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchPayments();
-  }, []);
-
-  const fetchPayments = async () => {
+  const fetchPayments = useCallback(async () => {
     try {
       const res = await api.get("/payments");
       const data = res.data?.data || res.data || [];
@@ -21,7 +17,12 @@ export default function PaymentHistoryPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchPayments();
+  }, [fetchPayments]);
 
   if (loading) {
     return <div className="p-6">Loading payment history...</div>;

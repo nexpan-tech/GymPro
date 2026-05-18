@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { attendanceService } from "@/services/attendance.service";
 
 interface AttendanceRecord {
@@ -11,11 +11,7 @@ export default function AttendanceHistoryPage() {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadAttendance();
-  }, []);
-
-  async function loadAttendance() {
+  const loadAttendance = useCallback(async () => {
     try {
       const res = await attendanceService.getAll();
       setRecords(Array.isArray(res) ? res : []);
@@ -25,7 +21,12 @@ export default function AttendanceHistoryPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadAttendance();
+  }, [loadAttendance]);
 
   if (loading) return <div>Loading attendance history...</div>;
 

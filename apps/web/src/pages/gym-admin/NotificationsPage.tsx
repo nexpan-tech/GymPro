@@ -1,6 +1,6 @@
 // src/pages/gym-admin/NotificationsPage.tsx
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Bell, Send, Trash2, Users } from "lucide-react";
 import { notificationService } from "@/services/notification.service";
 
@@ -29,11 +29,7 @@ export default function NotificationsPage() {
   const [audience, setAudience] =
     useState<NotificationItem["audience"]>("ALL_MEMBERS");
 
-  useEffect(() => {
-    loadNotifications();
-  }, []);
-
-  async function loadNotifications() {
+  const loadNotifications = useCallback(async () => {
     try {
       setLoading(true);
       const data = await notificationService.getAll();
@@ -51,7 +47,12 @@ export default function NotificationsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadNotifications();
+  }, [loadNotifications]);
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();

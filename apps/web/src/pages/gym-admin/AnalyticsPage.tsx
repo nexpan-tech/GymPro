@@ -1,6 +1,6 @@
 // src/pages/gym-admin/AnalyticsPage.tsx
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   TrendingUp,
   Users,
@@ -10,8 +10,9 @@ import {
 } from "lucide-react";
 
 import RevenueChart from "@/components/dashboard/RevenueChart";
-import AttendanceChart from "@/components/dashboard/AttendanceChart";
+import AttendanceHeatmap from "@/components/dashboard/AttendanceHeatmap";
 import MembershipChart from "@/components/dashboard/MembershipChart";
+import KPICard from "@/components/dashboard/KPICard";
 import { analyticsService } from "@/services/analytics.service";
 
 interface AnalyticsData {
@@ -33,32 +34,6 @@ interface AnalyticsData {
   }>;
 }
 
-function StatCard({
-  title,
-  value,
-  icon: Icon,
-  color,
-}: {
-  title: string;
-  value: string | number;
-  icon: React.ElementType;
-  color: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm text-gray-500">{title}</p>
-          <p className="mt-2 text-2xl font-bold text-gray-900">{value}</p>
-        </div>
-
-        <div className={`rounded-xl p-3 ${color}`}>
-          <Icon className="h-5 w-5" />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData>({
@@ -72,43 +47,53 @@ export default function AnalyticsPage() {
 
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadAnalytics();
-  }, []);
+  type AnalyticsApiResponse = {
+    stats?: unknown;
+    revenue?: unknown;
+    attendance?: AnalyticsData["attendanceTrend"];
+    memberships?: unknown;
+  };
 
-  async function loadAnalytics() {
+  const isRecordArray = (
+    value: unknown
+  ): value is Array<Record<string, unknown>> =>
+    Array.isArray(value);
+
+  const loadAnalytics = useCallback(async () => {
     try {
       setLoading(true);
 
-      const response = await analyticsService.getGymAnalytics();
+      const response =
+        (await analyticsService.getGymAnalytics()) as AnalyticsApiResponse;
 
       // Normalize API response safely
-      function statValue(stats: any, key: string) {
-        if (!Array.isArray(stats)) return (stats && stats[key]) || 0;
-        const found = stats.find((s: any) => {
-          const title = (s.title || s.name || "").toString().toLowerCase();
+      function statValue(stats: unknown, key: string) {
+        if (!isRecordArray(stats)) return 0;
+        const found = stats.find((s) => {
+          const title =
+            String(s.title ?? s.name ?? "").toLowerCase();
           return title.includes(key.toLowerCase());
         });
-        return found?.value ?? found?.data ?? 0;
+        return Number(found?.value ?? found?.data ?? 0);
       }
 
       const normalized: AnalyticsData = {
         totalMembers: statValue(response?.stats, "member") || 0,
         activeMembers: statValue(response?.stats, "active") || 0,
         totalRevenue: statValue(response?.stats, "revenue") || 0,
-        monthlyRevenue: Array.isArray(response?.revenue)
-          ? (response.revenue as any[]).map((item: any) => ({
-              month: item.date || item.month || "",
-              revenue: item.revenue || 0,
+        monthlyRevenue: isRecordArray(response.revenue)
+          ? response.revenue.map((item) => ({
+              month: String(item.date ?? item.month ?? ""),
+              revenue: Number(item.revenue ?? 0),
             }))
           : [],
         attendanceTrend: Array.isArray(response?.attendance)
           ? response.attendance
           : [],
-        membershipDistribution: Array.isArray(response?.memberships)
-          ? (response.memberships as any[]).map((item: any) => ({
-              name: item.name || item.date || "",
-              value: item.active || item.value || 0,
+        membershipDistribution: isRecordArray(response.memberships)
+          ? response.memberships.map((item) => ({
+              name: String(item.name ?? item.date ?? ""),
+              value: Number(item.active ?? item.value ?? 0),
             }))
           : [],
       };
@@ -129,7 +114,12 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadAnalytics();
+  }, [loadAnalytics]);
 
   const activePercentage = useMemo(() => {
     if (!data.totalMembers) return 0;
@@ -160,32 +150,32 @@ export default function AnalyticsPage() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard
+        <KPICard
           title="Total Members"
           value={data.totalMembers}
           icon={Users}
-          color="bg-blue-50 text-blue-600"
+          color="from-sky-500 to-indigo-600"
         />
 
-        <StatCard
+        <KPICard
           title="Active Members"
           value={data.activeMembers}
           icon={Activity}
-          color="bg-green-50 text-green-600"
+          color="from-emerald-500 to-teal-600"
         />
 
-        <StatCard
+        <KPICard
           title="Total Revenue"
           value={`₹${data.totalRevenue.toLocaleString("en-IN")}`}
           icon={CreditCard}
-          color="bg-purple-50 text-purple-600"
+          color="from-purple-500 to-fuchsia-600"
         />
 
-        <StatCard
+        <KPICard
           title="Active Rate"
           value={`${activePercentage}%`}
           icon={TrendingUp}
-          color="bg-orange-50 text-orange-600"
+          color="from-orange-500 to-amber-600"
         />
       </div>
 
@@ -220,7 +210,7 @@ export default function AnalyticsPage() {
             </h2>
           </div>
 
-          <AttendanceChart
+          <AttendanceHeatmap
             data={
               Array.isArray(data.attendanceTrend)
                 ? data.attendanceTrend

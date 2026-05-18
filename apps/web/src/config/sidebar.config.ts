@@ -1,4 +1,4 @@
-// src/config/sidebar.config.ts
+import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
   CalendarCheck,
@@ -11,12 +11,14 @@ import {
   ClipboardList,
   Bell,
   FileText,
+  UserCheck,
+  TrendingUp,
 } from "lucide-react";
 
 export interface SidebarItem {
   label: string;
   path: string;
-  icon: any;
+  icon: LucideIcon;
 }
 
 export interface SidebarConfig {
@@ -42,7 +44,7 @@ export const sidebarConfig: SidebarConfig = {
     { label: "Memberships", path: "/gym-admin/memberships", icon: CreditCard },
     { label: "Attendance", path: "/gym-admin/attendance", icon: CalendarCheck },
     { label: "Payments", path: "/gym-admin/payments", icon: FileText },
-    { label: "Trainers", path: "/gym-admin/trainers", icon: Users },
+    { label: "Trainers", path: "/gym-admin/trainers", icon: UserCheck },
     { label: "Workout Plans", path: "/gym-admin/workout-plans", icon: Dumbbell },
     { label: "Diet Plans", path: "/gym-admin/diet-plans", icon: ClipboardList },
     { label: "Analytics", path: "/gym-admin/analytics", icon: BarChart3 },
@@ -56,8 +58,9 @@ export const sidebarConfig: SidebarConfig = {
     { label: "Attendance", path: "/trainer/attendance", icon: CalendarCheck },
     { label: "Workout Plans", path: "/trainer/workout-plans", icon: Dumbbell },
     { label: "Diet Plans", path: "/trainer/diet-plans", icon: ClipboardList },
-    { label: "Progress", path: "/trainer/progress", icon: BarChart3 },
+    { label: "Progress", path: "/trainer/progress", icon: TrendingUp },
   ],
+
   member: [
     { label: "Dashboard", path: "/member/dashboard", icon: LayoutDashboard },
     { label: "Attendance History", path: "/member/attendance-history", icon: CalendarCheck },
@@ -65,6 +68,6 @@ export const sidebarConfig: SidebarConfig = {
     { label: "Payment History", path: "/member/payment-history", icon: FileText },
     { label: "Workout Plan", path: "/member/workout-plan", icon: Dumbbell },
     { label: "Diet Plan", path: "/member/diet-plan", icon: ClipboardList },
-    { label: "Progress", path: "/member/progress", icon: BarChart3 },
+    { label: "Progress", path: "/member/progress", icon: TrendingUp },
   ],
 };

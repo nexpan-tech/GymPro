@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "@/constants/api";
 import type { Member } from "@/types/member.types";
 
@@ -6,11 +6,7 @@ export default function MyMembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchMembers();
-  }, []);
-
-  const fetchMembers = async () => {
+  const fetchMembers = useCallback(async () => {
     try {
       const res = await api.get("/members");
       const data = res.data?.data || res.data || [];
@@ -21,7 +17,12 @@ export default function MyMembersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchMembers();
+  }, [fetchMembers]);
 
   if (loading) {
     return <div className="p-6">Loading members...</div>;

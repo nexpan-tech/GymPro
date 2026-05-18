@@ -1,24 +1,33 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { membershipService } from "@/services/membership.service";
 
+interface MembershipDetails {
+  id: string;
+  name?: string;
+  price?: number;
+  durationInDays?: number;
+  status?: string;
+}
+
 export default function MembershipDetailsPage() {
-  const [membership, setMembership] = useState<any>(null);
+  const [membership, setMembership] = useState<MembershipDetails | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadMembership();
-  }, []);
-
-  async function loadMembership() {
+  const loadMembership = useCallback(async () => {
     try {
       const res = await membershipService.getAll();
-      setMembership(Array.isArray(res) ? res[0] : null);
+      setMembership(Array.isArray(res) ? (res[0] as MembershipDetails) : null);
     } catch (error) {
       console.error("Failed to load membership", error);
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadMembership();
+  }, [loadMembership]);
 
   if (loading) return <div>Loading membership details...</div>;
 

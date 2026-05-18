@@ -8,3 +8,4 @@ export function ThemeProvider({ children }: PropsWithChildren) {
     </ThemeContextProvider>
   );
 }
+

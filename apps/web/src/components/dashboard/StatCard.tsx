@@ -1,5 +1,3 @@
-import { Card } from "@/components/ui/Card";
-
 interface Props {
   title: string;
   value: string | number;

@@ -1,55 +1,81 @@
-import StatCard from "@/components/dashboard/StatCard";
-import AttendanceChart from "@/components/dashboard/AttendanceChart";
+// apps/web/src/pages/member/DashboardPage.tsx
 
-export default function MemberDashboardPage() {
-  const attendanceData = [
-    { label: "Mon", value: 1 },
-    { label: "Tue", value: 1 },
-    { label: "Wed", value: 0 },
-    { label: "Thu", value: 1 },
-    { label: "Fri", value: 1 },
-    { label: "Sat", value: 0 },
-    { label: "Sun", value: 1 },
-  ];
+import {
+  CalendarCheck,
+  CreditCard,
+  Dumbbell,
+  TrendingUp,
+} from "lucide-react";
 
+import PageHeader from "@/components/common/PageHeader";
+import KPICard from "@/components/dashboard/KPICard";
+import GoalProgressCard from "@/components/dashboard/GoalProgressCard";
+import AttendanceHeatmap from "@/components/dashboard/AttendanceHeatmap";
+import UpcomingRenewals from "@/components/dashboard/UpcomingRenewals";
+import NotificationsPanel from "@/components/dashboard/NotificationsPanel";
+import QuickActions from "@/components/dashboard/QuickActions";
+
+export default function DashboardPage() {
   return (
-    <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          title="Days Attended"
+    <div className="space-y-8">
+      <PageHeader
+        title="My Fitness Dashboard"
+        description="Track attendance, workouts, diet plans, and fitness progress."
+      />
+
+      {/* KPI Cards */}
+      <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+        <KPICard
+          title="Attendance This Month"
           value={22}
+          subtitle="3 days missed"
+          icon={CalendarCheck}
+          trend={8.4}
+          color="blue"
         />
-        <StatCard
-          title="Membership"
+
+        <KPICard
+          title="Membership Status"
           value="Active"
+          subtitle="Renews in 14 days"
+          icon={CreditCard}
+          trend={0}
+          color="emerald"
         />
-        <StatCard
-          title="Payments Made"
-          value={8}
+
+        <KPICard
+          title="Workout Completion"
+          value="86%"
+          subtitle="Weekly target"
+          icon={Dumbbell}
+          trend={12.1}
+          color="violet"
         />
-        <StatCard
-          title="Workout Plans"
-          value={3}
+
+        <KPICard
+          title="Goal Progress"
+          value="78%"
+          subtitle="Weight loss target"
+          icon={TrendingUp}
+          trend={5.7}
+          color="amber"
         />
       </div>
 
-      {/* Attendance Chart */}
-      <AttendanceChart data={attendanceData} />
-
-      {/* Membership Summary */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-        <h2 className="mb-4 text-lg font-semibold">
-          Membership Summary
-        </h2>
-
-        <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-          <p><strong>Plan:</strong> Premium Monthly</p>
-          <p><strong>Start Date:</strong> 01 May 2026</p>
-          <p><strong>Expiry Date:</strong> 31 May 2026</p>
-          <p><strong>Status:</strong> Active</p>
-        </div>
+      {/* Progress */}
+      <div className="grid gap-6 xl:grid-cols-2">
+        <GoalProgressCard />
+        <AttendanceHeatmap />
       </div>
+
+      {/* Renewals + Notifications */}
+      <div className="grid gap-6 xl:grid-cols-2">
+        <UpcomingRenewals />
+        <NotificationsPanel />
+      </div>
+
+      {/* Quick Actions */}
+      <QuickActions />
     </div>
   );
 }

@@ -9,3 +9,4 @@ router.post("/login", AuthController.login);
 router.get("/me", authMiddleware, AuthController.me);
 
 export default router;
+

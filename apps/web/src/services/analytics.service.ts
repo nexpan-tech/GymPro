@@ -6,7 +6,7 @@ export const analyticsService = {
     try {
       const res = await api.get("/analytics/dashboard");
       return res.data.data;
-    } catch (err) {
+    } catch {
       // Mock data fallback for local development
       return {
         stats: [

@@ -1,4 +1,12 @@
-export default function ConfirmDialog({ onConfirm, onCancel }: any) {
+interface ConfirmDialogProps {
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+export default function ConfirmDialog({
+  onConfirm,
+  onCancel,
+}: ConfirmDialogProps) {
   return (
     <div className="p-4 border rounded">
       <p>Are you sure?</p>

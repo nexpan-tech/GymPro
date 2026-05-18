@@ -1,121 +1,79 @@
-import { useEffect, useState } from "react";
+// apps/web/src/components/forms/MembershipForm.tsx
+
+import { useState } from "react";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
-import type { Membership } from "@/pages/gym-admin/MembershipsPage";
+import Input from "@/components/ui/Input";
 
 interface MembershipFormProps {
   open: boolean;
-  membership?: Membership | null;
   onClose: () => void;
-  onSubmit: (data: Partial<Membership>) => void;
+  onSubmit?: (data: {
+    name: string;
+    duration: number;
+    price: number;
+  }) => void;
+  membership?: {
+    name?: string;
+    duration?: number;
+    price?: number;
+    description?: string;
+  } | null;
 }
 
 export default function MembershipForm({
   open,
-  membership,
   onClose,
   onSubmit,
+  membership,
 }: MembershipFormProps) {
-  const [form, setForm] = useState({
-    name: "",
-    duration: 1,
-    price: 0,
-    description: "",
-  });
+  const [name, setName] = useState(
+    membership?.name || ""
+  );
+  const [duration, setDuration] = useState(
+    membership?.duration?.toString() || ""
+  );
+  const [price, setPrice] = useState(
+    membership?.price?.toString() || ""
+  );
 
-  useEffect(() => {
-    if (membership) {
-      setForm({
-        name: membership.name || "",
-        duration: membership.duration || 1,
-        price: membership.price || 0,
-        description: membership.description || "",
-      });
-    } else {
-      setForm({
-        name: "",
-        duration: 1,
-        price: 0,
-        description: "",
-      });
-    }
-  }, [membership, open]);
-
-  function handleChange(
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement
-    >
-  ) {
-    const { name, value } = e.target;
-
-    setForm((prev) => ({
-      ...prev,
-      [name]:
-        name === "duration" || name === "price"
-          ? Number(value)
-          : value,
-    }));
-  }
-
-  function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(form);
-  }
 
-  if (!open) return null;
+    const payload = {
+      name,
+      duration: Number(duration),
+      price: Number(price),
+    };
+
+    onSubmit?.(payload);
+    onClose();
+  };
 
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title={
-        membership
-          ? "Edit Membership Plan"
-          : "Add Membership Plan"
-      }
-    >
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-4"
-      >
-        <input
-          name="name"
-          value={form.name}
-          onChange={handleChange}
-          placeholder="Plan Name"
-          className="w-full rounded-lg border px-4 py-2"
-          required
+    <Modal open={open} onClose={onClose} title="Membership Plan">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          label="Plan Name"
+          placeholder="Premium Plan"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
         />
 
-        <input
+        <Input
           type="number"
-          name="duration"
-          value={form.duration}
-          onChange={handleChange}
-          placeholder="Duration (Months)"
-          className="w-full rounded-lg border px-4 py-2"
-          min={1}
-          required
+          label="Duration (Days)"
+          placeholder="30"
+          value={duration}
+          onChange={(e) => setDuration(e.target.value)}
         />
 
-        <input
+        <Input
           type="number"
-          name="price"
-          value={form.price}
-          onChange={handleChange}
-          placeholder="Price"
-          className="w-full rounded-lg border px-4 py-2"
-          min={0}
-          required
-        />
-
-        <textarea
-          name="description"
-          value={form.description}
-          onChange={handleChange}
-          placeholder="Description"
-          className="w-full rounded-lg border px-4 py-2"
-          rows={3}
+          label="Price"
+          placeholder="1999"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
         />
 
         <div className="flex justify-end gap-3 pt-2">
@@ -128,9 +86,7 @@ export default function MembershipForm({
           </Button>
 
           <Button type="submit">
-            {membership
-              ? "Update Plan"
-              : "Create Plan"}
+            Save Membership
           </Button>
         </div>
       </form>

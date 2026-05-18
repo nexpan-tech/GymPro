@@ -6,7 +6,7 @@ export const gymService = {
     return res.data;
   },
 
-  updateGym: async (data: any) => {
+  updateGym: async (data: Record<string, unknown>) => {
     const res = await api.put("/gym", data);
     return res.data;
   },

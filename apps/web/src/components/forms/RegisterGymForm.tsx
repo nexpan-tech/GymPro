@@ -35,9 +35,16 @@ export default function RegisterGymForm() {
     try {
       await authService.registerGym(form);
       setSuccess("Gym registered successfully.");
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as {
+        response?: {
+          data?: {
+            message?: string;
+          };
+        };
+      };
       setError(
-        err?.response?.data?.message ||
+        err.response?.data?.message ||
           "Registration failed."
       );
     } finally {

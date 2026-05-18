@@ -1,19 +1,26 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { memberService } from "@/services/member.service";
 import { Card } from "@/components/ui/Card";
 import Page from "@/components/ui/Page";
 
-export default function ProgressPage() {
-  const [members, setMembers] = useState<any[]>([]);
+interface ProgressMember {
+  id: string;
+  name: string;
+  weight?: number | string;
+}
 
-  const load = async () => {
+export default function ProgressPage() {
+  const [members, setMembers] = useState<ProgressMember[]>([]);
+
+  const load = useCallback(async () => {
     const data = await memberService.getAll();
-    setMembers(data);
-  };
+    setMembers(Array.isArray(data) ? (data as ProgressMember[]) : []);
+  }, []);
 
   useEffect(() => {
-    load();
-  }, []);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load();
+  }, [load]);
 
   return (
     <Page title="Progress Tracking">

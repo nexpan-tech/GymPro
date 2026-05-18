@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 export default function LoginForm() {
   const navigate = useNavigate();
-  const { login, user } = useAuth();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,9 +34,16 @@ export default function LoginForm() {
       } else {
         navigate("/", { replace: true });
       }
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as {
+        response?: {
+          data?: {
+            message?: string;
+          };
+        };
+      };
       setError(
-        err?.response?.data?.message ||
+        err.response?.data?.message ||
           "Invalid email or password"
       );
     } finally {
@@ -87,4 +94,6 @@ export default function LoginForm() {
     </form>
   );
 }
+
+
 

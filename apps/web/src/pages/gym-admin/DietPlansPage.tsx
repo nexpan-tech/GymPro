@@ -1,20 +1,22 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Diet } from "@/types/diet.types";
 import { dietService } from "@/services/diet.service";
 import { Card } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Page from "@/components/ui/Page";
 
 export default function DietPlansPage() {
-  const [diets, setDiets] = useState<any[]>([]);
+  const [diets, setDiets] = useState<Diet[]>([]);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const data = await dietService.getAll();
     setDiets(data);
-  };
+  }, []);
 
   useEffect(() => {
-    load();
-  }, []);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load();
+  }, [load]);
 
   return (
     <Page title="Diet Plans">

@@ -1,19 +1,20 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Page from "@/components/ui/Page";
 import Button from "@/components/ui/Button";
 import AttendanceForm from "@/components/forms/AttendanceForm";
+import type { Attendance } from "@/types/attendance.types";
 import AttendanceTable from "@/components/tables/AttendanceTable";
 import Loader from "@/components/common/Loader";
 import EmptyState from "@/components/common/EmptyState";
 import { attendanceService } from "@/services/attendance.service";
 
 export default function AttendancePage() {
-  const [records, setRecords] = useState<any[]>([]);
+  const [records, setRecords] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
-  const [editingRecord, setEditingRecord] = useState<any>(null);
+  const [editingRecord, setEditingRecord] = useState<Attendance | null>(null);
 
-  const loadAttendance = async () => {
+  const loadAttendance = useCallback(async () => {
     try {
       setLoading(true);
       const res = await attendanceService.getAll();
@@ -24,22 +25,12 @@ export default function AttendancePage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadAttendance();
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this record?")) return;
-
-    try {
-      await attendanceService.remove(id);
-      loadAttendance();
-    } catch (error) {
-      console.error("Failed to delete attendance:", error);
-    }
-  };
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadAttendance();
+  }, [loadAttendance]);
 
   return (
     <Page title="Attendance">

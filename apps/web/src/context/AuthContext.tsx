@@ -1,5 +1,7 @@
+/* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
+  useCallback,
   useEffect,
   useState,
   type PropsWithChildren,
@@ -13,7 +15,6 @@ import type {
   AuthContextType,
   LoginPayload,
 } from "@/types/auth.types";
-import type { User } from "@/types/user.types";
 
 export const AuthContext = createContext<AuthContextType | undefined>(
   undefined
@@ -30,7 +31,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
 
-  async function refreshProfile() {
+  const refreshProfile = useCallback(async () => {
     const existingToken = storage.getToken();
 
     if (!existingToken) {
@@ -51,7 +52,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [setToken, setUser]);
 
   async function login(payload: LoginPayload) {
     const response = await authService.login(payload);
@@ -73,8 +74,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }
 
   useEffect(() => {
-    refreshProfile();
-  }, []);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void refreshProfile();
+  }, [refreshProfile]);
 
   return (
     <AuthContext.Provider
@@ -92,4 +94,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
     </AuthContext.Provider>
   );
 }
+
+
 

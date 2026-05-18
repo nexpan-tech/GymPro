@@ -22,9 +22,16 @@ export default function ForgotPasswordPage() {
         "If an account exists with this email, a password reset link has been sent."
       );
       setEmail("");
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as {
+        response?: {
+          data?: {
+            message?: string;
+          };
+        };
+      };
       setError(
-        err?.response?.data?.message || "Failed to send reset email."
+        err.response?.data?.message || "Failed to send reset email."
       );
     } finally {
       setLoading(false);

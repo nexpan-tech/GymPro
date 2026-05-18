@@ -1,22 +1,17 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import PaymentsTable from "@/components/tables/PaymentsTable";
 import { paymentService } from "@/services/payment.service";
 import type { Payment } from "@/types/payment.types";
 
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [filteredPayments, setFilteredPayments] = useState<Payment[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadPayments();
-  }, []);
-
-  useEffect(() => {
+  const filteredPayments = useMemo(() => {
     const q = search.toLowerCase();
 
-    const filtered = payments.filter((payment) => {
+    return payments.filter((payment) => {
       const method = payment.method?.toLowerCase() ?? "";
       const status = payment.status?.toLowerCase() ?? "";
       const amountStr = payment.amount?.toString() ?? "";
@@ -27,11 +22,9 @@ export default function PaymentsPage() {
         amountStr.includes(q)
       );
     });
-
-    setFilteredPayments(filtered);
   }, [search, payments]);
 
-  async function loadPayments() {
+  const loadPayments = useCallback(async () => {
     try {
       setLoading(true);
       const data = await paymentService.getAll();
@@ -42,7 +35,12 @@ export default function PaymentsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadPayments();
+  }, [loadPayments]);
 
   const totalRevenue = filteredPayments.reduce(
     (sum, payment) =>

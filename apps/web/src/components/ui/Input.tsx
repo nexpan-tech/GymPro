@@ -1,6 +1,5 @@
-// src/components/ui/Input.tsx
+import { forwardRef, type InputHTMLAttributes } from "react";
 import clsx from "clsx";
-import { InputHTMLAttributes, forwardRef } from "react";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -12,7 +11,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="space-y-2">
         {label && (
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label className="text-sm font-semibold text-(--text-secondary)">
             {label}
           </label>
         )}
@@ -20,18 +19,17 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         <input
           ref={ref}
           className={clsx(
-            "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none transition",
-            "focus:border-primary focus:ring-2 focus:ring-primary/20",
-            "dark:border-gray-700 dark:bg-gray-900 dark:text-white",
-            error && "border-red-500 focus:border-red-500 focus:ring-red-500/20",
+            "w-full rounded-xl border border-(--border) bg-(--surface-solid) px-4 py-3 text-sm text-(--text-primary) shadow-(--shadow-sm) outline-none transition",
+            "placeholder:text-(--text-muted)",
+            "focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10",
+            "disabled:cursor-not-allowed disabled:opacity-60",
+            error && "border-red-500 focus:border-red-500 focus:ring-red-500/10",
             className
           )}
           {...props}
         />
 
-        {error && (
-          <p className="text-xs text-red-500">{error}</p>
-        )}
+        {error && <p className="text-sm font-medium text-red-500">{error}</p>}
       </div>
     );
   }

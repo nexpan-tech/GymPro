@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import type { Member } from "@/pages/gym-admin/MembersPage";
@@ -16,30 +16,12 @@ export default function MemberForm({
   onClose,
   onSubmit,
 }: MemberFormProps) {
-  const [form, setForm] = useState({
-    fullName: "",
-    phone: "",
-    email: "",
-    gender: "Male",
-  });
-
-  useEffect(() => {
-    if (member) {
-      setForm({
-        fullName: member.fullName || "",
-        phone: member.phone || "",
-        email: member.email || "",
-        gender: member.gender || "Male",
-      });
-    } else {
-      setForm({
-        fullName: "",
-        phone: "",
-        email: "",
-        gender: "Male",
-      });
-    }
-  }, [member, open]);
+  const [form, setForm] = useState(() => ({
+    fullName: member?.fullName || "",
+    phone: member?.phone || "",
+    email: member?.email || "",
+    gender: member?.gender || "Male",
+  }));
 
   function handleChange(
     e: React.ChangeEvent<

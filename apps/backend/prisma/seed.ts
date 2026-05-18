@@ -8,18 +8,26 @@ async function main() {
 
   await prisma.user.upsert({
     where: {
-      email: "admin@gympro.com",
+      email: "superadmin@gympro.com",
     },
-    update: {},
-    create: {
-      name: "Gym Owner",
-      email: "admin@gympro.com",
+    update: {
       passwordHash,
-      role: Role.ADMIN,
+      role: Role.SUPER_ADMIN,
+      isActive: true,
+    },
+    create: {
+      name: "Super Admin",
+      email: "superadmin@gympro.com",
+      passwordHash,
+      role: Role.SUPER_ADMIN,
+      isActive: true,
+      gymId: null,
     },
   });
 
-  console.log("✅ Admin user created");
+  console.log("✅ SUPER_ADMIN user created");
+  console.log("Email: superadmin@gympro.com");
+  console.log("Password: Admin@123");
 }
 
 main()

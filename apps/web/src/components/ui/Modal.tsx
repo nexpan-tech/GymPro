@@ -1,6 +1,6 @@
-// src/components/ui/Modal.tsx
-import { ReactNode } from "react";
+import { type ReactNode } from "react";
 import { X } from "lucide-react";
+import clsx from "clsx";
 
 interface ModalProps {
   open: boolean;
@@ -27,18 +27,24 @@ export default function Modal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
       <div
-        className={`w-full rounded-2xl bg-white shadow-xl dark:bg-gray-900 ${sizeClasses[size]}`}
+        className={clsx(
+          "w-full overflow-hidden rounded-2xl border border-(--glass-border) bg-(--glass) shadow-(--shadow-xl) backdrop-blur-xl",
+          sizeClasses[size]
+        )}
       >
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-800">
+        <div className="flex items-center justify-between border-b border-(--border) px-6 py-4">
           {title && (
-            <h2 className="text-lg font-semibold">{title}</h2>
+            <h2 className="text-lg font-bold text-(--text-primary)">
+              {title}
+            </h2>
           )}
 
           <button
+            type="button"
             onClick={onClose}
-            className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="rounded-xl p-2 text-(--text-secondary) transition hover:bg-(--surface-hover) hover:text-(--text-primary)"
           >
             <X className="h-5 w-5" />
           </button>

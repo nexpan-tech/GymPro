@@ -1,6 +1,6 @@
-// src/components/ui/Button.tsx
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import clsx from "clsx";
+import { Loader2 } from "lucide-react";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
@@ -21,19 +21,19 @@ export default function Button({
   ...props
 }: ButtonProps) {
   const baseClasses =
-    "inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+    "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 focus:outline-none focus:ring-4 disabled:cursor-not-allowed disabled:opacity-60";
 
   const variantClasses = {
     primary:
-      "bg-primary text-white hover:bg-primary/90 focus:ring-primary",
+      "bg-(--gradient-primary) text-white shadow-[0_12px_30px_rgba(79,70,229,0.28)] hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(79,70,229,0.36)] focus:ring-indigo-500/20",
     secondary:
-      "bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700",
+      "border border-(--border) bg-(--surface-secondary) text-(--text-primary) hover:bg-(--surface-hover) focus:ring-slate-500/10",
     outline:
-      "border border-gray-300 bg-white text-gray-900 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800",
+      "border border-(--border) bg-transparent text-(--text-primary) hover:bg-(--surface-hover) focus:ring-indigo-500/10",
     danger:
-      "bg-red-600 text-white hover:bg-red-700 focus:ring-red-600",
+      "bg-red-600 text-white shadow-[0_12px_30px_rgba(239,68,68,0.25)] hover:bg-red-700 focus:ring-red-500/20",
     ghost:
-      "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800",
+      "text-(--text-secondary) hover:bg-(--surface-hover) hover:text-(--text-primary) focus:ring-slate-500/10",
   };
 
   const sizeClasses = {
@@ -54,7 +54,8 @@ export default function Button({
       disabled={disabled || loading}
       {...props}
     >
-      {loading ? "Loading..." : children}
+      {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+      {children}
     </button>
   );
 }
