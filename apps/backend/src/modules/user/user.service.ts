@@ -1,8 +1,14 @@
-import { Role } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { hashPassword } from "../../utils/password";
 import { AppError } from "../../utils/response";
 import type { CreateUserInput, UpdateUserInput } from "./user.validation";
+
+type UserRole =
+  | "SUPER_ADMIN"
+  | "ADMIN"
+  | "RECEPTIONIST"
+  | "TRAINER"
+  | "MEMBER";
 
 const safeUserSelect = {
   id: true,
@@ -20,7 +26,9 @@ export const createUser = async (
   payload: CreateUserInput
 ) => {
   const existing = await prisma.user.findUnique({
-    where: { email: payload.email },
+    where: {
+      email: payload.email,
+    },
   });
 
   if (existing) {
@@ -35,7 +43,7 @@ export const createUser = async (
       name: payload.name,
       email: payload.email,
       passwordHash,
-      role: payload.role as Role,
+      role: payload.role as UserRole,
       isActive: true,
     },
     select: safeUserSelect,
@@ -44,15 +52,25 @@ export const createUser = async (
 
 export const getUsers = async (gymId: string) => {
   return prisma.user.findMany({
-    where: { gymId },
+    where: {
+      gymId,
+    },
     select: safeUserSelect,
-    orderBy: { createdAt: "desc" },
+    orderBy: {
+      createdAt: "desc",
+    },
   });
 };
 
-export const getUserById = async (gymId: string, id: string) => {
+export const getUserById = async (
+  gymId: string,
+  id: string
+) => {
   const user = await prisma.user.findFirst({
-    where: { id, gymId },
+    where: {
+      id,
+      gymId,
+    },
     select: {
       ...safeUserSelect,
       memberProfile: true,
@@ -73,7 +91,10 @@ export const updateUser = async (
   payload: UpdateUserInput
 ) => {
   const user = await prisma.user.findFirst({
-    where: { id, gymId },
+    where: {
+      id,
+      gymId,
+    },
   });
 
   if (!user) {
@@ -82,7 +103,9 @@ export const updateUser = async (
 
   if (payload.email && payload.email !== user.email) {
     const existing = await prisma.user.findUnique({
-      where: { email: payload.email },
+      where: {
+        email: payload.email,
+      },
     });
 
     if (existing) {
@@ -91,27 +114,41 @@ export const updateUser = async (
   }
 
   return prisma.user.update({
-    where: { id },
+    where: {
+      id,
+    },
     data: {
-      ...payload,
-      role: payload.role as Role | undefined,
+      name: payload.name,
+      email: payload.email,
+      role: payload.role as UserRole | undefined,
+      isActive: payload.isActive,
     },
     select: safeUserSelect,
   });
 };
 
-export const deleteUser = async (gymId: string, id: string) => {
+export const deleteUser = async (
+  gymId: string,
+  id: string
+) => {
   const user = await prisma.user.findFirst({
-    where: { id, gymId },
+    where: {
+      id,
+      gymId,
+    },
   });
 
   if (!user) {
     throw new AppError("User not found", 404);
   }
 
-  if (user.role === Role.ADMIN) {
+  if (user.role === "ADMIN") {
     const adminCount = await prisma.user.count({
-      where: { gymId, role: Role.ADMIN, isActive: true },
+      where: {
+        gymId,
+        role: "ADMIN",
+        isActive: true,
+      },
     });
 
     if (adminCount <= 1) {
@@ -120,7 +157,9 @@ export const deleteUser = async (gymId: string, id: string) => {
   }
 
   return prisma.user.delete({
-    where: { id },
+    where: {
+      id,
+    },
     select: safeUserSelect,
   });
 };

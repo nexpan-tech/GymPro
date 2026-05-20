@@ -17,7 +17,9 @@ import workoutRoutes from "./modules/workout/workout.routes";
 import notificationRoutes from "./modules/notification/notification.routes";
 import paymentRoutes from "./modules/payment/payment.routes";
 import analyticsRoutes from "./modules/analytics/analytics.routes";
-
+import { rateLimitMiddleware } from "./middleware/rateLimit.middleware";
+import automationRoutes from "./modules/automation/automation.routes";
+import uploadRoutes from "./modules/upload/upload.routes";
 const app = express();
 
 /**
@@ -32,6 +34,7 @@ app.use(
   })
 );
 app.use(helmet());
+app.use(rateLimitMiddleware);
 app.use(express.json({ limit: "10mb" }));
 app.use(morgan("dev"));
 
@@ -53,20 +56,35 @@ app.get("/health", (_req, res) => {
  * API ROUTES
  * ----------------------------
  */
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/gyms", gymRoutes);
+
+app.use("/api/v1/members", memberRoutes);
+app.use("/api/v1/memberships", membershipRoutes);
+app.use("/api/v1/attendance", attendanceRoutes);
+
+app.use("/api/v1/diet-plans", dietRoutes);
+app.use("/api/v1/workout-plans", workoutRoutes);
+
+app.use("/api/v1/notifications", notificationRoutes);
+app.use("/api/v1/payments", paymentRoutes);
+
+app.use("/api/v1/analytics", analyticsRoutes);
+app.use("/api/v1/automation", automationRoutes);
+
+app.use("/api/v1/uploads", uploadRoutes);
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/gyms", gymRoutes);
-
 app.use("/api/members", memberRoutes);
 app.use("/api/memberships", membershipRoutes);
 app.use("/api/attendance", attendanceRoutes);
-
 app.use("/api/diet-plans", dietRoutes);
 app.use("/api/workout-plans", workoutRoutes);
-
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/payments", paymentRoutes);
-
 app.use("/api/analytics", analyticsRoutes);
 
 /**
@@ -77,3 +95,4 @@ app.use("/api/analytics", analyticsRoutes);
 app.use(errorMiddleware);
 
 export default app;
+

@@ -1,74 +1,83 @@
 import { prisma } from "../config/db";
 import { logger } from "../config/logger";
-import { NOTIFICATION_TYPE, PAYMENT_STATUS } from "../constants/enums";
+import { NotificationService } from "../modules/notification/notification.service";
+
+function startOfDay(date = new Date()) {
+  const value = new Date(date);
+  value.setHours(0, 0, 0, 0);
+  return value;
+}
+
+function addDays(days: number) {
+  const value = startOfDay();
+  value.setDate(value.getDate() + days);
+  return value;
+}
 
 /**
- * Create membership renewal reminder notifications
+ * Runs daily to detect memberships expiring soon.
  */
 export const processRenewalReminders = async () => {
   try {
-    const today = new Date();
-
-    const sevenDaysFromNow = new Date();
-    sevenDaysFromNow.setDate(today.getDate() + 7);
-    sevenDaysFromNow.setHours(23, 59, 59, 999);
+    const today = startOfDay();
+    const inThreeDays = addDays(3);
+    const inSevenDays = addDays(7);
 
     const expiringMemberships = await prisma.membership.findMany({
       where: {
+        paymentStatus: {
+          in: ["PAID", "PENDING"],
+        },
         endDate: {
           gte: today,
-          lte: sevenDaysFromNow,
-        },
-        paymentStatus: {
-          not: PAYMENT_STATUS.PAID,
+          lte: inSevenDays,
         },
       },
-      select: {
-        gymId: true,
-        memberId: true,
-        endDate: true,
+      include: {
         member: {
-          select: {
-            user: {
-              select: {
-                name: true,
-              },
-            },
+          include: {
+            user: true,
           },
         },
+        gym: true,
       },
     });
 
-    let notificationsCreated = 0;
+    let createdCount = 0;
 
     for (const membership of expiringMemberships) {
-      await prisma.notification.create({
-        data: {
-          gymId: membership.gymId,
-          memberId: membership.memberId,
-          type: NOTIFICATION_TYPE.MEMBERSHIP_RENEWAL,
-          title: "Membership Renewal Reminder",
-          message: `Hi ${membership.member.user.name}, your membership will expire on ${membership.endDate.toLocaleDateString()}. Please renew to continue your training without interruption.`,
-        },
+      const memberName = membership.member.user.name;
+      const endDate = membership.endDate.toDateString();
+
+      let title = "Membership renewal reminder";
+      let message = `${memberName}'s membership expires on ${endDate}.`;
+
+      if (membership.endDate <= inThreeDays) {
+        title = "Urgent membership renewal";
+        message = `${memberName}'s membership is expiring very soon on ${endDate}. Please follow up.`;
+      }
+
+      await NotificationService.create(membership.gymId, {
+        memberId: membership.memberId,
+        type: "MEMBERSHIP_RENEWAL",
+        title,
+        message,
       });
 
-      notificationsCreated++;
+      createdCount += 1;
     }
 
-    logger.info(
-      `Renewal reminder job completed successfully. ${notificationsCreated} notifications created.`
-    );
+    logger.info(`Renewal reminders created: ${createdCount}`);
 
     return {
       success: true,
-      count: notificationsCreated,
+      createdCount,
     };
   } catch (error) {
-    logger.error("Renewal reminder job failed:", error);
+    logger.error("Renewal reminder automation failed", error);
 
     return {
       success: false,
-      count: 0,
     };
   }
 };

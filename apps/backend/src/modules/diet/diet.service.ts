@@ -1,24 +1,29 @@
-import { Role } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { CreateDietPlanInput, UpdateDietPlanInput } from "./diet.validation";
 import { AppError } from "../../utils/response";
+import { requireGym } from "../../utils/tenant";
+
+type AuthRole =
+  | "SUPER_ADMIN"
+  | "ADMIN"
+  | "RECEPTIONIST"
+  | "TRAINER"
+  | "MEMBER";
 
 interface AuthUser {
   id: string;
-  role: Role;
+  role: AuthRole;
   gymId: string | null;
 }
 
 export class DietService {
   private static async assertMemberAccess(user: AuthUser, memberId: string) {
-    if (!user.gymId) {
-      throw new AppError("Gym context missing", 403);
-    }
+    const gymId = requireGym(user);
 
     const member = await prisma.member.findFirst({
       where: {
         id: memberId,
-        gymId: user.gymId,
+        gymId,
       },
     });
 
@@ -26,11 +31,11 @@ export class DietService {
       throw new AppError("Member not found in this gym", 404);
     }
 
-    if (user.role === Role.TRAINER && member.trainerId !== user.id) {
+    if (user.role === "TRAINER" && member.trainerId !== user.id) {
       throw new AppError("You can only manage assigned members", 403);
     }
 
-    if (user.role === Role.MEMBER && member.userId !== user.id) {
+    if (user.role === "MEMBER" && member.userId !== user.id) {
       throw new AppError("You can only access your own diet plan", 403);
     }
 
@@ -38,14 +43,14 @@ export class DietService {
   }
 
   static async create(user: AuthUser, data: CreateDietPlanInput) {
-    if (!user.gymId) {
-      throw new AppError("Gym context missing", 403);
-    }
+    const gymId = requireGym(user);
 
     await this.assertMemberAccess(user, data.memberId);
 
     const existing = await prisma.dietPlan.findUnique({
-      where: { memberId: data.memberId },
+      where: {
+        memberId: data.memberId,
+      },
     });
 
     if (existing) {
@@ -54,24 +59,31 @@ export class DietService {
 
     return prisma.dietPlan.create({
       data: {
-        gymId: user.gymId,
-        ...data,
+        gymId,
+        memberId: data.memberId,
+        goal: data.goal,
+        notes: data.notes,
+        monday: data.monday,
+        tuesday: data.tuesday,
+        wednesday: data.wednesday,
+        thursday: data.thursday,
+        friday: data.friday,
+        saturday: data.saturday,
+        sunday: data.sunday,
       },
     });
   }
 
   static async getAll(user: AuthUser) {
-    if (!user.gymId) {
-      throw new AppError("Gym context missing", 403);
-    }
+    const gymId = requireGym(user);
 
     return prisma.dietPlan.findMany({
       where: {
-        gymId: user.gymId,
-        ...(user.role === Role.TRAINER
+        gymId,
+        ...(user.role === "TRAINER"
           ? { member: { trainerId: user.id } }
           : {}),
-        ...(user.role === Role.MEMBER
+        ...(user.role === "MEMBER"
           ? { member: { userId: user.id } }
           : {}),
       },
@@ -83,19 +95,20 @@ export class DietService {
           },
         },
       },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
   }
 
   static async getByMember(user: AuthUser, memberId: string) {
-    if (!user.gymId) {
-      throw new AppError("Gym context missing", 403);
-    }
+    const gymId = requireGym(user);
 
     await this.assertMemberAccess(user, memberId);
 
     return prisma.dietPlan.findFirst({
       where: {
-        gymId: user.gymId,
+        gymId,
         memberId,
       },
       include: {
@@ -114,15 +127,13 @@ export class DietService {
     memberId: string,
     data: UpdateDietPlanInput
   ) {
-    if (!user.gymId) {
-      throw new AppError("Gym context missing", 403);
-    }
+    const gymId = requireGym(user);
 
     await this.assertMemberAccess(user, memberId);
 
     const plan = await prisma.dietPlan.findFirst({
       where: {
-        gymId: user.gymId,
+        gymId,
         memberId,
       },
     });
@@ -132,21 +143,31 @@ export class DietService {
     }
 
     return prisma.dietPlan.update({
-      where: { id: plan.id },
-      data,
+      where: {
+        id: plan.id,
+      },
+      data: {
+        goal: data.goal,
+        notes: data.notes,
+        monday: data.monday,
+        tuesday: data.tuesday,
+        wednesday: data.wednesday,
+        thursday: data.thursday,
+        friday: data.friday,
+        saturday: data.saturday,
+        sunday: data.sunday,
+      },
     });
   }
 
   static async delete(user: AuthUser, memberId: string) {
-    if (!user.gymId) {
-      throw new AppError("Gym context missing", 403);
-    }
+    const gymId = requireGym(user);
 
     await this.assertMemberAccess(user, memberId);
 
     const plan = await prisma.dietPlan.findFirst({
       where: {
-        gymId: user.gymId,
+        gymId,
         memberId,
       },
     });
@@ -156,7 +177,9 @@ export class DietService {
     }
 
     return prisma.dietPlan.delete({
-      where: { id: plan.id },
+      where: {
+        id: plan.id,
+      },
     });
   }
 }

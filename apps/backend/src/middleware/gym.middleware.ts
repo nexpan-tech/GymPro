@@ -30,3 +30,4 @@ export const gymMiddleware: RequestHandler = (
 
   next();
 };
+

@@ -1,15 +1,22 @@
-import { Role } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { hashPassword } from "../../utils/password";
 import { AppError } from "../../utils/response";
+import { requireGym } from "../../utils/tenant";
 import {
   CreateMemberInput,
   UpdateMemberInput,
 } from "./member.validation";
 
+type AuthRole =
+  | "SUPER_ADMIN"
+  | "ADMIN"
+  | "RECEPTIONIST"
+  | "TRAINER"
+  | "MEMBER";
+
 interface AuthUser {
   id: string;
-  role: Role;
+  role: AuthRole;
   gymId: string | null;
 }
 
@@ -28,7 +35,7 @@ export class MemberService {
         where: {
           id: data.trainerId,
           gymId,
-          role: Role.TRAINER,
+          role: "TRAINER",
           isActive: true,
         },
       });
@@ -46,7 +53,7 @@ export class MemberService {
           name: data.name,
           email: data.email,
           passwordHash,
-          role: Role.MEMBER,
+          role: "MEMBER",
           gymId,
           isActive: true,
         },
@@ -76,16 +83,14 @@ export class MemberService {
   }
 
   static async getAll(user: AuthUser) {
-    if (!user.gymId) {
-      throw new AppError("Gym context missing", 403);
-    }
+    const gymId = requireGym(user);
 
     const where =
-      user.role === Role.TRAINER
-        ? { gymId: user.gymId, trainerId: user.id }
-        : user.role === Role.MEMBER
-          ? { gymId: user.gymId, userId: user.id }
-          : { gymId: user.gymId };
+      user.role === "TRAINER"
+        ? { gymId, trainerId: user.id }
+        : user.role === "MEMBER"
+          ? { gymId, userId: user.id }
+          : { gymId };
 
     return prisma.member.findMany({
       where,
@@ -93,17 +98,20 @@ export class MemberService {
         user: true,
         trainer: true,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
   }
 
   static async getById(user: AuthUser, id: string) {
-    if (!user.gymId) {
-      throw new AppError("Gym context missing", 403);
-    }
+    const gymId = requireGym(user);
 
     const member = await prisma.member.findFirst({
-      where: { id, gymId: user.gymId },
+      where: {
+        id,
+        gymId,
+      },
       include: {
         user: true,
         trainer: true,
@@ -118,11 +126,11 @@ export class MemberService {
       throw new AppError("Member not found", 404);
     }
 
-    if (user.role === Role.TRAINER && member.trainerId !== user.id) {
+    if (user.role === "TRAINER" && member.trainerId !== user.id) {
       throw new AppError("You can only access assigned members", 403);
     }
 
-    if (user.role === Role.MEMBER && member.userId !== user.id) {
+    if (user.role === "MEMBER" && member.userId !== user.id) {
       throw new AppError("You can only access your own profile", 403);
     }
 
@@ -131,7 +139,10 @@ export class MemberService {
 
   static async update(gymId: string, id: string, data: UpdateMemberInput) {
     const member = await prisma.member.findFirst({
-      where: { id, gymId },
+      where: {
+        id,
+        gymId,
+      },
     });
 
     if (!member) {
@@ -143,7 +154,7 @@ export class MemberService {
         where: {
           id: data.trainerId,
           gymId,
-          role: Role.TRAINER,
+          role: "TRAINER",
           isActive: true,
         },
       });
@@ -154,7 +165,9 @@ export class MemberService {
     }
 
     return prisma.member.update({
-      where: { id },
+      where: {
+        id,
+      },
       data: {
         phone: data.phone,
         gender: data.gender,
@@ -176,7 +189,10 @@ export class MemberService {
 
   static async delete(gymId: string, id: string) {
     const member = await prisma.member.findFirst({
-      where: { id, gymId },
+      where: {
+        id,
+        gymId,
+      },
     });
 
     if (!member) {
@@ -185,11 +201,15 @@ export class MemberService {
 
     return prisma.$transaction(async (tx) => {
       await tx.member.delete({
-        where: { id },
+        where: {
+          id,
+        },
       });
 
       await tx.user.delete({
-        where: { id: member.userId },
+        where: {
+          id: member.userId,
+        },
       });
 
       return { id };

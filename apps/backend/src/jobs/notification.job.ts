@@ -1,50 +1,38 @@
-import { prisma } from "../config/db";
+import { Worker } from "bullmq";
+import { redisConnection } from "../config/redis";
 import { logger } from "../config/logger";
+import { NotificationService } from "../modules/notification/notification.service";
 
-/**
- * Sends pending notifications
- */
-export const processNotifications = async () => {
-  try {
-    const notifications = await prisma.notification.findMany({
-      where: {
-        isSent: false,
-      },
-      include: {
-        member: {
-          include: {
-            user: true,
-          },
-        },
-        gym: true,
-      },
+export const notificationWorker = new Worker(
+  "notifications",
+  async (job) => {
+    logger.info(`Processing notification job: ${job.id}`);
+
+    const { notificationId, type, gymId, memberId, title, message } = job.data;
+
+    logger.info({
+      type,
+      gymId,
+      memberId,
+      title,
+      message,
     });
 
-    for (const n of notifications) {
-      // 🚀 Replace this later with SMS / WhatsApp / Push service
-      logger.info(
-        `📩 Sending notification: ${n.title} -> ${n.member?.user?.name || "ALL"}`
-      );
+    /**
+     * Future:
+     * - Send push notification
+     * - Send WhatsApp
+     * - Send SMS
+     * - Send email
+     */
 
-      await prisma.notification.update({
-        where: { id: n.id },
-        data: {
-          isSent: true,
-          sentAt: new Date(),
-        },
-      });
+    if (notificationId) {
+      await NotificationService.markAsSent(notificationId);
     }
 
-    logger.info(`✅ Notifications processed: ${notifications.length}`);
-
-    return {
-      success: true,
-      processed: notifications.length,
-    };
-  } catch (error) {
-    logger.error("❌ Notification Job Failed", error);
-    return {
-      success: false,
-    };
+    return true;
+  },
+  {
+    connection: redisConnection,
   }
-};
+);

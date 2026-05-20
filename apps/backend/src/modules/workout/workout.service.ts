@@ -1,22 +1,27 @@
-import { Role } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { AppError } from "../../utils/response";
+import { requireGym } from "../../utils/tenant";
+
+type AuthRole =
+  | "SUPER_ADMIN"
+  | "ADMIN"
+  | "RECEPTIONIST"
+  | "TRAINER"
+  | "MEMBER";
 
 interface AuthUser {
   id: string;
-  role: Role;
+  role: AuthRole;
   gymId: string | null;
 }
 
 async function assertMemberAccess(user: AuthUser, memberId: string) {
-  if (!user.gymId) {
-    throw new AppError("Gym context missing", 403);
-  }
+  const gymId = requireGym(user);
 
   const member = await prisma.member.findFirst({
     where: {
       id: memberId,
-      gymId: user.gymId,
+      gymId,
     },
   });
 
@@ -24,11 +29,11 @@ async function assertMemberAccess(user: AuthUser, memberId: string) {
     throw new AppError("Member not found in this gym", 404);
   }
 
-  if (user.role === Role.TRAINER && member.trainerId !== user.id) {
+  if (user.role === "TRAINER" && member.trainerId !== user.id) {
     throw new AppError("You can only manage assigned members", 403);
   }
 
-  if (user.role === Role.MEMBER && member.userId !== user.id) {
+  if (user.role === "MEMBER" && member.userId !== user.id) {
     throw new AppError("You can only access your own workout plan", 403);
   }
 
@@ -39,14 +44,14 @@ export const createWorkoutPlan = async (
   user: AuthUser,
   payload: any
 ) => {
-  if (!user.gymId) {
-    throw new AppError("Gym context missing", 403);
-  }
+  const gymId = requireGym(user);
 
   await assertMemberAccess(user, payload.memberId);
 
   const existing = await prisma.workoutPlan.findUnique({
-    where: { memberId: payload.memberId },
+    where: {
+      memberId: payload.memberId,
+    },
   });
 
   if (existing) {
@@ -55,7 +60,7 @@ export const createWorkoutPlan = async (
 
   return prisma.workoutPlan.create({
     data: {
-      gymId: user.gymId,
+      gymId,
       memberId: payload.memberId,
       goal: payload.goal,
       monday: payload.monday,
@@ -71,17 +76,15 @@ export const createWorkoutPlan = async (
 };
 
 export const getWorkoutPlans = async (user: AuthUser) => {
-  if (!user.gymId) {
-    throw new AppError("Gym context missing", 403);
-  }
+  const gymId = requireGym(user);
 
   return prisma.workoutPlan.findMany({
     where: {
-      gymId: user.gymId,
-      ...(user.role === Role.TRAINER
+      gymId,
+      ...(user.role === "TRAINER"
         ? { member: { trainerId: user.id } }
         : {}),
-      ...(user.role === Role.MEMBER
+      ...(user.role === "MEMBER"
         ? { member: { userId: user.id } }
         : {}),
     },
@@ -93,7 +96,9 @@ export const getWorkoutPlans = async (user: AuthUser) => {
         },
       },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: {
+      createdAt: "desc",
+    },
   });
 };
 
@@ -101,15 +106,13 @@ export const getWorkoutPlanByMember = async (
   user: AuthUser,
   memberId: string
 ) => {
-  if (!user.gymId) {
-    throw new AppError("Gym context missing", 403);
-  }
+  const gymId = requireGym(user);
 
   await assertMemberAccess(user, memberId);
 
   return prisma.workoutPlan.findFirst({
     where: {
-      gymId: user.gymId,
+      gymId,
       memberId,
     },
     include: {
@@ -128,15 +131,13 @@ export const updateWorkoutPlan = async (
   memberId: string,
   payload: any
 ) => {
-  if (!user.gymId) {
-    throw new AppError("Gym context missing", 403);
-  }
+  const gymId = requireGym(user);
 
   await assertMemberAccess(user, memberId);
 
   const plan = await prisma.workoutPlan.findFirst({
     where: {
-      gymId: user.gymId,
+      gymId,
       memberId,
     },
   });
@@ -146,7 +147,45 @@ export const updateWorkoutPlan = async (
   }
 
   return prisma.workoutPlan.update({
-    where: { id: plan.id },
-    data: payload,
+    where: {
+      id: plan.id,
+    },
+    data: {
+      goal: payload.goal,
+      monday: payload.monday,
+      tuesday: payload.tuesday,
+      wednesday: payload.wednesday,
+      thursday: payload.thursday,
+      friday: payload.friday,
+      saturday: payload.saturday,
+      sunday: payload.sunday,
+      notes: payload.notes,
+    },
+  });
+};
+
+export const deleteWorkoutPlan = async (
+  user: AuthUser,
+  memberId: string
+) => {
+  const gymId = requireGym(user);
+
+  await assertMemberAccess(user, memberId);
+
+  const plan = await prisma.workoutPlan.findFirst({
+    where: {
+      gymId,
+      memberId,
+    },
+  });
+
+  if (!plan) {
+    throw new AppError("Workout plan not found", 404);
+  }
+
+  return prisma.workoutPlan.delete({
+    where: {
+      id: plan.id,
+    },
   });
 };

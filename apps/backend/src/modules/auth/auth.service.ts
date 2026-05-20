@@ -1,12 +1,22 @@
 import { prisma } from "../../config/db";
 import { hashPassword, comparePassword } from "../../utils/password";
-import { generateToken } from "../../utils/jwt";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  hashRefreshToken,
+} from "../../utils/jwt";
 import { AppError } from "../../utils/response";
 import { RegisterInput, LoginInput } from "./auth.validation";
 
 function sanitizeUser(user: any) {
   const { passwordHash, ...safeUser } = user;
   return safeUser;
+}
+
+function getRefreshExpiry() {
+  const date = new Date();
+  date.setDate(date.getDate() + 30);
+  return date;
 }
 
 export class AuthService {
@@ -31,16 +41,28 @@ export class AuthService {
       },
     });
 
-    const token = generateToken({
+    const accessToken = generateAccessToken({
       id: user.id,
       email: user.email,
       role: user.role,
       gymId: user.gymId,
     });
 
+    const refreshToken = generateRefreshToken();
+
+    await prisma.session.create({
+      data: {
+        userId: user.id,
+        refreshTokenHash: hashRefreshToken(refreshToken),
+        expiresAt: getRefreshExpiry(),
+      },
+    });
+
     return {
       user: sanitizeUser(user),
-      token,
+      token: accessToken,
+      accessToken,
+      refreshToken,
     };
   }
 
@@ -59,17 +81,92 @@ export class AuthService {
       throw new AppError("Invalid credentials", 401);
     }
 
-    const token = generateToken({
+    const accessToken = generateAccessToken({
       id: user.id,
       email: user.email,
       role: user.role,
       gymId: user.gymId,
     });
 
+    const refreshToken = generateRefreshToken();
+
+    await prisma.session.create({
+      data: {
+        userId: user.id,
+        refreshTokenHash: hashRefreshToken(refreshToken),
+        expiresAt: getRefreshExpiry(),
+      },
+    });
+
     return {
       user: sanitizeUser(user),
-      token,
+      token: accessToken,
+      accessToken,
+      refreshToken,
     };
+  }
+
+  static async refresh(refreshToken: string) {
+    const refreshTokenHash = hashRefreshToken(refreshToken);
+
+    const session = await prisma.session.findFirst({
+      where: {
+        refreshTokenHash,
+        revokedAt: null,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    if (!session || !session.user.isActive) {
+      throw new AppError("Invalid or expired refresh token", 401);
+    }
+
+    const accessToken = generateAccessToken({
+      id: session.user.id,
+      email: session.user.email,
+      role: session.user.role,
+      gymId: session.user.gymId,
+    });
+
+    return {
+      token: accessToken,
+      accessToken,
+    };
+  }
+
+  static async logout(refreshToken: string) {
+    const refreshTokenHash = hashRefreshToken(refreshToken);
+
+    await prisma.session.updateMany({
+      where: {
+        refreshTokenHash,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+      },
+    });
+
+    return true;
+  }
+
+  static async logoutAll(userId: string) {
+    await prisma.session.updateMany({
+      where: {
+        userId,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+      },
+    });
+
+    return true;
   }
 
   static async me(id: string) {

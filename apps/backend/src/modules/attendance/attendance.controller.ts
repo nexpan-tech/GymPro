@@ -1,6 +1,15 @@
 import { Request, Response } from "express";
+import { AuditAction } from "@prisma/client";
 import { AttendanceService } from "./attendance.service";
+import { createAuditLog } from "../../utils/audit";
 import { successResponse } from "../../utils/response";
+
+function getRequestMeta(req: Request) {
+  return {
+    ipAddress: req.ip,
+    userAgent: req.headers["user-agent"] || null,
+  };
+}
 
 export class AttendanceController {
   static async memberQrCheckIn(req: Request, res: Response) {
@@ -20,9 +29,27 @@ export class AttendanceController {
       });
     }
 
-    const data = await AttendanceService.memberQrCheckIn(req.user, gymId);
+    const data = await AttendanceService.memberQrCheckIn(
+      req.user,
+      gymId
+    );
 
-    return successResponse(res, "Check-in successful", data, 201);
+    await createAuditLog({
+      gymId,
+      userId: req.user.id,
+      action: AuditAction.CHECK_IN,
+      entity: "Attendance",
+      entityId: data.id,
+      newData: data,
+      ...getRequestMeta(req),
+    });
+
+    return successResponse(
+      res,
+      "Check-in successful",
+      data,
+      201
+    );
   }
 
   static async getMyAttendance(req: Request, res: Response) {
@@ -33,9 +60,16 @@ export class AttendanceController {
       });
     }
 
-    const data = await AttendanceService.getMyAttendance(req.user);
+    const data = await AttendanceService.getMyAttendance(
+      req.user
+    );
 
-    return successResponse(res, "My attendance fetched", data, 200);
+    return successResponse(
+      res,
+      "My attendance fetched",
+      data,
+      200
+    );
   }
 
   static async getMemberAttendance(req: Request, res: Response) {
@@ -53,7 +87,12 @@ export class AttendanceController {
       memberId
     );
 
-    return successResponse(res, "Member attendance fetched", data, 200);
+    return successResponse(
+      res,
+      "Member attendance fetched",
+      data,
+      200
+    );
   }
 
   static async getDailyAttendance(req: Request, res: Response) {
@@ -71,6 +110,11 @@ export class AttendanceController {
       date as string | undefined
     );
 
-    return successResponse(res, "Daily attendance fetched", data, 200);
+    return successResponse(
+      res,
+      "Daily attendance fetched",
+      data,
+      200
+    );
   }
 }

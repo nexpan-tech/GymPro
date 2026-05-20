@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
+import { AuditAction } from "@prisma/client";
 import { MemberService } from "./member.service";
+import { createAuditLog } from "../../utils/audit";
 import {
   createMemberSchema,
   updateMemberSchema,
@@ -27,13 +29,33 @@ function requireGym(req: Request, res: Response) {
   return user.gymId;
 }
 
+function getRequestMeta(req: Request) {
+  return {
+    ipAddress: req.ip,
+    userAgent: req.headers["user-agent"] || null,
+  };
+}
+
 export class MemberController {
   static async create(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
     const gymId = requireGym(req, res);
     if (!gymId) return;
 
     const data = createMemberSchema.parse(req.body);
     const member = await MemberService.create(gymId, data);
+
+    await createAuditLog({
+      gymId,
+      userId: user.id,
+      action: AuditAction.CREATE,
+      entity: "Member",
+      entityId: member.id,
+      newData: member,
+      ...getRequestMeta(req),
+    });
 
     return res.status(201).json({
       success: true,
@@ -70,16 +92,33 @@ export class MemberController {
   }
 
   static async update(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
     const gymId = requireGym(req, res);
     if (!gymId) return;
+
+    const memberId = req.params.id as string;
+    const oldMember = await MemberService.getById(user, memberId);
 
     const data = updateMemberSchema.parse(req.body);
 
     const member = await MemberService.update(
       gymId,
-      req.params.id as string,
+      memberId,
       data
     );
+
+    await createAuditLog({
+      gymId,
+      userId: user.id,
+      action: AuditAction.UPDATE,
+      entity: "Member",
+      entityId: member.id,
+      oldData: oldMember,
+      newData: member,
+      ...getRequestMeta(req),
+    });
 
     return res.json({
       success: true,
@@ -89,10 +128,26 @@ export class MemberController {
   }
 
   static async delete(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
     const gymId = requireGym(req, res);
     if (!gymId) return;
 
-    await MemberService.delete(gymId, req.params.id as string);
+    const memberId = req.params.id as string;
+    const oldMember = await MemberService.getById(user, memberId);
+
+    await MemberService.delete(gymId, memberId);
+
+    await createAuditLog({
+      gymId,
+      userId: user.id,
+      action: AuditAction.DELETE,
+      entity: "Member",
+      entityId: memberId,
+      oldData: oldMember,
+      ...getRequestMeta(req),
+    });
 
     return res.json({
       success: true,

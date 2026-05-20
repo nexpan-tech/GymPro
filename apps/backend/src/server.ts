@@ -3,12 +3,16 @@ dotenv.config();
 
 import app from "./app";
 import { logger } from "./config/logger";
+import "./jobs/notification.job";
+import "./jobs/renewalReminder.job";
+
 
 /**
  * PORT
  */
 const PORT = process.env.PORT || 5000;
-
+import { initSentry } from "./config/sentry";
+initSentry();
 /**
  * START SERVER
  */

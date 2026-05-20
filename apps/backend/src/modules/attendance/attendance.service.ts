@@ -1,32 +1,32 @@
-import { Role } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { startOfDay } from "../../utils/date";
 import { AppError } from "../../utils/response";
+import { requireGym } from "../../utils/tenant";
+
+type AuthRole = "SUPER_ADMIN" | "ADMIN" | "RECEPTIONIST" | "TRAINER" | "MEMBER";
 
 interface AuthUser {
   id: string;
-  role: Role;
+  role: AuthRole;
   gymId: string | null;
 }
 
 export class AttendanceService {
   static async memberQrCheckIn(user: AuthUser, scannedGymId: string) {
-    if (user.role !== Role.MEMBER) {
+    if (user.role !== "MEMBER") {
       throw new AppError("Only members can check in using QR scan", 403);
     }
 
-    if (!user.gymId) {
-      throw new AppError("Member is not assigned to a gym", 403);
-    }
+    const gymId = requireGym(user);
 
-    if (user.gymId !== scannedGymId) {
+    if (gymId !== scannedGymId) {
       throw new AppError("Invalid gym QR code", 403);
     }
 
     const member = await prisma.member.findFirst({
       where: {
         userId: user.id,
-        gymId: user.gymId,
+        gymId,
       },
     });
 
@@ -38,7 +38,7 @@ export class AttendanceService {
 
     const existing = await prisma.attendance.findFirst({
       where: {
-        gymId: user.gymId,
+        gymId,
         memberId: member.id,
         date: today,
       },
@@ -50,7 +50,7 @@ export class AttendanceService {
 
     return prisma.attendance.create({
       data: {
-        gymId: user.gymId,
+        gymId,
         memberId: member.id,
         date: today,
       },
@@ -72,18 +72,16 @@ export class AttendanceService {
   }
 
   static async getMyAttendance(user: AuthUser) {
-    if (user.role !== Role.MEMBER) {
+    if (user.role !== "MEMBER") {
       throw new AppError("Only members can access this route", 403);
     }
 
-    if (!user.gymId) {
-      throw new AppError("Gym context missing", 403);
-    }
+    const gymId = requireGym(user);
 
     const member = await prisma.member.findFirst({
       where: {
         userId: user.id,
-        gymId: user.gymId,
+        gymId,
       },
     });
 
@@ -93,7 +91,7 @@ export class AttendanceService {
 
     return prisma.attendance.findMany({
       where: {
-        gymId: user.gymId,
+        gymId,
         memberId: member.id,
       },
       orderBy: {
@@ -103,14 +101,12 @@ export class AttendanceService {
   }
 
   static async getMemberAttendance(user: AuthUser, memberId: string) {
-    if (!user.gymId) {
-      throw new AppError("Gym context missing", 403);
-    }
+    const gymId = requireGym(user);
 
     const member = await prisma.member.findFirst({
       where: {
         id: memberId,
-        gymId: user.gymId,
+        gymId,
       },
     });
 
@@ -118,17 +114,17 @@ export class AttendanceService {
       throw new AppError("Member not found in this gym", 404);
     }
 
-    if (user.role === Role.TRAINER && member.trainerId !== user.id) {
+    if (user.role === "TRAINER" && member.trainerId !== user.id) {
       throw new AppError("You can only view assigned member attendance", 403);
     }
 
-    if (user.role === Role.MEMBER && member.userId !== user.id) {
+    if (user.role === "MEMBER" && member.userId !== user.id) {
       throw new AppError("You can only view your own attendance", 403);
     }
 
     return prisma.attendance.findMany({
       where: {
-        gymId: user.gymId,
+        gymId,
         memberId,
       },
       orderBy: {
@@ -138,19 +134,20 @@ export class AttendanceService {
   }
 
   static async getDailyAttendance(user: AuthUser, date?: string) {
-    if (!user.gymId) {
-      throw new AppError("Gym context missing", 403);
-    }
+    const gymId = requireGym(user);
 
-    if (user.role !== Role.ADMIN && user.role !== Role.RECEPTIONIST) {
-      throw new AppError("Only admin or receptionist can view daily attendance", 403);
+    if (user.role !== "ADMIN" && user.role !== "RECEPTIONIST") {
+      throw new AppError(
+        "Only admin or receptionist can view daily attendance",
+        403
+      );
     }
 
     const targetDate = date ? new Date(date) : startOfDay();
 
     return prisma.attendance.findMany({
       where: {
-        gymId: user.gymId,
+        gymId,
         date: targetDate,
       },
       include: {

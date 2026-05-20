@@ -41,6 +41,16 @@ enum NotificationType {
   GENERAL
 }
 
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  PAYMENT
+  CHECK_IN
+}
+
 //////////////////////////////////////////////////////
 // GYM (TENANT)
 //////////////////////////////////////////////////////
@@ -56,6 +66,7 @@ model Gym {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  auditLogs AuditLog[]
 
   users         User[]
   members       Member[]
@@ -84,7 +95,9 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  auditLogs AuditLog[]
+  sessions Session[]
+  
   // relations
   memberProfile Member?
 
@@ -272,4 +285,50 @@ model Payment {
   updatedAt DateTime @updatedAt
 }
 
+model AuditLog {
+  id String @id @default(uuid())
 
+  gymId String?
+  gym   Gym? @relation(fields: [gymId], references: [id])
+
+  userId String?
+  user   User? @relation(fields: [userId], references: [id])
+
+  action AuditAction
+  entity String
+  entityId String?
+
+  oldData Json?
+  newData Json?
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([gymId])
+  @@index([userId])
+  @@index([entity])
+  @@index([createdAt])
+}
+
+model Session {
+  id String @id @default(uuid())
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  refreshTokenHash String
+  deviceName       String?
+  ipAddress        String?
+  userAgent        String?
+
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([expiresAt])
+}

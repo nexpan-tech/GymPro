@@ -1,9 +1,18 @@
 import { Request, Response } from "express";
+import { AuditAction } from "@prisma/client";
 import { MembershipService } from "./membership.service";
+import { createAuditLog } from "../../utils/audit";
 import {
   createMembershipSchema,
   updateMembershipSchema,
 } from "./membership.validation";
+
+function getRequestMeta(req: Request) {
+  return {
+    ipAddress: req.ip,
+    userAgent: req.headers["user-agent"] || null,
+  };
+}
 
 export class MembershipController {
   static async create(req: Request, res: Response) {
@@ -15,14 +24,22 @@ export class MembershipController {
       return res.status(400).json({ success: false, message: "Gym ID required" });
     }
 
+    const gymId = req.user.gymId;
     const data = createMembershipSchema.parse(req.body);
 
-    const membership = await MembershipService.create(
-      req.user.gymId,
-      data
-    );
+    const membership = await MembershipService.create(gymId, data);
 
-    res.json({
+    await createAuditLog({
+      gymId,
+      userId: req.user.id,
+      action: AuditAction.CREATE,
+      entity: "Membership",
+      entityId: membership.id,
+      newData: membership,
+      ...getRequestMeta(req),
+    });
+
+    return res.json({
       success: true,
       message: "Membership created successfully",
       data: membership,
@@ -38,11 +55,9 @@ export class MembershipController {
       return res.status(400).json({ success: false, message: "Gym ID required" });
     }
 
-    const memberships = await MembershipService.getAll(
-      req.user.gymId
-    );
+    const memberships = await MembershipService.getAll(req.user.gymId);
 
-    res.json({
+    return res.json({
       success: true,
       data: memberships,
     });
@@ -59,13 +74,12 @@ export class MembershipController {
 
     const memberId = req.params.memberId as string;
 
-    const memberships =
-      await MembershipService.getByMember(
-        req.user.gymId,
-        memberId
-      );
+    const memberships = await MembershipService.getByMember(
+      req.user.gymId,
+      memberId
+    );
 
-    res.json({
+    return res.json({
       success: true,
       data: memberships,
     });
@@ -80,15 +94,31 @@ export class MembershipController {
       return res.status(400).json({ success: false, message: "Gym ID required" });
     }
 
+    const gymId = req.user.gymId;
+    const membershipId = req.params.id as string;
+
+    const oldMembership = await MembershipService.getById(gymId, membershipId);
+
     const data = updateMembershipSchema.parse(req.body);
 
     const updated = await MembershipService.update(
-      req.user.gymId,
-      req.params.id as string,
+      gymId,
+      membershipId,
       data
     );
 
-    res.json({
+    await createAuditLog({
+      gymId,
+      userId: req.user.id,
+      action: AuditAction.UPDATE,
+      entity: "Membership",
+      entityId: updated.id,
+      oldData: oldMembership,
+      newData: updated,
+      ...getRequestMeta(req),
+    });
+
+    return res.json({
       success: true,
       message: "Membership updated successfully",
       data: updated,
@@ -104,12 +134,24 @@ export class MembershipController {
       return res.status(400).json({ success: false, message: "Gym ID required" });
     }
 
-    await MembershipService.delete(
-      req.user.gymId,
-      req.params.id as string
-    );
+    const gymId = req.user.gymId;
+    const membershipId = req.params.id as string;
 
-    res.json({
+    const oldMembership = await MembershipService.getById(gymId, membershipId);
+
+    await MembershipService.delete(gymId, membershipId);
+
+    await createAuditLog({
+      gymId,
+      userId: req.user.id,
+      action: AuditAction.DELETE,
+      entity: "Membership",
+      entityId: membershipId,
+      oldData: oldMembership,
+      ...getRequestMeta(req),
+    });
+
+    return res.json({
       success: true,
       message: "Membership deleted successfully",
     });
