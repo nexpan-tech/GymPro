@@ -1,20 +1,18 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { CalendarCheck } from "lucide-react";
+import PageHeader from "@/components/common/PageHeader";
+import { Card, CardContent } from "@/components/ui/Card";
 import { attendanceService } from "@/services/attendance.service";
-
-interface AttendanceRecord {
-  id: string;
-  date: string;
-  status: string;
-}
+import type { Attendance } from "@/types/attendance.types";
 
 export default function AttendanceHistoryPage() {
-  const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  const [records, setRecords] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadAttendance = useCallback(async () => {
     try {
-      const res = await attendanceService.getAll();
-      setRecords(Array.isArray(res) ? res : []);
+      const data = await attendanceService.getMyAttendance();
+      setRecords(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to load attendance", error);
       setRecords([]);
@@ -24,52 +22,117 @@ export default function AttendanceHistoryPage() {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadAttendance();
   }, [loadAttendance]);
 
-  if (loading) return <div>Loading attendance history...</div>;
+  const thisMonthCount = useMemo(() => {
+    const now = new Date();
+
+    return records.filter((record) => {
+      const date = new Date(record.date);
+      return (
+        date.getMonth() === now.getMonth() &&
+        date.getFullYear() === now.getFullYear()
+      );
+    }).length;
+  }, [records]);
+
+  if (loading) {
+    return <div className="text-(--text-secondary)">Loading attendance...</div>;
+  }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Attendance History</h1>
+      <PageHeader
+        title="Attendance History"
+        description="View your gym check-ins and monthly consistency."
+      />
 
-      <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-50 dark:bg-gray-800">
-            <tr>
-              <th className="px-4 py-3 text-left">Date</th>
-              <th className="px-4 py-3 text-left">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {records.length > 0 ? (
-              records.map((record) => (
-                <tr
-                  key={record.id}
-                  className="border-t border-gray-100 dark:border-gray-800"
-                >
-                  <td className="px-4 py-3">
-                    {new Date(record.date).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3">
-                    {record.status}
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan={2}
-                  className="px-4 py-6 text-center text-gray-500"
-                >
-                  No attendance records found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card variant="premium" padding="md">
+          <p className="text-sm font-semibold text-(--text-secondary)">
+            This Month
+          </p>
+          <h2 className="mt-2 text-3xl font-black text-(--text-primary)">
+            {thisMonthCount}
+          </h2>
+        </Card>
+
+        <Card variant="glass" padding="md">
+          <p className="text-sm font-semibold text-(--text-secondary)">
+            Total Check-ins
+          </p>
+          <h2 className="mt-2 text-3xl font-black text-(--text-primary)">
+            {records.length}
+          </h2>
+        </Card>
+
+        <Card variant="glass" padding="md">
+          <p className="text-sm font-semibold text-(--text-secondary)">
+            Status
+          </p>
+          <h2 className="mt-2 text-3xl font-black text-emerald-500">
+            Active
+          </h2>
+        </Card>
       </div>
+
+      <Card variant="glass">
+        <CardContent className="p-0">
+          <div className="overflow-hidden rounded-2xl">
+            <table className="min-w-full text-sm">
+              <thead className="bg-(--surface-secondary)">
+                <tr>
+                  <th className="px-5 py-4 text-left font-bold text-(--text-secondary)">
+                    Date
+                  </th>
+                  <th className="px-5 py-4 text-left font-bold text-(--text-secondary)">
+                    Check-in Time
+                  </th>
+                  <th className="px-5 py-4 text-left font-bold text-(--text-secondary)">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {records.length > 0 ? (
+                  records.map((record) => (
+                    <tr
+                      key={record.id}
+                      className="border-t border-(--border)"
+                    >
+                      <td className="px-5 py-4 font-semibold text-(--text-primary)">
+                        {new Date(record.date).toLocaleDateString()}
+                      </td>
+                      <td className="px-5 py-4 text-(--text-secondary)">
+                        {record.checkInAt
+                          ? new Date(record.checkInAt).toLocaleTimeString()
+                          : "N/A"}
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-600">
+                          <CalendarCheck className="h-3.5 w-3.5" />
+                          Present
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className="px-5 py-10 text-center text-(--text-secondary)"
+                    >
+                      No attendance records found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

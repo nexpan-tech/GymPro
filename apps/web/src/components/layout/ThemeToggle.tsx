@@ -26,7 +26,7 @@ export default function ThemeToggle() {
             className={clsx(
               "rounded-xl p-2 transition-all duration-200",
               active
-                ? "bg-(--gradient-primary) text-white shadow-[0_8px_20px_rgba(79,70,229,0.25)]"
+                ? "bg-[image:var(--gradient-primary)] text-white shadow-[0_8px_20px_rgba(79,70,229,0.25)]"
                 : "text-(--text-secondary) hover:bg-(--surface-hover) hover:text-(--text-primary)"
             )}
           >
@@ -37,3 +37,4 @@ export default function ThemeToggle() {
     </div>
   );
 }
+

@@ -1,9 +1,14 @@
 export interface Payment {
   id: string;
-  gymId: string;
-  memberId: string;
+
   amount: number;
-  method: "cash" | "card" | "upi" | "bank";
-  status: "paid" | "pending" | "failed";
-  date: string;
+
+  method?: string;
+
+  status: "PAID" | "PENDING" | "OVERDUE";
+
+  paidAt?: string;
+  date?: string;
+
+  createdAt?: string;
 }

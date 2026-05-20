@@ -25,7 +25,7 @@ export default function Button({
 
   const variantClasses = {
     primary:
-      "bg-(--gradient-primary) text-white shadow-[0_12px_30px_rgba(79,70,229,0.28)] hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(79,70,229,0.36)] focus:ring-indigo-500/20",
+      "bg-[image:var(--gradient-primary)] text-white shadow-[0_12px_30px_rgba(79,70,229,0.28)] hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(79,70,229,0.36)] focus:ring-indigo-500/20",
     secondary:
       "border border-(--border) bg-(--surface-secondary) text-(--text-primary) hover:bg-(--surface-hover) focus:ring-slate-500/10",
     outline:
@@ -59,3 +59,5 @@ export default function Button({
     </button>
   );
 }
+
+

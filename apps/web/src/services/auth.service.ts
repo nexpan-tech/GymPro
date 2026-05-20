@@ -8,19 +8,19 @@ import type { User } from "@/types/user.types";
 
 export const authService = {
   login: async (data: LoginPayload): Promise<AuthResponse> => {
-    const res = await api.post("/auth/login", data);
+    const res = await api.post<AuthResponse>("/auth/login", data);
     return res.data;
   },
 
   registerGym: async (
     data: RegisterGymPayload
   ): Promise<AuthResponse> => {
-    const res = await api.post("/auth/register-gym", data);
+    const res = await api.post<AuthResponse>("/auth/register-gym", data);
     return res.data;
   },
 
   getProfile: async (): Promise<User> => {
-    const res = await api.get("/auth/me");
+    const res = await api.get<{ success: boolean; data: User }>("/auth/me");
     return res.data.data;
   },
 
@@ -29,4 +29,3 @@ export const authService = {
     return res.data;
   },
 };
-

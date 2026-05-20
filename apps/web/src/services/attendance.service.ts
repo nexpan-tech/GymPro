@@ -1,23 +1,30 @@
 import api from "@/lib/axios";
 import type { Attendance } from "@/types/attendance.types";
 
+function unwrap<T>(res: { data: { data?: T } | T }): T {
+  return ((res.data as { data?: T }).data ?? res.data) as T;
+}
+
 export const attendanceService = {
-  getAll: async (): Promise<Attendance[]> => {
-    const res = await api.get("/attendance");
-    return res.data;
+  getMyAttendance: async (): Promise<Attendance[]> => {
+    const res = await api.get("/attendance/my");
+    return unwrap<Attendance[]>(res);
   },
 
-  mark: async (data: Partial<Attendance>): Promise<Attendance> => {
-    const res = await api.post("/attendance", data);
-    return res.data;
+  scanQr: async (gymId: string): Promise<Attendance> => {
+    const res = await api.post("/attendance/scan", { gymId });
+    return unwrap<Attendance>(res);
   },
 
-  update: async (id: string, data: Partial<Attendance>): Promise<Attendance> => {
-    const res = await api.put(`/attendance/${id}`, data);
-    return res.data;
+  getMemberAttendance: async (memberId: string): Promise<Attendance[]> => {
+    const res = await api.get(`/attendance/member/${memberId}`);
+    return unwrap<Attendance[]>(res);
   },
 
-  remove: async (id: string): Promise<void> => {
-    await api.delete(`/attendance/${id}`);
+  getDaily: async (date?: string): Promise<Attendance[]> => {
+    const res = await api.get("/attendance/daily", {
+      params: date ? { date } : undefined,
+    });
+    return unwrap<Attendance[]>(res);
   },
 };

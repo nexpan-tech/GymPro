@@ -14,10 +14,7 @@ html {
 
 body {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(79, 70, 229, 0.08), transparent 30%),
-    radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.06), transparent 32%),
-    var(--background);
+  background: var(--gradient-page);
   color: var(--text-primary);
   font-family: "Inter", system-ui, sans-serif;
   transition: background var(--transition-base), color var(--transition-base);
@@ -47,11 +44,12 @@ body {
   background: var(--glass);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-lg);
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(22px);
 }
 
 .premium-card {
-  background: var(--surface);
+  background: var(--gradient-surface);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-md);
+  backdrop-filter: blur(18px);
 }

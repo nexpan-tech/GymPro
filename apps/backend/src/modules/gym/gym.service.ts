@@ -1,27 +1,82 @@
+import { Role } from "@prisma/client";
 import { prisma } from "../../config/db";
-import { CreateGymInput, UpdateGymInput } from "./gym.validation";
+import { hashPassword } from "../../utils/password";
 import { AppError } from "../../utils/response";
+import { CreateGymInput, UpdateGymInput } from "./gym.validation";
 
 export class GymService {
   static async create(data: CreateGymInput) {
-    const existing = await prisma.gym.findUnique({
+    const existingGym = await prisma.gym.findUnique({
       where: { email: data.email },
     });
 
-    if (existing) {
+    if (existingGym) {
       throw new AppError("Gym already exists with this email", 400);
     }
 
-    return prisma.gym.create({
+    if (data.adminEmail) {
+      const existingAdmin = await prisma.user.findUnique({
+        where: { email: data.adminEmail },
+      });
+
+      if (existingAdmin) {
+        throw new AppError("Admin already exists with this email", 400);
+      }
+    }
+
+    const gym = await prisma.gym.create({
       data: {
-        ...data,
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        address: data.address,
+        logo: data.logo,
       },
     });
+
+    let admin = null;
+
+    if (data.adminName && data.adminEmail && data.adminPassword) {
+      const passwordHash = await hashPassword(data.adminPassword);
+
+      admin = await prisma.user.create({
+        data: {
+          name: data.adminName,
+          email: data.adminEmail,
+          passwordHash,
+          role: Role.ADMIN,
+          gymId: gym.id,
+          isActive: true,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          gymId: true,
+          isActive: true,
+          createdAt: true,
+        },
+      });
+    }
+
+    return {
+      gym,
+      admin,
+    };
   }
 
   static async getAll() {
     return prisma.gym.findMany({
       orderBy: { createdAt: "desc" },
+      include: {
+        _count: {
+          select: {
+            users: true,
+            members: true,
+          },
+        },
+      },
     });
   }
 
@@ -29,8 +84,24 @@ export class GymService {
     const gym = await prisma.gym.findUnique({
       where: { id },
       include: {
-        users: true,
+        users: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            isActive: true,
+            createdAt: true,
+          },
+        },
         members: true,
+        _count: {
+          select: {
+            users: true,
+            members: true,
+            payments: true,
+          },
+        },
       },
     });
 
@@ -42,10 +113,22 @@ export class GymService {
   }
 
   static async update(id: string, data: UpdateGymInput) {
-    const gym = await prisma.gym.findUnique({ where: { id } });
+    const gym = await prisma.gym.findUnique({
+      where: { id },
+    });
 
     if (!gym) {
       throw new AppError("Gym not found", 404);
+    }
+
+    if (data.email && data.email !== gym.email) {
+      const existing = await prisma.gym.findUnique({
+        where: { email: data.email },
+      });
+
+      if (existing) {
+        throw new AppError("Another gym already uses this email", 400);
+      }
     }
 
     return prisma.gym.update({
@@ -69,7 +152,9 @@ export class GymService {
   }
 
   static async delete(id: string) {
-    const gym = await prisma.gym.findUnique({ where: { id } });
+    const gym = await prisma.gym.findUnique({
+      where: { id },
+    });
 
     if (!gym) {
       throw new AppError("Gym not found", 404);

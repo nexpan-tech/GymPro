@@ -1,5 +1,3 @@
-// apps/web/src/components/dashboard/KPICard.tsx
-
 import { LucideIcon, TrendingDown, TrendingUp } from "lucide-react";
 import clsx from "clsx";
 
@@ -23,20 +21,27 @@ export default function KPICard({
   const isPositive = trend === undefined ? true : trend >= 0;
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-500">{title}</p>
-          <h3 className="mt-2 text-3xl font-bold text-gray-900">{value}</h3>
+    <div className="group relative overflow-hidden rounded-2xl border border-(--border) bg-(--glass-strong) p-6 shadow-(--shadow-md) backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-(--shadow-lg)">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-indigo-400/60 to-transparent" />
+
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-(--text-muted)">{title}</p>
+
+          <h3 className="mt-2 truncate text-3xl font-black tracking-tight text-(--text-primary)">
+            {value}
+          </h3>
 
           {subtitle && (
-            <p className="mt-1 text-sm text-gray-500">{subtitle}</p>
+            <p className="mt-1 line-clamp-2 text-sm leading-5 text-(--text-secondary)">
+              {subtitle}
+            </p>
           )}
         </div>
 
         <div
           className={clsx(
-            "flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br text-white shadow",
+            "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br text-white shadow-[0_14px_30px_rgba(79,70,229,0.28)] transition-transform duration-300 group-hover:scale-110",
             color
           )}
         >
@@ -45,25 +50,26 @@ export default function KPICard({
       </div>
 
       {trend !== undefined && (
-        <div className="mt-4 flex items-center gap-2 text-sm">
+        <div className="mt-5 flex items-center gap-2 text-sm">
           {isPositive ? (
-            <TrendingUp className="h-4 w-4 text-green-500" />
+            <TrendingUp className="h-4 w-4 text-emerald-500" />
           ) : (
             <TrendingDown className="h-4 w-4 text-red-500" />
           )}
 
           <span
             className={clsx(
-              "font-medium",
-              isPositive ? "text-green-600" : "text-red-600"
+              "font-black",
+              isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
             )}
           >
             {Math.abs(trend)}%
           </span>
 
-          <span className="text-gray-500">vs last month</span>
+          <span className="text-(--text-muted)">vs last month</span>
         </div>
       )}
     </div>
   );
 }
+

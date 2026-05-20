@@ -1,47 +1,76 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { AttendanceService } from "./attendance.service";
 import { successResponse } from "../../utils/response";
 
 export class AttendanceController {
-  /**
-   * QR Check-in
-   */
-  static async checkIn(req: any, res: Response) {
-    const gymId = req.user.gymId;
-    const { memberId, date } = req.body;
+  static async memberQrCheckIn(req: Request, res: Response) {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
 
-    const data = await AttendanceService.checkIn(gymId, memberId, date);
+    const { gymId } = req.body;
 
-    return successResponse(res, "Check-in successful", data);
+    if (!gymId) {
+      return res.status(400).json({
+        success: false,
+        message: "Scanned gym ID is required",
+      });
+    }
+
+    const data = await AttendanceService.memberQrCheckIn(req.user, gymId);
+
+    return successResponse(res, "Check-in successful", data, 201);
   }
 
-  /**
-   * Member attendance history
-   */
-  static async getMemberAttendance(req: any, res: Response) {
-    const gymId = req.user.gymId;
-    const memberId = req.params.memberId;
+  static async getMyAttendance(req: Request, res: Response) {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const data = await AttendanceService.getMyAttendance(req.user);
+
+    return successResponse(res, "My attendance fetched", data, 200);
+  }
+
+  static async getMemberAttendance(req: Request, res: Response) {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const memberId = req.params.memberId as string;
 
     const data = await AttendanceService.getMemberAttendance(
-      gymId,
+      req.user,
       memberId
     );
 
-    return successResponse(res, "Attendance fetched", data);
+    return successResponse(res, "Member attendance fetched", data, 200);
   }
 
-  /**
-   * Daily attendance (gym dashboard)
-   */
-  static async getDailyAttendance(req: any, res: Response) {
-    const gymId = req.user.gymId;
+  static async getDailyAttendance(req: Request, res: Response) {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
     const { date } = req.query;
 
     const data = await AttendanceService.getDailyAttendance(
-      gymId,
-      date as string
+      req.user,
+      date as string | undefined
     );
 
-    return successResponse(res, "Daily attendance fetched", data);
+    return successResponse(res, "Daily attendance fetched", data, 200);
   }
 }

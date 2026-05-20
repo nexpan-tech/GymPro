@@ -1,11 +1,27 @@
+import type { User } from "./user.types";
+
 export interface Member {
   id: string;
+
   gymId: string;
-  name: string;
-  email: string;
+  userId: string;
+
   phone: string;
-  age?: number;
-  gender?: "male" | "female" | "other";
-  status: "active" | "inactive";
-  joinedAt: string;
+
+  gender?: string;
+  dateOfBirth?: string;
+
+  address?: string;
+
+  height?: number;
+  weight?: number;
+  fitnessGoal?: string;
+
+  trainerId?: string;
+
+  createdAt?: string;
+  updatedAt?: string;
+
+  user?: User;
+  trainer?: User;
 }

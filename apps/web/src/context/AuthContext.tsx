@@ -29,6 +29,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setToken,
     logout: logoutAction,
   } = useAuthStore();
+
   const [isLoading, setIsLoading] = useState(true);
 
   const refreshProfile = useCallback(async () => {
@@ -42,9 +43,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
 
     try {
+      setToken(existingToken);
       const profile = await authService.getProfile();
       setUser(profile);
-      setToken(existingToken);
     } catch {
       storage.removeToken();
       setUser(null);
@@ -70,11 +71,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
   function logout() {
     storage.removeToken();
     logoutAction();
-    window.location.href = "/login";
+    window.location.replace("/login");
   }
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refreshProfile();
   }, [refreshProfile]);
 
@@ -94,6 +94,3 @@ export function AuthProvider({ children }: PropsWithChildren) {
     </AuthContext.Provider>
   );
 }
-
-
-

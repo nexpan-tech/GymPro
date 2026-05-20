@@ -10,7 +10,6 @@ const router = Router();
 
 router.use(authMiddleware);
 
-// Only ADMIN can manage users
 router.post(
   "/",
   roleMiddleware([ROLES.ADMIN]),

@@ -5,24 +5,37 @@ import {
   updateMemberSchema,
 } from "./member.validation";
 
+function requireAuth(req: Request, res: Response) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "Unauthorized" });
+    return null;
+  }
+
+  return req.user;
+}
+
+function requireGym(req: Request, res: Response) {
+  const user = requireAuth(req, res);
+
+  if (!user) return null;
+
+  if (!user.gymId) {
+    res.status(400).json({ success: false, message: "Gym ID required" });
+    return null;
+  }
+
+  return user.gymId;
+}
+
 export class MemberController {
   static async create(req: Request, res: Response) {
-    if (!req.user) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
-
-    if (!req.user.gymId) {
-      return res.status(400).json({ success: false, message: "Gym ID required" });
-    }
+    const gymId = requireGym(req, res);
+    if (!gymId) return;
 
     const data = createMemberSchema.parse(req.body);
+    const member = await MemberService.create(gymId, data);
 
-    const member = await MemberService.create(
-      req.user.gymId,
-      data
-    );
-
-    res.json({
+    return res.status(201).json({
       success: true,
       message: "Member created successfully",
       data: member,
@@ -30,60 +43,45 @@ export class MemberController {
   }
 
   static async getAll(req: Request, res: Response) {
-    if (!req.user) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
+    const user = requireAuth(req, res);
+    if (!user) return;
 
-    if (!req.user.gymId) {
-      return res.status(400).json({ success: false, message: "Gym ID required" });
-    }
+    const members = await MemberService.getAll(user);
 
-    const members = await MemberService.getAll(req.user.gymId);
-
-    res.json({
+    return res.json({
       success: true,
       data: members,
     });
   }
 
   static async getById(req: Request, res: Response) {
-    if (!req.user) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
-
-    if (!req.user.gymId) {
-      return res.status(400).json({ success: false, message: "Gym ID required" });
-    }
+    const user = requireAuth(req, res);
+    if (!user) return;
 
     const member = await MemberService.getById(
-      req.user.gymId,
+      user,
       req.params.id as string
     );
 
-    res.json({
+    return res.json({
       success: true,
       data: member,
     });
   }
 
   static async update(req: Request, res: Response) {
-    if (!req.user) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
-
-    if (!req.user.gymId) {
-      return res.status(400).json({ success: false, message: "Gym ID required" });
-    }
+    const gymId = requireGym(req, res);
+    if (!gymId) return;
 
     const data = updateMemberSchema.parse(req.body);
 
     const member = await MemberService.update(
-      req.user.gymId,
+      gymId,
       req.params.id as string,
       data
     );
 
-    res.json({
+    return res.json({
       success: true,
       message: "Member updated successfully",
       data: member,
@@ -91,20 +89,12 @@ export class MemberController {
   }
 
   static async delete(req: Request, res: Response) {
-    if (!req.user) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
+    const gymId = requireGym(req, res);
+    if (!gymId) return;
 
-    if (!req.user.gymId) {
-      return res.status(400).json({ success: false, message: "Gym ID required" });
-    }
+    await MemberService.delete(gymId, req.params.id as string);
 
-    await MemberService.delete(
-      req.user.gymId,
-      req.params.id as string
-    );
-
-    res.json({
+    return res.json({
       success: true,
       message: "Member deleted successfully",
     });

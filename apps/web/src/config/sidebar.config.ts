@@ -63,11 +63,11 @@ export const sidebarConfig: SidebarConfig = {
 
   member: [
     { label: "Dashboard", path: "/member/dashboard", icon: LayoutDashboard },
-    { label: "Attendance History", path: "/member/attendance-history", icon: CalendarCheck },
-    { label: "Membership Details", path: "/member/membership-details", icon: CreditCard },
-    { label: "Payment History", path: "/member/payment-history", icon: FileText },
-    { label: "Workout Plan", path: "/member/workout-plan", icon: Dumbbell },
-    { label: "Diet Plan", path: "/member/diet-plan", icon: ClipboardList },
+    { label: "Attendance", path: "/member/attendance-history", icon: CalendarCheck },
+    { label: "Membership", path: "/member/membership-details", icon: CreditCard },
+    { label: "Payments", path: "/member/payment-history", icon: FileText },
+    { label: "Workout", path: "/member/workout-plan", icon: Dumbbell },
+    { label: "Diet", path: "/member/diet-plan", icon: ClipboardList },
     { label: "Progress", path: "/member/progress", icon: TrendingUp },
   ],
 };

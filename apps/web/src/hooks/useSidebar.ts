@@ -5,3 +5,4 @@ import { useSidebarContext } from "@/context/SidebarContext";
 export const useSidebar = () => useSidebarContext();
 
 export default useSidebar;
+

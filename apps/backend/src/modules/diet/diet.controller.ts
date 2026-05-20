@@ -5,21 +5,24 @@ import {
   updateDietPlanSchema,
 } from "./diet.validation";
 
+function requireAuth(req: Request, res: Response) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "Unauthorized" });
+    return null;
+  }
+
+  return req.user;
+}
+
 export class DietController {
   static async create(req: Request, res: Response) {
-    if (!req.user) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
-
-    if (!req.user.gymId) {
-      return res.status(400).json({ success: false, message: "Gym ID required" });
-    }
+    const user = requireAuth(req, res);
+    if (!user) return;
 
     const data = createDietPlanSchema.parse(req.body);
+    const diet = await DietService.create(user, data);
 
-    const diet = await DietService.create(req.user.gymId, data);
-
-    res.json({
+    return res.status(201).json({
       success: true,
       message: "Diet plan created successfully",
       data: diet,
@@ -27,63 +30,45 @@ export class DietController {
   }
 
   static async getAll(req: Request, res: Response) {
-    if (!req.user) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
+    const user = requireAuth(req, res);
+    if (!user) return;
 
-    if (!req.user.gymId) {
-      return res.status(400).json({ success: false, message: "Gym ID required" });
-    }
+    const diets = await DietService.getAll(user);
 
-    const diets = await DietService.getAll(req.user.gymId);
-
-    res.json({
+    return res.json({
       success: true,
       data: diets,
     });
   }
 
   static async getByMember(req: Request, res: Response) {
-    if (!req.user) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
-
-    if (!req.user.gymId) {
-      return res.status(400).json({ success: false, message: "Gym ID required" });
-    }
-
-    const memberId = req.params.memberId as string;
+    const user = requireAuth(req, res);
+    if (!user) return;
 
     const diet = await DietService.getByMember(
-      req.user.gymId,
-      memberId
+      user,
+      req.params.memberId as string
     );
 
-    res.json({
+    return res.json({
       success: true,
       data: diet,
     });
   }
 
   static async update(req: Request, res: Response) {
-    if (!req.user) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
+    const user = requireAuth(req, res);
+    if (!user) return;
 
-    if (!req.user.gymId) {
-      return res.status(400).json({ success: false, message: "Gym ID required" });
-    }
-
-    const memberId = req.params.memberId as string;
     const data = updateDietPlanSchema.parse(req.body);
 
     const updated = await DietService.update(
-      req.user.gymId,
-      memberId,
+      user,
+      req.params.memberId as string,
       data
     );
 
-    res.json({
+    return res.json({
       success: true,
       message: "Diet plan updated successfully",
       data: updated,
@@ -91,19 +76,12 @@ export class DietController {
   }
 
   static async delete(req: Request, res: Response) {
-    if (!req.user) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
+    const user = requireAuth(req, res);
+    if (!user) return;
 
-    if (!req.user.gymId) {
-      return res.status(400).json({ success: false, message: "Gym ID required" });
-    }
+    await DietService.delete(user, req.params.memberId as string);
 
-    const memberId = req.params.memberId as string;
-
-    await DietService.delete(req.user.gymId, memberId);
-
-    res.json({
+    return res.json({
       success: true,
       message: "Diet plan deleted successfully",
     });

@@ -59,7 +59,7 @@ export default function UserMenu() {
           "hover:bg-(--surface-hover) hover:shadow-(--shadow-md)"
         )}
       >
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-(--gradient-primary) text-sm font-black text-white shadow-[0_10px_24px_rgba(79,70,229,0.28)]">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[image:var(--gradient-primary)] text-sm font-black text-white shadow-[0_10px_24px_rgba(79,70,229,0.28)]">
           {getInitials(user?.name)}
         </div>
 
@@ -102,7 +102,11 @@ export default function UserMenu() {
             </Link>
 
             <Link
-              to="/settings"
+              to={
+                user?.role === "SUPER_ADMIN"
+                  ? "/super-admin/settings"
+                  : "/gym-admin/settings"
+              }
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-(--text-secondary) transition hover:bg-(--surface-hover) hover:text-(--text-primary)"
             >
@@ -124,3 +128,5 @@ export default function UserMenu() {
     </div>
   );
 }
+
+

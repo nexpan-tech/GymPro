@@ -4,6 +4,11 @@ import { generateToken } from "../../utils/jwt";
 import { AppError } from "../../utils/response";
 import { RegisterInput, LoginInput } from "./auth.validation";
 
+function sanitizeUser(user: any) {
+  const { passwordHash, ...safeUser } = user;
+  return safeUser;
+}
+
 export class AuthService {
   static async register(data: RegisterInput) {
     const existingUser = await prisma.user.findUnique({
@@ -22,17 +27,21 @@ export class AuthService {
         email: data.email,
         passwordHash,
         role: data.role || "MEMBER",
-        gymId: data.gymId!,
+        gymId: data.gymId ?? null,
       },
     });
 
     const token = generateToken({
       id: user.id,
+      email: user.email,
       role: user.role,
       gymId: user.gymId,
     });
 
-    return { user, token };
+    return {
+      user: sanitizeUser(user),
+      token,
+    };
   }
 
   static async login(data: LoginInput) {
@@ -40,14 +49,11 @@ export class AuthService {
       where: { email: data.email },
     });
 
-    if (!user) {
+    if (!user || !user.isActive) {
       throw new AppError("Invalid credentials", 401);
     }
 
-    const isValid = await comparePassword(
-      data.password,
-      user.passwordHash
-    );
+    const isValid = await comparePassword(data.password, user.passwordHash);
 
     if (!isValid) {
       throw new AppError("Invalid credentials", 401);
@@ -55,18 +61,30 @@ export class AuthService {
 
     const token = generateToken({
       id: user.id,
+      email: user.email,
       role: user.role,
       gymId: user.gymId,
     });
 
-    return { user, token };
+    return {
+      user: sanitizeUser(user),
+      token,
+    };
   }
 
   static async me(id: string) {
-    return prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id },
-      include: { memberProfile: true },
+      include: {
+        gym: true,
+        memberProfile: true,
+      },
     });
+
+    if (!user) {
+      throw new AppError("User not found", 404);
+    }
+
+    return sanitizeUser(user);
   }
 }
-

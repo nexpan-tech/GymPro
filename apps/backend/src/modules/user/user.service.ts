@@ -1,8 +1,32 @@
+import { Role } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { hashPassword } from "../../utils/password";
-import { ROLES } from "../../constants/roles";
+import { AppError } from "../../utils/response";
+import type { CreateUserInput, UpdateUserInput } from "./user.validation";
 
-export const createUser = async (gymId: string, payload: any) => {
+const safeUserSelect = {
+  id: true,
+  name: true,
+  email: true,
+  role: true,
+  gymId: true,
+  isActive: true,
+  createdAt: true,
+  updatedAt: true,
+};
+
+export const createUser = async (
+  gymId: string,
+  payload: CreateUserInput
+) => {
+  const existing = await prisma.user.findUnique({
+    where: { email: payload.email },
+  });
+
+  if (existing) {
+    throw new AppError("User already exists with this email", 400);
+  }
+
   const passwordHash = await hashPassword(payload.password);
 
   return prisma.user.create({
@@ -11,49 +35,92 @@ export const createUser = async (gymId: string, payload: any) => {
       name: payload.name,
       email: payload.email,
       passwordHash,
-      role: payload.role || ROLES.MEMBER,
+      role: payload.role as Role,
+      isActive: true,
     },
+    select: safeUserSelect,
   });
 };
 
 export const getUsers = async (gymId: string) => {
   return prisma.user.findMany({
     where: { gymId },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      isActive: true,
-      createdAt: true,
-    },
+    select: safeUserSelect,
     orderBy: { createdAt: "desc" },
   });
 };
 
 export const getUserById = async (gymId: string, id: string) => {
-  return prisma.user.findFirst({
+  const user = await prisma.user.findFirst({
     where: { id, gymId },
     select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      isActive: true,
-      member: true,
+      ...safeUserSelect,
+      memberProfile: true,
+      trainedMembers: true,
     },
   });
+
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
+
+  return user;
 };
 
-export const updateUser = async (gymId: string, id: string, payload: any) => {
-  return prisma.user.updateMany({
+export const updateUser = async (
+  gymId: string,
+  id: string,
+  payload: UpdateUserInput
+) => {
+  const user = await prisma.user.findFirst({
     where: { id, gymId },
-    data: payload,
+  });
+
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
+
+  if (payload.email && payload.email !== user.email) {
+    const existing = await prisma.user.findUnique({
+      where: { email: payload.email },
+    });
+
+    if (existing) {
+      throw new AppError("Another user already uses this email", 400);
+    }
+  }
+
+  return prisma.user.update({
+    where: { id },
+    data: {
+      ...payload,
+      role: payload.role as Role | undefined,
+    },
+    select: safeUserSelect,
   });
 };
 
 export const deleteUser = async (gymId: string, id: string) => {
-  return prisma.user.deleteMany({
+  const user = await prisma.user.findFirst({
     where: { id, gymId },
+  });
+
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
+
+  if (user.role === Role.ADMIN) {
+    const adminCount = await prisma.user.count({
+      where: { gymId, role: Role.ADMIN, isActive: true },
+    });
+
+    if (adminCount <= 1) {
+      throw new AppError("Cannot delete the last active gym admin", 400);
+    }
+  }
+
+  return prisma.user.delete({
+    where: { id },
+    select: safeUserSelect,
   });
 };

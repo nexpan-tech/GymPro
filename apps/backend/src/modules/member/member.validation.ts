@@ -21,3 +21,4 @@ export const updateMemberSchema = createMemberSchema.partial();
 
 export type CreateMemberInput = z.infer<typeof createMemberSchema>;
 export type UpdateMemberInput = z.infer<typeof updateMemberSchema>;
+

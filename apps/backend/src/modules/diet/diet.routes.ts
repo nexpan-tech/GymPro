@@ -3,44 +3,40 @@ import { DietController } from "./diet.controller";
 import { authMiddleware } from "../../middleware/auth.middleware";
 import { roleMiddleware } from "../../middleware/role.middleware";
 import { ROLES } from "../../constants/roles";
+import { asyncHandler } from "../../utils/asyncHandler";
 
 const router = Router();
 
-/**
- * Trainers + Admin can manage diet plans
- */
+router.use(authMiddleware);
+
 router.post(
   "/",
-  authMiddleware,
   roleMiddleware([ROLES.ADMIN, ROLES.TRAINER]),
-  DietController.create
+  asyncHandler(DietController.create)
 );
 
 router.get(
   "/",
-  authMiddleware,
-  roleMiddleware([ROLES.ADMIN, ROLES.TRAINER]),
-  DietController.getAll
+  roleMiddleware([ROLES.ADMIN, ROLES.TRAINER, ROLES.MEMBER]),
+  asyncHandler(DietController.getAll)
 );
 
 router.get(
   "/:memberId",
-  authMiddleware,
-  DietController.getByMember
+  roleMiddleware([ROLES.ADMIN, ROLES.TRAINER, ROLES.MEMBER]),
+  asyncHandler(DietController.getByMember)
 );
 
 router.put(
   "/:memberId",
-  authMiddleware,
   roleMiddleware([ROLES.ADMIN, ROLES.TRAINER]),
-  DietController.update
+  asyncHandler(DietController.update)
 );
 
 router.delete(
   "/:memberId",
-  authMiddleware,
   roleMiddleware([ROLES.ADMIN]),
-  DietController.delete
+  asyncHandler(DietController.delete)
 );
 
 export default router;

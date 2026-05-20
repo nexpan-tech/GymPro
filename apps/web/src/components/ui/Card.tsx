@@ -13,13 +13,13 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 
 const variantClasses: Record<CardVariant, string> = {
   default:
-    "border border-(--border) bg-(--surface-solid) shadow-(--shadow-md) dark:bg-(--surface)",
+    "border border-(--border) bg-(--glass-strong) shadow-(--shadow-md) backdrop-blur-xl",
   glass:
-    "border border-(--glass-border) bg-(--glass) shadow-(--shadow-lg) backdrop-blur-xl",
+    "border border-(--glass-border) bg-(--glass) shadow-(--shadow-md) backdrop-blur-xl",
   solid:
     "border border-(--border) bg-(--surface-solid) shadow-(--shadow-sm)",
   premium:
-    "relative overflow-hidden border border-(--border) bg-(--surface-solid) shadow-(--shadow-lg) dark:bg-(--surface)",
+    "relative overflow-hidden border border-(--border) bg-[image:var(--gradient-surface)] shadow-(--shadow-lg) backdrop-blur-xl",
   flat:
     "border border-(--border) bg-(--surface-secondary) shadow-none",
 };
@@ -42,7 +42,7 @@ export function Card({
   return (
     <div
       className={clsx(
-        "rounded-2xl text-(--text-primary) transition-all duration-300",
+        "rounded-[22px] text-(--text-primary) transition-all duration-300",
         variantClasses[variant],
         paddingClasses[padding],
         hover && "hover:-translate-y-1 hover:shadow-(--shadow-xl)",
@@ -51,7 +51,7 @@ export function Card({
       {...props}
     >
       {variant === "premium" && (
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-(--gradient-primary)" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-indigo-400/70 to-transparent" />
       )}
 
       {children}
@@ -66,10 +66,7 @@ export function CardHeader({
 }: CardProps) {
   return (
     <div
-      className={clsx(
-        "border-b border-(--border) px-6 py-5",
-        className
-      )}
+      className={clsx("border-b border-(--border) px-6 py-5", className)}
       {...props}
     >
       {children}
@@ -97,7 +94,7 @@ export function CardTitle({
   return (
     <h3
       className={clsx(
-        "text-lg font-bold tracking-tight text-(--text-primary)",
+        "text-lg font-black tracking-tight text-(--text-primary)",
         className
       )}
       {...props}

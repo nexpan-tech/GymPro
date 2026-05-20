@@ -2,37 +2,35 @@ import { Request, Response } from "express";
 import * as userService from "./user.service";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { successResponse } from "../../utils/response";
+import { createUserSchema, updateUserSchema } from "./user.validation";
 
-export const createUser = asyncHandler(async (req: Request, res: Response) => {
+function getGymId(req: Request, res: Response): string | null {
   if (!req.user) {
-    return res.status(401).json({ success: false, message: "Unauthorized" });
+    res.status(401).json({ success: false, message: "Unauthorized" });
+    return null;
   }
 
   if (!req.user.gymId) {
-    return res.status(400).json({ success: false, message: "Gym ID required" });
+    res.status(400).json({ success: false, message: "Gym ID required" });
+    return null;
   }
 
-  const gymId = req.user.gymId;
+  return req.user.gymId;
+}
 
-  const user = await userService.createUser(gymId, req.body);
+export const createUser = asyncHandler(async (req: Request, res: Response) => {
+  const gymId = getGymId(req, res);
+  if (!gymId) return;
+
+  const payload = createUserSchema.parse(req.body);
+  const user = await userService.createUser(gymId, payload);
 
   return successResponse(res, "User created successfully", user, 201);
 });
 
 export const getUsers = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) {
-    return res.status(401).json({ success: false, message: "Unauthorized" });
-  }
-
-  if (!req.user.gymId) {
-    return res.status(400).json({ success: false, message: "Gym ID required" });
-  }
-
-  if (!req.user.gymId) {
-    return res.status(400).json({ success: false, message: "Gym ID required" });
-  }
-
-  const gymId = req.user.gymId;
+  const gymId = getGymId(req, res);
+  if (!gymId) return;
 
   const users = await userService.getUsers(gymId);
 
@@ -40,52 +38,33 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getUserById = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) {
-    return res.status(401).json({ success: false, message: "Unauthorized" });
-  }
+  const gymId = getGymId(req, res);
+  if (!gymId) return;
 
-  if (!req.user.gymId) {
-    return res.status(400).json({ success: false, message: "Gym ID required" });
-  }
-
-  const gymId = req.user.gymId;
-  const id = req.params.id as string;
-
-  const user = await userService.getUserById(gymId, id);
+  const user = await userService.getUserById(gymId, req.params.id as string);
 
   return successResponse(res, "User fetched successfully", user, 200);
 });
 
 export const updateUser = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) {
-    return res.status(401).json({ success: false, message: "Unauthorized" });
-  }
+  const gymId = getGymId(req, res);
+  if (!gymId) return;
 
-  if (!req.user.gymId) {
-    return res.status(400).json({ success: false, message: "Gym ID required" });
-  }
-
-  const gymId = req.user.gymId;
-  const id = req.params.id as string;
-
-  const updated = await userService.updateUser(gymId, id, req.body);
+  const payload = updateUserSchema.parse(req.body);
+  const updated = await userService.updateUser(
+    gymId,
+    req.params.id as string,
+    payload
+  );
 
   return successResponse(res, "User updated successfully", updated, 200);
 });
 
 export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) {
-    return res.status(401).json({ success: false, message: "Unauthorized" });
-  }
+  const gymId = getGymId(req, res);
+  if (!gymId) return;
 
-  if (!req.user.gymId) {
-    return res.status(400).json({ success: false, message: "Gym ID required" });
-  }
+  const deleted = await userService.deleteUser(gymId, req.params.id as string);
 
-  const gymId = req.user.gymId;
-  const id = req.params.id as string;
-
-  await userService.deleteUser(gymId, id);
-
-  return successResponse(res, "User deleted successfully", null, 200);
+  return successResponse(res, "User deleted successfully", deleted, 200);
 });

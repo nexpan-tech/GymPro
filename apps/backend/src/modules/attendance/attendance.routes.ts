@@ -3,40 +3,52 @@ import { AttendanceController } from "./attendance.controller";
 import { authMiddleware } from "../../middleware/auth.middleware";
 import { gymMiddleware } from "../../middleware/gym.middleware";
 import { roleMiddleware } from "../../middleware/role.middleware";
+import { asyncHandler } from "../../utils/asyncHandler";
 
 const router = Router();
 
-/**
- * All attendance routes require auth + gym context
- */
 router.use(authMiddleware);
 router.use(gymMiddleware);
 
 /**
- * QR Check-in
+ * MEMBER scans QR pasted in gym.
+ * Body:
+ * {
+ *   "gymId": "scanned-gym-id"
+ * }
  */
 router.post(
-  "/checkin",
-  roleMiddleware(["ADMIN", "RECEPTIONIST"]),
-  AttendanceController.checkIn
+  "/scan",
+  roleMiddleware(["MEMBER"]),
+  asyncHandler(AttendanceController.memberQrCheckIn)
 );
 
 /**
- * Member history
+ * MEMBER views own attendance.
+ */
+router.get(
+  "/my",
+  roleMiddleware(["MEMBER"]),
+  asyncHandler(AttendanceController.getMyAttendance)
+);
+
+/**
+ * ADMIN / RECEPTIONIST view any member in own gym.
+ * TRAINER views assigned members only.
  */
 router.get(
   "/member/:memberId",
-  roleMiddleware(["ADMIN", "TRAINER", "RECEPTIONIST"]),
-  AttendanceController.getMemberAttendance
+  roleMiddleware(["ADMIN", "RECEPTIONIST", "TRAINER", "MEMBER"]),
+  asyncHandler(AttendanceController.getMemberAttendance)
 );
 
 /**
- * Daily attendance view
+ * ADMIN / RECEPTIONIST daily attendance.
  */
 router.get(
   "/daily",
   roleMiddleware(["ADMIN", "RECEPTIONIST"]),
-  AttendanceController.getDailyAttendance
+  asyncHandler(AttendanceController.getDailyAttendance)
 );
 
 export default router;

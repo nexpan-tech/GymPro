@@ -3,72 +3,82 @@ import * as workoutService from "./workout.service";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { successResponse } from "../../utils/response";
 
-export const createWorkoutPlan = asyncHandler(async (req: Request, res: Response) => {
+function requireAuth(req: Request, res: Response) {
   if (!req.user) {
-    return res.status(401).json({ success: false, message: "Unauthorized" });
+    res.status(401).json({ success: false, message: "Unauthorized" });
+    return null;
   }
 
-  if (!req.user.gymId) {
-    return res.status(400).json({ success: false, message: "Gym ID required" });
+  return req.user;
+}
+
+export const createWorkoutPlan = asyncHandler(
+  async (req: Request, res: Response) => {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    const plan = await workoutService.createWorkoutPlan(user, req.body);
+
+    return successResponse(
+      res,
+      "Workout plan created successfully",
+      plan,
+      201
+    );
   }
+);
 
-  const gymId = req.user.gymId;
+export const getWorkoutPlans = asyncHandler(
+  async (req: Request, res: Response) => {
+    const user = requireAuth(req, res);
+    if (!user) return;
 
-  const plan = await workoutService.createWorkoutPlan(gymId, req.body);
+    const plans = await workoutService.getWorkoutPlans(user);
 
-  return successResponse(res, "Workout plan created successfully", plan, 201);
-});
-
-export const getWorkoutPlans = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) {
-    return res.status(401).json({ success: false, message: "Unauthorized" });
+    return successResponse(
+      res,
+      "Workout plans fetched successfully",
+      plans,
+      200
+    );
   }
+);
 
-  if (!req.user.gymId) {
-    return res.status(400).json({ success: false, message: "Gym ID required" });
+export const getWorkoutPlanByMember = asyncHandler(
+  async (req: Request, res: Response) => {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    const plan = await workoutService.getWorkoutPlanByMember(
+      user,
+      req.params.memberId as string
+    );
+
+    return successResponse(
+      res,
+      "Workout plan fetched successfully",
+      plan,
+      200
+    );
   }
+);
 
-  const gymId = req.user.gymId;
+export const updateWorkoutPlan = asyncHandler(
+  async (req: Request, res: Response) => {
+    const user = requireAuth(req, res);
+    if (!user) return;
 
-  const plans = await workoutService.getWorkoutPlans(gymId);
+    const updated = await workoutService.updateWorkoutPlan(
+      user,
+      req.params.memberId as string,
+      req.body
+    );
 
-  return successResponse(res, "Workout plans fetched successfully", plans, 200);
-});
-
-export const getWorkoutPlanByMember = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) {
-    return res.status(401).json({ success: false, message: "Unauthorized" });
+    return successResponse(
+      res,
+      "Workout plan updated successfully",
+      updated,
+      200
+    );
   }
-
-  if (!req.user.gymId) {
-    return res.status(400).json({ success: false, message: "Gym ID required" });
-  }
-
-  const gymId = req.user.gymId;
-  const memberId = req.params.memberId as string;
-
-  const plan = await workoutService.getWorkoutPlanByMember(gymId, memberId);
-
-  return successResponse(res, "Workout plan fetched successfully", plan, 200);
-});
-
-export const updateWorkoutPlan = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) {
-    return res.status(401).json({ success: false, message: "Unauthorized" });
-  }
-
-  if (!req.user.gymId) {
-    return res.status(400).json({ success: false, message: "Gym ID required" });
-  }
-
-  const gymId = req.user.gymId;
-  const memberId = req.params.memberId as string;
-
-  const updated = await workoutService.updateWorkoutPlan(
-    gymId,
-    memberId,
-    req.body
-  );
-
-  return successResponse(res, "Workout plan updated successfully", updated, 200);
-});
+);

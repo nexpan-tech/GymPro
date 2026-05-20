@@ -1,24 +1,32 @@
-import { Response, NextFunction } from "express";
-import { AuthRequest } from "./auth.middleware";
+import { Request, Response, NextFunction, RequestHandler } from "express";
 
-/**
- * Ensures gym context is always valid
- */
-export const gymMiddleware = (
-  req: AuthRequest,
+export const gymMiddleware: RequestHandler = (
+  req: Request,
   res: Response,
   next: NextFunction
-) => {
-  try {
-    if (!req.user?.gymId) {
-      return res.status(403).json({ message: "Gym context missing" });
-    }
-
-    // attach for easy access
-    req.headers["x-gym-id"] = req.user.gymId;
-
-    next();
-  } catch (error) {
-    return res.status(500).json({ message: "Gym middleware error" });
+): void => {
+  if (!req.user) {
+    res.status(401).json({
+      success: false,
+      message: "Unauthorized",
+    });
+    return;
   }
+
+  if (req.user.role === "SUPER_ADMIN") {
+    next();
+    return;
+  }
+
+  if (!req.user.gymId) {
+    res.status(403).json({
+      success: false,
+      message: "Gym context missing",
+    });
+    return;
+  }
+
+  req.headers["x-gym-id"] = req.user.gymId;
+
+  next();
 };
