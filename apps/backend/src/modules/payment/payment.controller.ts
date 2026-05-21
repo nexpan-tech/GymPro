@@ -28,10 +28,7 @@ export const createPayment = asyncHandler(
 
     const gymId = req.user.gymId;
 
-    const data = await paymentService.createPayment(
-      gymId,
-      req.body
-    );
+    const data = await paymentService.createPayment(gymId, req.body);
 
     await createAuditLog({
       gymId,
@@ -66,9 +63,7 @@ export const getPayments = asyncHandler(
         .json({ success: false, message: "Gym ID required" });
     }
 
-    const gymId = req.user.gymId;
-
-    const data = await paymentService.getPayments(gymId);
+    const data = await paymentService.getPayments(req.user.gymId);
 
     return successResponse(
       res,
@@ -93,12 +88,9 @@ export const getPaymentById = asyncHandler(
         .json({ success: false, message: "Gym ID required" });
     }
 
-    const gymId = req.user.gymId;
-    const id = req.params.id as string;
-
     const data = await paymentService.getPaymentById(
-      gymId,
-      id
+      req.user.gymId,
+      req.params.id as string
     );
 
     return successResponse(

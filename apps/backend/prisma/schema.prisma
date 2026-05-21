@@ -51,6 +51,13 @@ enum AuditAction {
   CHECK_IN
 }
 
+enum DueStatus {
+  PENDING
+  PARTIAL
+  PAID
+  OVERDUE
+  WAIVED
+}
 //////////////////////////////////////////////////////
 // GYM (TENANT)
 //////////////////////////////////////////////////////
@@ -67,6 +74,7 @@ model Gym {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   auditLogs AuditLog[]
+  dues          Due[]
 
   users         User[]
   members       Member[]
@@ -97,6 +105,8 @@ model User {
   updatedAt DateTime @updatedAt
   auditLogs AuditLog[]
   sessions Session[]
+  
+  deviceTokens DeviceToken[]
   
   // relations
   memberProfile Member?
@@ -132,6 +142,7 @@ model Member {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  dues          Due[]
 
   memberships   Membership[]
   attendances   Attendance[]
@@ -162,6 +173,7 @@ model Membership {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  dues          Due[]
 }
 
 //////////////////////////////////////////////////////
@@ -331,4 +343,55 @@ model Session {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+model Due {
+  id String @id @default(uuid())
+
+  gymId String
+  gym   Gym @relation(fields: [gymId], references: [id])
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id])
+
+  membershipId String?
+  membership   Membership? @relation(fields: [membershipId], references: [id])
+
+  amount     Float
+  paidAmount Float @default(0)
+  balance    Float
+
+  status DueStatus @default(PENDING)
+
+  dueDate DateTime
+  paidAt  DateTime?
+
+  reminderCount Int       @default(0)
+  lastReminderAt DateTime?
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gymId])
+  @@index([memberId])
+  @@index([membershipId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model DeviceToken {
+  id String @id @default(uuid())
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  token    String @unique
+  platform String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }

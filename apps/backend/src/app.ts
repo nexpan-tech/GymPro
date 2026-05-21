@@ -20,6 +20,9 @@ import analyticsRoutes from "./modules/analytics/analytics.routes";
 import { rateLimitMiddleware } from "./middleware/rateLimit.middleware";
 import automationRoutes from "./modules/automation/automation.routes";
 import uploadRoutes from "./modules/upload/upload.routes";
+import dueRoutes from "./modules/due/due.routes";
+import deviceRoutes from "./modules/device/device.routes";
+
 const app = express();
 
 /**
@@ -86,6 +89,12 @@ app.use("/api/workout-plans", workoutRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/analytics", analyticsRoutes);
+
+app.use("/api/v1/dues", dueRoutes);
+app.use("/api/dues", dueRoutes);
+
+app.use("/api/v1/devices", deviceRoutes);
+app.use("/api/devices", deviceRoutes);
 
 /**
  * ----------------------------
