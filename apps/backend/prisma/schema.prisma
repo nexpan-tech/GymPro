@@ -58,6 +58,13 @@ enum DueStatus {
   OVERDUE
   WAIVED
 }
+
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  FAILED
+  CANCELLED
+}
 //////////////////////////////////////////////////////
 // GYM (TENANT)
 //////////////////////////////////////////////////////
@@ -75,6 +82,9 @@ model Gym {
   updatedAt DateTime @updatedAt
   auditLogs AuditLog[]
   dues          Due[]
+
+  bodyMeasurements BodyMeasurement[]
+  goals Goal[]
 
   users         User[]
   members       Member[]
@@ -139,6 +149,9 @@ model Member {
 
   trainerId String?
   trainer   User?   @relation("TrainerMembers", fields: [trainerId], references: [id])
+  
+  bodyMeasurements BodyMeasurement[]
+  goals Goal[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -394,4 +407,65 @@ model DeviceToken {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+model BodyMeasurement {
+  id String @id @default(uuid())
+
+  gymId String
+  gym   Gym @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  weight Float?
+
+  chest Float?
+  waist Float?
+  hips Float?
+  arms Float?
+  thighs Float?
+
+  bodyFatPercentage Float?
+
+  bmi Float?
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gymId])
+  @@index([memberId])
+}
+
+model Goal {
+  id String @id @default(uuid())
+
+  gymId String
+  gym   Gym @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  title String
+
+  description String?
+
+  targetValue Float?
+
+  currentValue Float?
+
+  unit String?
+
+  startDate DateTime
+  targetDate DateTime?
+
+  status GoalStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gymId])
+  @@index([memberId])
 }

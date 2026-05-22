@@ -325,4 +325,5 @@ static async getCollectionDashboard(gymId: string) {
     dues,
   };
 }
+
 }

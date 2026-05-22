@@ -22,6 +22,7 @@ export class DeviceService {
         userId,
       },
       create: {
+        
         token: data.token,
         platform: data.platform,
         userId,
