@@ -7,6 +7,8 @@ import { processRenewalReminders } from "../../jobs/renewalReminder.job";
 import { processDueReminders } from "../../jobs/dueReminder.job";
 import { processRenewalCampaigns } from "../../jobs/renewalCampaign.job";
 import { processInactiveMembers } from "../../jobs/inactiveMember.job";
+import { processRetentionAlerts } from "../../jobs/retention.job";
+import { processEngagementReminders } from "../../jobs/engagement-reminder.job";
 
 const router = Router();
 
@@ -56,6 +58,24 @@ router.post("/inactive-members", async (_req, res) => {
   return res.json({
     success: true,
     message: "Inactive member automation completed",
+    data: result,
+  });
+});
+router.post("/retention-alerts", async (_req, res) => {
+  const result = await processRetentionAlerts();
+
+  return res.json({
+    success: true,
+    message: "Retention alerts processed successfully",
+    data: result,
+  });
+});
+router.post("/engagement-reminders", async (_req, res) => {
+  const result = await processEngagementReminders();
+
+  return res.json({
+    success: true,
+    message: "Engagement reminders processed successfully",
     data: result,
   });
 });

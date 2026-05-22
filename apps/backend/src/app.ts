@@ -22,6 +22,11 @@ import automationRoutes from "./modules/automation/automation.routes";
 import uploadRoutes from "./modules/upload/upload.routes";
 import dueRoutes from "./modules/due/due.routes";
 import deviceRoutes from "./modules/device/device.routes";
+import progressRoutes from "./modules/progress/progress.routes";
+import goalRoutes from "./modules/goal/goal.routes";
+import engagementRoutes from "./modules/engagement/engagement.routes";
+import badgeRoutes from "./modules/badge/badge.routes";
+import transformationRoutes from "./modules/transformation/transformation.routes";
 
 const app = express();
 
@@ -96,6 +101,20 @@ app.use("/api/dues", dueRoutes);
 app.use("/api/v1/devices", deviceRoutes);
 app.use("/api/devices", deviceRoutes);
 
+app.use("/api/v1/progress", progressRoutes);
+app.use("/api/progress", progressRoutes);
+
+app.use("/api/v1/goals", goalRoutes);
+app.use("/api/goals", goalRoutes);
+
+app.use("/api/v1/engagement", engagementRoutes);
+app.use("/api/engagement", engagementRoutes);
+
+app.use("/api/v1/badges", badgeRoutes);
+app.use("/api/badges", badgeRoutes);
+
+app.use("/api/v1/transformations", transformationRoutes);
+app.use("/api/transformations", transformationRoutes);
 /**
  * ----------------------------
  * ERROR HANDLER (LAST)

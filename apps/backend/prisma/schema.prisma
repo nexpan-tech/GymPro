@@ -65,6 +65,20 @@ enum GoalStatus {
   FAILED
   CANCELLED
 }
+
+enum BadgeType {
+  ATTENDANCE
+  STREAK
+  GOAL
+  PROGRESS
+  SPECIAL
+}
+
+enum ProgressPhotoType {
+  BEFORE
+  PROGRESS
+  AFTER
+}
 //////////////////////////////////////////////////////
 // GYM (TENANT)
 //////////////////////////////////////////////////////
@@ -85,6 +99,8 @@ model Gym {
 
   bodyMeasurements BodyMeasurement[]
   goals Goal[]
+  memberBadges MemberBadge[]
+  progressPhotos ProgressPhoto[]
 
   users         User[]
   members       Member[]
@@ -152,6 +168,8 @@ model Member {
   
   bodyMeasurements BodyMeasurement[]
   goals Goal[]
+  memberBadges MemberBadge[]
+  progressPhotos ProgressPhoto[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -468,4 +486,61 @@ model Goal {
 
   @@index([gymId])
   @@index([memberId])
+}
+
+model Badge {
+  id String @id @default(uuid())
+
+  name        String
+  description String?
+  type        BadgeType
+  icon        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberBadges MemberBadge[]
+}
+
+model MemberBadge {
+  id String @id @default(uuid())
+
+  gymId String
+  gym   Gym @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  badgeId String
+  badge   Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  earnedAt DateTime @default(now())
+
+  @@unique([memberId, badgeId])
+  @@index([gymId])
+  @@index([memberId])
+}
+
+model ProgressPhoto {
+  id String @id @default(uuid())
+
+  gymId String
+  gym   Gym @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  imageUrl String
+  type     ProgressPhotoType @default(PROGRESS)
+
+  notes String?
+
+  takenAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gymId])
+  @@index([memberId])
+  @@index([takenAt])
 }
