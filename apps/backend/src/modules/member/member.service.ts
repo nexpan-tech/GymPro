@@ -118,7 +118,7 @@ export class MemberService {
         memberships: true,
         attendances: true,
         dietPlan: true,
-        workoutPlan: true,
+        workoutPlans: true,
       },
     });
 

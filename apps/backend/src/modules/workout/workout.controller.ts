@@ -1,7 +1,5 @@
 import { Request, Response } from "express";
-import * as workoutService from "./workout.service";
-import { asyncHandler } from "../../utils/asyncHandler";
-import { successResponse } from "../../utils/response";
+import { WorkoutService } from "./workout.service";
 
 function requireAuth(req: Request, res: Response) {
   if (!req.user) {
@@ -12,73 +10,124 @@ function requireAuth(req: Request, res: Response) {
   return req.user;
 }
 
-export const createWorkoutPlan = asyncHandler(
-  async (req: Request, res: Response) => {
+export class WorkoutController {
+  static async createPlan(req: Request, res: Response) {
     const user = requireAuth(req, res);
     if (!user) return;
 
-    const plan = await workoutService.createWorkoutPlan(user, req.body);
+    const data = await WorkoutService.createPlan(user, req.body);
 
-    return successResponse(
-      res,
-      "Workout plan created successfully",
-      plan,
-      201
-    );
+    return res.status(201).json({
+      success: true,
+      message: "Workout plan created successfully",
+      data,
+    });
   }
-);
 
-export const getWorkoutPlans = asyncHandler(
-  async (req: Request, res: Response) => {
+  static async getPlans(req: Request, res: Response) {
     const user = requireAuth(req, res);
     if (!user) return;
 
-    const plans = await workoutService.getWorkoutPlans(user);
+    const data = await WorkoutService.getPlans(user);
 
-    return successResponse(
-      res,
-      "Workout plans fetched successfully",
-      plans,
-      200
-    );
+    return res.json({ success: true, data });
   }
-);
 
-export const getWorkoutPlanByMember = asyncHandler(
-  async (req: Request, res: Response) => {
+  static async getPlanById(req: Request, res: Response) {
     const user = requireAuth(req, res);
     if (!user) return;
 
-    const plan = await workoutService.getWorkoutPlanByMember(
+    const data = await WorkoutService.getPlanById(
       user,
-      req.params.memberId as string
+      req.params.id as string
     );
 
-    return successResponse(
-      res,
-      "Workout plan fetched successfully",
-      plan,
-      200
-    );
+    return res.json({ success: true, data });
   }
-);
 
-export const updateWorkoutPlan = asyncHandler(
-  async (req: Request, res: Response) => {
+  static async addExercise(req: Request, res: Response) {
     const user = requireAuth(req, res);
     if (!user) return;
 
-    const updated = await workoutService.updateWorkoutPlan(
+    const data = await WorkoutService.addExercise(
       user,
-      req.params.memberId as string,
+      req.params.planId as string,
       req.body
     );
 
-    return successResponse(
-      res,
-      "Workout plan updated successfully",
-      updated,
-      200
-    );
+    return res.status(201).json({
+      success: true,
+      message: "Exercise added to workout plan",
+      data,
+    });
   }
-);
+
+  static async removeExercise(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    await WorkoutService.removeExercise(user, req.params.id as string);
+
+    return res.json({
+      success: true,
+      message: "Exercise removed from workout plan",
+    });
+  }
+
+  static async assignToMember(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    const data = await WorkoutService.assignToMember(
+      user,
+      req.params.planId as string,
+      req.body.memberId
+    );
+
+    return res.json({
+      success: true,
+      message: "Workout plan assigned successfully",
+      data,
+    });
+  }
+
+  static async deletePlan(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    await WorkoutService.deletePlan(user, req.params.id as string);
+
+    return res.json({
+      success: true,
+      message: "Workout plan deleted successfully",
+    });
+  }
+
+  static async completeWorkout(req: Request, res: Response) {
+  const user = requireAuth(req, res);
+  if (!user) return;
+
+  const data = await WorkoutService.completeWorkout(user, req.body);
+
+  return res.status(201).json({
+    success: true,
+    message: "Workout completed successfully",
+    data,
+  });
+}
+
+static async getCompletions(req: Request, res: Response) {
+  const user = requireAuth(req, res);
+  if (!user) return;
+
+  const data = await WorkoutService.getCompletions(
+    user,
+    req.params.planId as string
+  );
+
+  return res.json({
+    success: true,
+    data,
+  });
+}
+}

@@ -79,6 +79,56 @@ enum ProgressPhotoType {
   PROGRESS
   AFTER
 }
+
+enum ExerciseCategory {
+  STRENGTH
+  CARDIO
+  FLEXIBILITY
+  MOBILITY
+  WARMUP
+  STRETCHING
+}
+
+enum MuscleGroup {
+  CHEST
+  BACK
+  SHOULDERS
+  BICEPS
+  TRICEPS
+  LEGS
+  GLUTES
+  CORE
+  FULL_BODY
+}
+
+enum DifficultyLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+  PRE_WORKOUT
+  POST_WORKOUT
+}
+
+enum MessageType {
+  TEXT
+  PROGRESS_COMMENT
+  FEEDBACK
+}
+
+enum FeedbackRating {
+  ONE
+  TWO
+  THREE
+  FOUR
+  FIVE
+}
 //////////////////////////////////////////////////////
 // GYM (TENANT)
 //////////////////////////////////////////////////////
@@ -110,6 +160,13 @@ model Gym {
   workoutPlans  WorkoutPlan[]
   notifications Notification[]
   payments      Payment[]
+
+  exercises Exercise[]
+
+  workoutCompletions WorkoutCompletion[]
+  
+  trainerMessages TrainerMessage[]
+  trainerFeedbacks TrainerFeedback[]
 }
 
 //////////////////////////////////////////////////////
@@ -139,6 +196,12 @@ model User {
 
   // trainer → members mapping
   trainedMembers Member[] @relation("TrainerMembers")
+
+  trainerWorkoutPlans WorkoutPlan[] @relation("TrainerWorkoutPlans")
+
+  trainerMessages TrainerMessage[] @relation("TrainerMessages")
+  sentMessages TrainerMessage[] @relation("MessageSender")
+  trainerFeedbacks TrainerFeedback[] @relation("TrainerFeedbacks")
 }
 
 //////////////////////////////////////////////////////
@@ -175,12 +238,18 @@ model Member {
   updatedAt DateTime @updatedAt
   dues          Due[]
 
+  workoutPlans WorkoutPlan[]
+
   memberships   Membership[]
   attendances   Attendance[]
   dietPlan      DietPlan?
-  workoutPlan   WorkoutPlan?
   notifications Notification[]
   payments      Payment[]
+
+  workoutCompletions WorkoutCompletion[]
+
+  trainerMessages TrainerMessage[]
+trainerFeedbacks TrainerFeedback[]
 }
 
 //////////////////////////////////////////////////////
@@ -244,6 +313,8 @@ model DietPlan {
   goal  String?
   notes String?
 
+  meals DietMeal[]
+
   monday    String?
   tuesday   String?
   wednesday String?
@@ -259,30 +330,6 @@ model DietPlan {
 //////////////////////////////////////////////////////
 // WORKOUT PLAN
 //////////////////////////////////////////////////////
-
-model WorkoutPlan {
-  id String @id @default(uuid())
-
-  gymId String
-  gym   Gym    @relation(fields: [gymId], references: [id])
-
-  memberId String @unique
-  member   Member @relation(fields: [memberId], references: [id])
-
-  goal  String?
-  notes String?
-
-  monday    String?
-  tuesday   String?
-  wednesday String?
-  thursday  String?
-  friday    String?
-  saturday  String?
-  sunday    String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
 
 //////////////////////////////////////////////////////
 // NOTIFICATIONS
@@ -543,4 +590,184 @@ model ProgressPhoto {
   @@index([gymId])
   @@index([memberId])
   @@index([takenAt])
+}
+
+model Exercise {
+  id              String              @id @default(uuid())
+  gymId           String?
+  name            String
+  description     String?
+  category        ExerciseCategory
+  muscleGroup     MuscleGroup
+  difficulty      DifficultyLevel
+  equipment       String?
+  instructions    String?
+  videoUrl        String?
+  imageUrl        String?
+  caloriesBurned  Int?
+  durationMinutes Int?
+  isPublic        Boolean             @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  gym Gym? @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  @@index([category])
+  @@index([muscleGroup])
+  @@index([difficulty])
+
+  workoutExercises WorkoutExercise[]
+}
+
+model WorkoutPlan {
+  id          String   @id @default(uuid())
+  gymId       String
+  trainerId   String
+  memberId    String?
+  title       String
+  description String?
+  difficulty  DifficultyLevel
+  durationWeeks Int?
+  isTemplate  Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  gym      Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  trainer  User     @relation("TrainerWorkoutPlans", fields: [trainerId], references: [id], onDelete: Cascade)
+  member   Member?  @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  exercises WorkoutExercise[]
+
+  completions WorkoutCompletion[]
+
+  @@index([gymId])
+  @@index([trainerId])
+  @@index([memberId])
+}
+
+model WorkoutExercise {
+  id            String @id @default(uuid())
+  workoutPlanId String
+  exerciseId    String
+
+  dayNumber Int
+  sets      Int
+  reps      String
+  restSeconds Int?
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workoutPlan WorkoutPlan @relation(fields: [workoutPlanId], references: [id], onDelete: Cascade)
+  exercise    Exercise    @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+   
+  completions WorkoutCompletion[]
+
+  @@index([workoutPlanId])
+  @@index([exerciseId])
+}
+
+model WorkoutCompletion {
+  id String @id @default(uuid())
+
+  gymId String
+  gym   Gym @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  workoutPlanId String
+  workoutPlan   WorkoutPlan @relation(fields: [workoutPlanId], references: [id], onDelete: Cascade)
+
+  workoutExerciseId String?
+  workoutExercise   WorkoutExercise? @relation(fields: [workoutExerciseId], references: [id], onDelete: SetNull)
+
+  dayNumber Int?
+
+  completedAt DateTime @default(now())
+  notes       String?
+
+  createdAt DateTime @default(now())
+
+  @@index([gymId])
+  @@index([memberId])
+  @@index([workoutPlanId])
+}
+
+model DietMeal {
+  id String @id @default(uuid())
+
+  dietPlanId String
+  dietPlan   DietPlan @relation(fields: [dietPlanId], references: [id], onDelete: Cascade)
+
+  dayOfWeek String
+  mealType  MealType
+
+  title       String
+  description String?
+  calories    Int?
+  protein     Float?
+  carbs       Float?
+  fats        Float?
+
+  time String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dietPlanId])
+  @@index([dayOfWeek])
+  @@index([mealType])
+}
+
+model TrainerMessage {
+  id String @id @default(uuid())
+
+  gymId String
+  gym   Gym @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  trainerId String
+  trainer   User @relation("TrainerMessages", fields: [trainerId], references: [id], onDelete: Cascade)
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  senderId String
+  sender   User @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  type    MessageType @default(TEXT)
+  message String
+
+  createdAt DateTime @default(now())
+
+  @@index([gymId])
+  @@index([trainerId])
+  @@index([memberId])
+  @@index([senderId])
+}
+
+model TrainerFeedback {
+  id String @id @default(uuid())
+
+  gymId String
+  gym   Gym @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  trainerId String
+  trainer   User @relation("TrainerFeedbacks", fields: [trainerId], references: [id], onDelete: Cascade)
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  rating  FeedbackRating
+  comment String?
+
+  createdAt DateTime @default(now())
+
+  @@index([gymId])
+  @@index([trainerId])
+  @@index([memberId])
 }

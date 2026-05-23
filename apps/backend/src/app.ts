@@ -27,6 +27,10 @@ import goalRoutes from "./modules/goal/goal.routes";
 import engagementRoutes from "./modules/engagement/engagement.routes";
 import badgeRoutes from "./modules/badge/badge.routes";
 import transformationRoutes from "./modules/transformation/transformation.routes";
+import exerciseRoutes from "./modules/exercise/exercise.routes";
+import trainerAnalyticsRoutes from "./modules/trainer-analytics/trainer-analytics.routes";
+import dietBuilderRoutes from "./modules/diet-builder/diet-builder.routes";
+import communicationRoutes from "./modules/communication/communication.routes";
 
 const app = express();
 
@@ -73,7 +77,7 @@ app.use("/api/v1/memberships", membershipRoutes);
 app.use("/api/v1/attendance", attendanceRoutes);
 
 app.use("/api/v1/diet-plans", dietRoutes);
-app.use("/api/v1/workout-plans", workoutRoutes);
+app.use("/api/v1/workouts", workoutRoutes);
 
 app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/payments", paymentRoutes);
@@ -90,7 +94,7 @@ app.use("/api/members", memberRoutes);
 app.use("/api/memberships", membershipRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/diet-plans", dietRoutes);
-app.use("/api/workout-plans", workoutRoutes);
+app.use("/api/workouts", workoutRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/analytics", analyticsRoutes);
@@ -115,6 +119,19 @@ app.use("/api/badges", badgeRoutes);
 
 app.use("/api/v1/transformations", transformationRoutes);
 app.use("/api/transformations", transformationRoutes);
+
+app.use("/api/v1/exercises", exerciseRoutes);
+app.use("/api/exercises", exerciseRoutes);
+
+app.use("/api/v1/trainer-analytics", trainerAnalyticsRoutes);
+app.use("/api/trainer-analytics", trainerAnalyticsRoutes);
+
+app.use("/api/v1/diet-builder", dietBuilderRoutes);
+app.use("/api/diet-builder", dietBuilderRoutes);
+
+app.use("/api/v1/communication", communicationRoutes);
+app.use("/api/communication", communicationRoutes);
+
 /**
  * ----------------------------
  * ERROR HANDLER (LAST)

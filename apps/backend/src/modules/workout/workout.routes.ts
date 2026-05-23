@@ -1,44 +1,22 @@
 import { Router } from "express";
-import * as controller from "./workout.controller";
 import { authMiddleware } from "../../middleware/auth.middleware";
-import { roleMiddleware } from "../../middleware/role.middleware";
-import { ROLES } from "../../constants/roles";
-import { validate } from "../../middleware/validate.middleware";
-import {
-  createWorkoutSchema,
-  updateWorkoutSchema,
-} from "./workout.validation";
+import { WorkoutController } from "./workout.controller";
 
 const router = Router();
 
 router.use(authMiddleware);
 
-// Trainer + Admin can create/update plans
-router.post(
-  "/",
-  roleMiddleware([ROLES.ADMIN, ROLES.TRAINER]),
-  validate(createWorkoutSchema),
-  controller.createWorkoutPlan
-);
+router.post("/", WorkoutController.createPlan);
+router.get("/", WorkoutController.getPlans);
+router.get("/:id", WorkoutController.getPlanById);
 
-router.get(
-  "/",
-  roleMiddleware([ROLES.ADMIN, ROLES.TRAINER]),
-  controller.getWorkoutPlans
-);
+router.post("/:planId/exercises", WorkoutController.addExercise);
+router.delete("/exercises/:id", WorkoutController.removeExercise);
 
-router.get(
-  "/member/:memberId",
-  roleMiddleware([ROLES.ADMIN, ROLES.TRAINER, ROLES.MEMBER]),
-  controller.getWorkoutPlanByMember
-);
+router.patch("/:planId/assign", WorkoutController.assignToMember);
+router.delete("/:id", WorkoutController.deletePlan);
 
-router.put(
-  "/member/:memberId",
-  roleMiddleware([ROLES.ADMIN, ROLES.TRAINER]),
-  validate(updateWorkoutSchema),
-  controller.updateWorkoutPlan
-);
+router.post("/complete", WorkoutController.completeWorkout);
+router.get("/:planId/completions", WorkoutController.getCompletions);
 
 export default router;
-
