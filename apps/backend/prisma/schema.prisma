@@ -249,7 +249,7 @@ model Member {
   workoutCompletions WorkoutCompletion[]
 
   trainerMessages TrainerMessage[]
-trainerFeedbacks TrainerFeedback[]
+  trainerFeedbacks TrainerFeedback[]
 }
 
 //////////////////////////////////////////////////////

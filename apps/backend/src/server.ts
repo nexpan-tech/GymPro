@@ -6,7 +6,7 @@ import { logger } from "./config/logger";
 import "./jobs/notification.job";
 import "./jobs/renewalReminder.job";
 import { startSchedulers } from "./jobs/scheduler";
-
+import { startReportSchedulers } from "./jobs/report.scheduler";
 
 /**
  * PORT
@@ -21,6 +21,7 @@ const server = app.listen(PORT, () => {
   logger.info(`🚀 GymPro API running on port ${PORT}`);
   logger.info(`📡 Environment: ${process.env.NODE_ENV || "development"}`);
   startSchedulers();
+  startReportSchedulers();
 });
 
 /**

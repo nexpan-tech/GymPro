@@ -31,6 +31,8 @@ import exerciseRoutes from "./modules/exercise/exercise.routes";
 import trainerAnalyticsRoutes from "./modules/trainer-analytics/trainer-analytics.routes";
 import dietBuilderRoutes from "./modules/diet-builder/diet-builder.routes";
 import communicationRoutes from "./modules/communication/communication.routes";
+import intelligenceRoutes from "./modules/intelligence/intelligence.routes";
+import reportsRoutes from "./modules/reports/reports.routes";
 
 const app = express();
 
@@ -131,6 +133,12 @@ app.use("/api/diet-builder", dietBuilderRoutes);
 
 app.use("/api/v1/communication", communicationRoutes);
 app.use("/api/communication", communicationRoutes);
+
+app.use("/api/v1/intelligence", intelligenceRoutes);
+app.use("/api/intelligence", intelligenceRoutes);
+
+app.use("/api/v1/reports", reportsRoutes);
+app.use("/api/reports", reportsRoutes);
 
 /**
  * ----------------------------
