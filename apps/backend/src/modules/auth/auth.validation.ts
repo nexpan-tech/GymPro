@@ -5,7 +5,15 @@ export const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   gymId: z.string().uuid().optional(),
-  role: z.enum(["ADMIN", "RECEPTIONIST", "TRAINER", "MEMBER"]).optional(),
+  role: z.enum([
+  "SUPER_ADMIN",
+  "REGIONAL_MANAGER",
+  "BRANCH_MANAGER",
+  "ADMIN",
+  "RECEPTIONIST",
+  "TRAINER",
+  "MEMBER",
+]).optional(),
 });
 
 export const loginSchema = z.object({

@@ -13,6 +13,8 @@ datasource db {
 
 enum Role {
   SUPER_ADMIN
+  REGIONAL_MANAGER
+  BRANCH_MANAGER
   ADMIN
   RECEPTIONIST
   TRAINER
@@ -197,6 +199,9 @@ model Gym {
   
   trainerMessages TrainerMessage[]
   trainerFeedbacks TrainerFeedback[]
+
+  branches Branch[]
+  regionalManagerBranches RegionalManagerBranch[]
 }
 
 //////////////////////////////////////////////////////
@@ -235,6 +240,10 @@ model User {
   trainerMessages TrainerMessage[] @relation("TrainerMessages")
   sentMessages TrainerMessage[] @relation("MessageSender")
   trainerFeedbacks TrainerFeedback[] @relation("TrainerFeedbacks")
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
+  regionalBranches RegionalManagerBranch[]
 }
 
 //////////////////////////////////////////////////////
@@ -283,6 +292,9 @@ model Member {
 
   trainerMessages TrainerMessage[]
   trainerFeedbacks TrainerFeedback[]
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
 }
 
 //////////////////////////////////////////////////////
@@ -859,4 +871,48 @@ model Campaign {
 
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+}
+
+model Branch {
+  id            String      @id @default(cuid())
+
+  gymId         String
+  gym           Gym         @relation(fields: [gymId], references: [id])
+
+  name          String
+  code          String      @unique
+
+  phone         String?
+  email         String?
+
+  address       String?
+  city          String?
+  state         String?
+  country       String?
+
+  isActive      Boolean     @default(true)
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  users         User[]
+  members       Member[]
+  regionalManagers RegionalManagerBranch[]
+}
+
+model RegionalManagerBranch {
+  id String @id @default(cuid())
+
+  gymId String
+  gym   Gym @relation(fields: [gymId], references: [id])
+
+  managerId String
+  manager   User @relation(fields: [managerId], references: [id])
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([managerId, branchId])
 }

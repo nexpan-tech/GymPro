@@ -35,6 +35,8 @@ import intelligenceRoutes from "./modules/intelligence/intelligence.routes";
 import reportsRoutes from "./modules/reports/reports.routes";
 import leadRoutes from "./modules/lead/lead.routes";
 import campaignRoutes from "./modules/campaign/campaign.routes";
+import branchRoutes from "./modules/branch/branch.routes";
+import scalabilityRoutes from "./modules/scalability/scalability.routes";
 
 const app = express();
 
@@ -147,6 +149,13 @@ app.use("/api/leads", leadRoutes);
 
 app.use("/api/v1/campaigns", campaignRoutes);
 app.use("/api/campaigns", campaignRoutes);
+
+app.use("/api/v1/branches", branchRoutes);
+app.use("/api/branches", branchRoutes);
+
+app.use("/api/v1/scalability", scalabilityRoutes);
+app.use("/api/scalability", scalabilityRoutes);
+
 /**
  * ----------------------------
  * ERROR HANDLER (LAST)
