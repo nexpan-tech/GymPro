@@ -129,6 +129,34 @@ enum FeedbackRating {
   FOUR
   FIVE
 }
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  TRIAL_BOOKED
+  TRIAL_COMPLETED
+  NEGOTIATION
+  CONVERTED
+  LOST
+}
+
+enum LeadSource {
+  WALK_IN
+  WEBSITE
+  WHATSAPP
+  INSTAGRAM
+  FACEBOOK
+  REFERRAL
+  CALL
+  OTHER
+}
+
+enum CampaignType {
+  PROMOTIONAL
+  REFERRAL
+  REACTIVATION
+  WHATSAPP
+}
 //////////////////////////////////////////////////////
 // GYM (TENANT)
 //////////////////////////////////////////////////////
@@ -162,6 +190,8 @@ model Gym {
   payments      Payment[]
 
   exercises Exercise[]
+  leads Lead[]
+  campaigns Campaign[]
 
   workoutCompletions WorkoutCompletion[]
   
@@ -193,6 +223,9 @@ model User {
   
   // relations
   memberProfile Member?
+
+  assignedLeads Lead[]
+  campaigns Campaign[]
 
   // trainer → members mapping
   trainedMembers Member[] @relation("TrainerMembers")
@@ -770,4 +803,60 @@ model TrainerFeedback {
   @@index([gymId])
   @@index([trainerId])
   @@index([memberId])
+}
+
+model Lead {
+  id             String      @id @default(cuid())
+  gymId          String
+  gym            Gym         @relation(fields: [gymId], references: [id])
+
+  assignedToId   String?
+  assignedTo     User?       @relation(fields: [assignedToId], references: [id])
+
+  name           String
+  phone          String
+  email          String?
+
+  source         LeadSource
+  status         LeadStatus  @default(NEW)
+
+  fitnessGoal    String?
+  notes          String?
+
+  trialDate      DateTime?
+  followUpDate   DateTime?
+
+  convertedAt    DateTime?
+  lostReason     String?
+
+  leadScore      Int         @default(0)
+
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+}
+
+model Campaign {
+  id            String        @id @default(cuid())
+
+  gymId         String
+  gym           Gym           @relation(fields: [gymId], references: [id])
+
+  createdById   String
+  createdBy     User          @relation(fields: [createdById], references: [id])
+
+  type          CampaignType
+
+  title         String
+  message       String
+
+  targetCount   Int           @default(0)
+  sentCount     Int           @default(0)
+
+  scheduledAt   DateTime?
+  sentAt        DateTime?
+
+  isActive      Boolean       @default(true)
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 }

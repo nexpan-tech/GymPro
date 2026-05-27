@@ -33,6 +33,8 @@ import dietBuilderRoutes from "./modules/diet-builder/diet-builder.routes";
 import communicationRoutes from "./modules/communication/communication.routes";
 import intelligenceRoutes from "./modules/intelligence/intelligence.routes";
 import reportsRoutes from "./modules/reports/reports.routes";
+import leadRoutes from "./modules/lead/lead.routes";
+import campaignRoutes from "./modules/campaign/campaign.routes";
 
 const app = express();
 
@@ -140,6 +142,11 @@ app.use("/api/intelligence", intelligenceRoutes);
 app.use("/api/v1/reports", reportsRoutes);
 app.use("/api/reports", reportsRoutes);
 
+app.use("/api/v1/leads", leadRoutes);
+app.use("/api/leads", leadRoutes);
+
+app.use("/api/v1/campaigns", campaignRoutes);
+app.use("/api/campaigns", campaignRoutes);
 /**
  * ----------------------------
  * ERROR HANDLER (LAST)
