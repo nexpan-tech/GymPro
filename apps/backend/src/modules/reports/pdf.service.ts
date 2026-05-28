@@ -9,7 +9,7 @@ export function generateSimplePdfReport(input: {
     const doc = new PDFDocument({ margin: 40 });
     const chunks: Buffer[] = [];
 
-    doc.on("data", (chunk) => chunks.push(chunk));
+    doc.on("data", (chunk: Buffer) => chunks.push(chunk));
     doc.on("end", () => resolve(Buffer.concat(chunks)));
 
     doc.fontSize(20).text(input.title, { align: "center" });

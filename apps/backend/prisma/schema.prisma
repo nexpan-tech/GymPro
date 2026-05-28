@@ -200,6 +200,57 @@ enum CommunityGroupType {
   CUSTOM
 }
 
+enum SaaSPlanInterval {
+  MONTHLY
+  YEARLY
+}
+
+enum GymSubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+enum SaaSInvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  FAILED
+  CANCELLED
+}
+
+enum MarketplaceItemType {
+  TRAINER
+  DIET_PLAN
+  WORKOUT_TEMPLATE
+}
+
+enum MarketplaceItemStatus {
+  DRAFT
+  PUBLISHED
+  UNPUBLISHED
+}
+
+enum ApiKeyStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum WebhookEvent {
+  MEMBER_CREATED
+  PAYMENT_RECEIVED
+  SUBSCRIPTION_UPDATED
+  LEAD_CREATED
+  MARKETPLACE_PURCHASED
+}
+
+enum IntegrationStatus {
+  ACTIVE
+  INACTIVE
+}
+
 //////////////////////////////////////////////////////
 // GYM (TENANT)
 //////////////////////////////////////////////////////
@@ -249,6 +300,18 @@ model Gym {
 
   branches Branch[]
   regionalManagerBranches RegionalManagerBranch[]
+
+  subscriptions GymSubscription[]
+  saasInvoices SaaSInvoice[]
+
+  whiteLabelSetting WhiteLabelSetting?
+
+  marketplaceItems MarketplaceItem[]
+
+  apiKeys ApiKey[]
+webhookEndpoints WebhookEndpoint[]
+integrations Integration[]
+
 }
 
 //////////////////////////////////////////////////////
@@ -291,6 +354,7 @@ model User {
   branchId String?
   branch   Branch? @relation(fields: [branchId], references: [id])
   regionalBranches RegionalManagerBranch[]
+  marketplaceItems MarketplaceItem[]
 }
 
 //////////////////////////////////////////////////////
@@ -1111,4 +1175,193 @@ model CommunityGroupMember {
   joinedAt DateTime @default(now())
 
   @@unique([groupId, memberId])
+}
+
+model SaaSPlan {
+  id String @id @default(cuid())
+
+  name String
+  description String?
+
+  interval SaaSPlanInterval
+  price Float
+
+  maxBranches Int?
+  maxMembers Int?
+  maxStaff Int?
+
+  isActive Boolean @default(true)
+
+  subscriptions GymSubscription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GymSubscription {
+  id String @id @default(cuid())
+
+  gymId String
+  gym   Gym @relation(fields: [gymId], references: [id])
+
+  planId String
+  plan   SaaSPlan @relation(fields: [planId], references: [id])
+
+  status GymSubscriptionStatus @default(TRIALING)
+
+  startDate DateTime
+  endDate DateTime
+
+  autoRenew Boolean @default(true)
+
+  invoices SaaSInvoice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gymId])
+  @@index([planId])
+  @@index([status])
+}
+
+model SaaSInvoice {
+  id String @id @default(cuid())
+
+  gymId String
+  gym   Gym @relation(fields: [gymId], references: [id])
+
+  subscriptionId String
+  subscription   GymSubscription @relation(fields: [subscriptionId], references: [id])
+
+  invoiceNumber String @unique
+
+  amount Float
+  gstAmount Float
+  totalAmount Float
+
+  status SaaSInvoiceStatus @default(ISSUED)
+
+  dueDate DateTime
+  paidAt DateTime?
+  failedAt DateTime?
+
+  retryCount Int @default(0)
+  lastRetryAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gymId])
+  @@index([subscriptionId])
+  @@index([status])
+}
+
+model WhiteLabelSetting {
+  id String @id @default(cuid())
+
+  gymId String @unique
+  gym   Gym @relation(fields: [gymId], references: [id])
+
+  appName String?
+  logoUrl String?
+  faviconUrl String?
+
+  primaryColor String?
+  secondaryColor String?
+  accentColor String?
+
+  customDomain String? @unique
+  isDomainVerified Boolean @default(false)
+
+  mobileAppName String?
+  playStoreUrl String?
+  appStoreUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MarketplaceItem {
+  id String @id @default(cuid())
+
+  gymId String
+  gym   Gym @relation(fields: [gymId], references: [id])
+
+  createdById String
+  createdBy   User @relation(fields: [createdById], references: [id])
+
+  type MarketplaceItemType
+  status MarketplaceItemStatus @default(DRAFT)
+
+  title String
+  description String?
+  price Float @default(0)
+
+  imageUrl String?
+  tags String[]
+
+  isFeatured Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gymId])
+  @@index([type])
+  @@index([status])
+}
+
+model ApiKey {
+  id String @id @default(cuid())
+
+  gymId String
+  gym   Gym @relation(fields: [gymId], references: [id])
+
+  name String
+  keyHash String @unique
+
+  status ApiKeyStatus @default(ACTIVE)
+
+  lastUsedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gymId])
+  @@index([status])
+}
+
+model WebhookEndpoint {
+  id String @id @default(cuid())
+
+  gymId String
+  gym   Gym @relation(fields: [gymId], references: [id])
+
+  url String
+  events WebhookEvent[]
+
+  secret String
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gymId])
+}
+
+model Integration {
+  id String @id @default(cuid())
+
+  gymId String
+  gym   Gym @relation(fields: [gymId], references: [id])
+
+  provider String
+  status IntegrationStatus @default(ACTIVE)
+
+  config Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gymId])
 }

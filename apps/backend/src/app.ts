@@ -40,6 +40,10 @@ import scalabilityRoutes from "./modules/scalability/scalability.routes";
 import communityRoutes from "./modules/community/community.routes";
 import gamificationRoutes from "./modules/gamification/gamification.routes";
 import experienceRoutes from "./modules/experience/experience.routes";
+import billingRoutes from "./modules/billing/billing.routes";
+import whiteLabelRoutes from "./modules/white-label/white-label.routes";
+import marketplaceRoutes from "./modules/marketplace/marketplace.routes";
+import apiPlatformRoutes from "./modules/api-platform/api-platform.routes";
 
 const app = express();
 
@@ -167,6 +171,18 @@ app.use("/api/gamification", gamificationRoutes);
 
 app.use("/api/v1/experience", experienceRoutes);
 app.use("/api/experience", experienceRoutes);
+
+app.use("/api/v1/billing", billingRoutes);
+app.use("/api/billing", billingRoutes);
+
+app.use("/api/v1/white-label", whiteLabelRoutes);
+app.use("/api/white-label", whiteLabelRoutes);
+
+app.use("/api/v1/marketplace", marketplaceRoutes);
+app.use("/api/marketplace", marketplaceRoutes);
+
+app.use("/api/v1/api-platform", apiPlatformRoutes);
+app.use("/api/api-platform", apiPlatformRoutes);
 
 /**
  * ----------------------------
