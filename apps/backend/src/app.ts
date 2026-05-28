@@ -37,6 +37,9 @@ import leadRoutes from "./modules/lead/lead.routes";
 import campaignRoutes from "./modules/campaign/campaign.routes";
 import branchRoutes from "./modules/branch/branch.routes";
 import scalabilityRoutes from "./modules/scalability/scalability.routes";
+import communityRoutes from "./modules/community/community.routes";
+import gamificationRoutes from "./modules/gamification/gamification.routes";
+import experienceRoutes from "./modules/experience/experience.routes";
 
 const app = express();
 
@@ -156,12 +159,21 @@ app.use("/api/branches", branchRoutes);
 app.use("/api/v1/scalability", scalabilityRoutes);
 app.use("/api/scalability", scalabilityRoutes);
 
+app.use("/api/v1/community", communityRoutes);
+app.use("/api/community", communityRoutes);
+
+app.use("/api/v1/gamification", gamificationRoutes);
+app.use("/api/gamification", gamificationRoutes);
+
+app.use("/api/v1/experience", experienceRoutes);
+app.use("/api/experience", experienceRoutes);
+
 /**
  * ----------------------------
  * ERROR HANDLER (LAST)
  * ----------------------------
  */
-app.use(errorMiddleware);
+app.use(errorMiddleware); 
 
 export default app;
 

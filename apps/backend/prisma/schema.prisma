@@ -159,6 +159,47 @@ enum CampaignType {
   REACTIVATION
   WHATSAPP
 }
+
+enum ChallengeType {
+  ATTENDANCE
+  WORKOUT
+  WEIGHT_LOSS
+  CONSISTENCY
+  CUSTOM
+}
+
+enum ChallengeStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum MissionType {
+  CHECK_IN
+  COMPLETE_WORKOUT
+  LOG_PROGRESS
+  FOLLOW_DIET
+  SEND_FEEDBACK
+}
+
+enum RewardType {
+  XP
+  BADGE
+  DISCOUNT
+  GIFT
+}
+
+enum CommunityGroupType {
+  FITNESS
+  WEIGHT_LOSS
+  BODYBUILDING
+  YOGA
+  CROSSFIT
+  RUNNING
+  CUSTOM
+}
+
 //////////////////////////////////////////////////////
 // GYM (TENANT)
 //////////////////////////////////////////////////////
@@ -194,11 +235,17 @@ model Gym {
   exercises Exercise[]
   leads Lead[]
   campaigns Campaign[]
+  communityGroups CommunityGroup[]
 
   workoutCompletions WorkoutCompletion[]
   
   trainerMessages TrainerMessage[]
   trainerFeedbacks TrainerFeedback[]
+
+  challenges Challenge[]
+  memberXps MemberXP[]
+  dailyMissions DailyMission[]
+  rewards Reward[]
 
   branches Branch[]
   regionalManagerBranches RegionalManagerBranch[]
@@ -281,6 +328,11 @@ model Member {
   dues          Due[]
 
   workoutPlans WorkoutPlan[]
+  communityGroups CommunityGroupMember[]
+
+  challengeParticipants ChallengeParticipant[]
+  memberXp MemberXP?
+  missionCompletions MissionCompletion[]
 
   memberships   Membership[]
   attendances   Attendance[]
@@ -915,4 +967,148 @@ model RegionalManagerBranch {
   createdAt DateTime @default(now())
 
   @@unique([managerId, branchId])
+}
+
+model Challenge {
+  id          String @id @default(cuid())
+  gymId       String
+  gym         Gym    @relation(fields: [gymId], references: [id])
+
+  title       String
+  description String?
+  type        ChallengeType
+  status      ChallengeStatus @default(UPCOMING)
+
+  targetValue Int?
+  startDate   DateTime
+  endDate     DateTime
+
+  participants ChallengeParticipant[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gymId])
+  @@index([status])
+}
+
+model ChallengeParticipant {
+  id String @id @default(cuid())
+
+  challengeId String
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  progress Int @default(0)
+  rank     Int?
+  isCompleted Boolean @default(false)
+
+  joinedAt DateTime @default(now())
+
+  @@unique([challengeId, memberId])
+  @@index([memberId])
+}
+
+model MemberXP {
+  id String @id @default(cuid())
+
+  gymId String
+  gym   Gym @relation(fields: [gymId], references: [id])
+
+  memberId String @unique
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  xp Int @default(0)
+  level Int @default(1)
+  streak Int @default(0)
+
+  updatedAt DateTime @updatedAt
+}
+
+model DailyMission {
+  id String @id @default(cuid())
+
+  gymId String
+  gym   Gym @relation(fields: [gymId], references: [id])
+
+  title String
+  description String?
+  type MissionType
+  xpReward Int @default(10)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  completions MissionCompletion[]
+}
+
+model MissionCompletion {
+  id String @id @default(cuid())
+
+  missionId String
+  mission   DailyMission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  completedAt DateTime @default(now())
+
+  @@unique([missionId, memberId, completedAt])
+  @@index([memberId])
+}
+
+model Reward {
+  id String @id @default(cuid())
+
+  gymId String
+  gym   Gym @relation(fields: [gymId], references: [id])
+
+  title String
+  description String?
+  type RewardType
+  xpCost Int?
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CommunityGroup {
+  id String @id @default(cuid())
+
+  gymId String
+  gym   Gym @relation(fields: [gymId], references: [id])
+
+  name String
+  description String?
+
+  type CommunityGroupType
+
+  isPrivate Boolean @default(false)
+
+  members CommunityGroupMember[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gymId])
+}
+
+model CommunityGroupMember {
+  id String @id @default(cuid())
+
+  groupId String
+  group   CommunityGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  joinedAt DateTime @default(now())
+
+  @@unique([groupId, memberId])
 }

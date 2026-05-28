@@ -1,0 +1,128 @@
+import { Request, Response } from "express";
+import { GamificationService } from "./gamification.service";
+
+function requireAuth(req: Request, res: Response) {
+  if (!req.user) {
+    res.status(401).json({ success: false, message: "Unauthorized" });
+    return null;
+  }
+
+  return req.user;
+}
+
+export class GamificationController {
+  static async addXp(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    const data = await GamificationService.addXp(
+      user,
+      req.body.memberId,
+      Number(req.body.xp)
+    );
+
+    return res.json({
+      success: true,
+      message: "XP added successfully",
+      data,
+    });
+  }
+
+  static async getMemberXp(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    const data = await GamificationService.getMemberXp(
+      user,
+      req.params.memberId as string
+    );
+
+    return res.json({
+      success: true,
+      data,
+    });
+  }
+
+  static async createMission(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    const data = await GamificationService.createMission(user, req.body);
+
+    return res.status(201).json({
+      success: true,
+      message: "Daily mission created successfully",
+      data,
+    });
+  }
+
+  static async getMissions(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    const data = await GamificationService.getMissions(user);
+
+    return res.json({
+      success: true,
+      data,
+    });
+  }
+
+  static async completeMission(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    const data = await GamificationService.completeMission(
+      user,
+      req.params.id as string,
+      req.body.memberId
+    );
+
+    return res.json({
+      success: true,
+      message: "Mission completed successfully",
+      data,
+    });
+  }
+
+  static async createReward(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    const data = await GamificationService.createReward(user, req.body);
+
+    return res.status(201).json({
+      success: true,
+      message: "Reward created successfully",
+      data,
+    });
+  }
+
+  static async getRewards(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    const data = await GamificationService.getRewards(user);
+
+    return res.json({
+      success: true,
+      data,
+    });
+  }
+
+  static async updateStreak(req: Request, res: Response) {
+  const user = requireAuth(req, res);
+  if (!user) return;
+
+  const data = await GamificationService.updateStreak(
+    user,
+    req.body.memberId
+  );
+
+  return res.json({
+    success: true,
+    message: "Habit streak updated successfully",
+    data,
+  });
+}
+}
