@@ -50,6 +50,7 @@ import TrainerProgressPage from "@/pages/trainer/ProgressPage";
 // Member
 import MemberLayout from "@/layouts/MemberLayout";
 
+import { MemberExperiencePage } from "@/pages/experience/MemberExperiencePage";
 import MemberDashboardPage from "@/pages/member/DashboardPage";
 import AttendanceHistoryPage from "@/pages/member/AttendanceHistoryPage";
 import MembershipDetailsPage from "@/pages/member/MembershipDetailsPage";
@@ -139,6 +140,7 @@ const router = createBrowserRouter([
             element: <MemberLayout />,
             children: [
               { index: true, element: <MemberDashboardPage /> },
+              { path: "experience", element: <MemberExperiencePage /> },
               { path: "dashboard", element: <MemberDashboardPage /> },
               { path: "attendance-history", element: <AttendanceHistoryPage /> },
               { path: "membership-details", element: <MembershipDetailsPage /> },
