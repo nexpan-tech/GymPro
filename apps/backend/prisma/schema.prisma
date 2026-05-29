@@ -309,8 +309,8 @@ model Gym {
   marketplaceItems MarketplaceItem[]
 
   apiKeys ApiKey[]
-webhookEndpoints WebhookEndpoint[]
-integrations Integration[]
+  webhookEndpoints WebhookEndpoint[]
+  integrations Integration[]
 
 }
 
@@ -536,32 +536,6 @@ model Payment {
   updatedAt DateTime @updatedAt
 }
 
-model AuditLog {
-  id String @id @default(uuid())
-
-  gymId String?
-  gym   Gym? @relation(fields: [gymId], references: [id])
-
-  userId String?
-  user   User? @relation(fields: [userId], references: [id])
-
-  action AuditAction
-  entity String
-  entityId String?
-
-  oldData Json?
-  newData Json?
-
-  ipAddress String?
-  userAgent String?
-
-  createdAt DateTime @default(now())
-
-  @@index([gymId])
-  @@index([userId])
-  @@index([entity])
-  @@index([createdAt])
-}
 
 model Session {
   id String @id @default(uuid())
@@ -1364,4 +1338,32 @@ model Integration {
   updatedAt DateTime @updatedAt
 
   @@index([gymId])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  gymId       String?
+  userId      String?
+
+  action AuditAction
+
+  entityType  String?
+  entityId    String?
+
+  method      String?  @default("UNKNOWN")
+  path        String?  @default("UNKNOWN")
+
+  ipAddress   String?
+  userAgent   String?
+  metadata    Json?
+
+  createdAt   DateTime @default(now())
+
+  gym         Gym?     @relation(fields: [gymId], references: [id])
+  user        User?    @relation(fields: [userId], references: [id])
+
+  @@index([gymId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
 }

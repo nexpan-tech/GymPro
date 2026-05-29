@@ -1,0 +1,47 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: gympro-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gympro-backend
+    env_file:
+      - apps/backend/.env
+    ports:
+      - "5050:5050"
+    depends_on:
+      - redis
+    restart: unless-stopped
+    command: pnpm --filter backend dev
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gympro-worker
+    env_file:
+      - apps/backend/.env
+    depends_on:
+      - redis
+      - backend
+    restart: unless-stopped
+    command: pnpm --filter backend worker
+
+  nginx:
+    image: nginx:alpine
+    container_name: gympro-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
