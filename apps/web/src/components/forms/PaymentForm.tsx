@@ -1,19 +1,18 @@
 import { useState } from "react";
 import { paymentService } from "../../services/payment.service";
-import { Payment } from "../../types/payment.types";
 
 interface Props {
-  initialData?: Partial<Payment>;
+  initialData?: { id?: string; amount?: number; method?: string; status?: string };
   onSuccess?: () => void;
 }
 
 export default function PaymentForm({ initialData, onSuccess }: Props) {
   const [form, setForm] = useState({
-    memberId: initialData?.memberId || "",
+    gymId: "",
+    memberId: "",
     amount: initialData?.amount || 0,
-    method: initialData?.method || "cash",
-    status: initialData?.status || "paid",
-    date: initialData?.date || "",
+    method: initialData?.method || "CASH",
+    status: initialData?.status || "PAID",
   });
 
   const handleChange = (
@@ -28,9 +27,19 @@ export default function PaymentForm({ initialData, onSuccess }: Props) {
     e.preventDefault();
 
     if (initialData?.id) {
-      await paymentService.update(initialData.id, form);
+      await paymentService.update(initialData.id, {
+        amount: Number(form.amount),
+        method: form.method,
+        status: form.status as "PAID" | "PENDING" | "OVERDUE",
+      });
     } else {
-      await paymentService.create(form);
+      await paymentService.create({
+        gymId: form.gymId,
+        memberId: form.memberId,
+        amount: Number(form.amount),
+        method: form.method as "CASH" | "CARD" | "UPI" | "BANK_TRANSFER" | "OTHER",
+        status: form.status as "PAID" | "PENDING" | "OVERDUE",
+      });
     }
 
     onSuccess?.();

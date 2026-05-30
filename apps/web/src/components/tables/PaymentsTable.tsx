@@ -70,7 +70,7 @@ export default function PaymentsTable({
               </td>
 
               <td className="px-4 py-3 text-gray-700">
-                {payment.memberId ?? "N/A"}
+                {"N/A"}
               </td>
 
               <td className="px-4 py-3 text-gray-700">-</td>
@@ -84,7 +84,7 @@ export default function PaymentsTable({
               </td>
 
               <td className="px-4 py-3 text-gray-700">
-                {formatDate(payment.date)}
+                {payment.date ? formatDate(payment.date) : (payment.paidAt ? formatDate(payment.paidAt) : "-")}
               </td>
 
               <td className="px-4 py-3">

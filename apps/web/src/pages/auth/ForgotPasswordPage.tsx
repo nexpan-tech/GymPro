@@ -17,7 +17,7 @@ export default function ForgotPasswordPage() {
     setSuccess("");
 
     try {
-      await authService.forgotPassword(email);
+      await authService.forgotPassword({ email });
       setSuccess(
         "If an account exists with this email, a password reset link has been sent."
       );

@@ -17,8 +17,9 @@ export default function AttendancePage() {
   const loadAttendance = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await attendanceService.getAll();
-      setRecords(Array.isArray(res) ? res : []);
+      const res = await attendanceService.list();
+      const records = res.data?.attendance ?? [];
+      setRecords(Array.isArray(records) ? records : []);
     } catch (error) {
       console.error("Failed to load attendance:", error);
       setRecords([]);

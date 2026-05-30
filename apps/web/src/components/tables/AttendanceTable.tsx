@@ -29,7 +29,7 @@ export default function AttendanceTable({ data, onEdit, onRefresh }: Props) {
           <tr key={a.id}>
             <td>{a.memberId}</td>
             <td>{a.date}</td>
-            <td>{a.status}</td>
+            <td>Present</td>
             <td className="space-x-2">
               <button onClick={() => onEdit(a)}>Edit</button>
               <button onClick={() => handleDelete(a.id)}>Delete</button>

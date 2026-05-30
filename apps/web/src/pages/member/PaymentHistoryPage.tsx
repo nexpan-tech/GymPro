@@ -10,7 +10,8 @@ export default function PaymentHistoryPage() {
 
   const fetchPayments = useCallback(async () => {
     try {
-      const data = await paymentService.getAll();
+      const response = await paymentService.list();
+      const data = response.data?.payments ?? [];
       setPayments(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to fetch payments:", error);

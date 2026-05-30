@@ -9,8 +9,8 @@ export default function TrainersPage() {
   const [selected, setSelected] = useState<Trainer | null>(null);
 
   const load = useCallback(async () => {
-    const res = await trainerService.getAll();
-    setData(res);
+    const res = await trainerService.list();
+    setData(res.data?.trainers ?? []);
   }, []);
 
   useEffect(() => {

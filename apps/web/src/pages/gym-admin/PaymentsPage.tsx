@@ -27,7 +27,8 @@ export default function PaymentsPage() {
   const loadPayments = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await paymentService.getAll();
+      const res = await paymentService.list();
+      const data = res.data?.payments ?? [];
       setPayments(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to load payments:", error);
@@ -44,16 +45,16 @@ export default function PaymentsPage() {
 
   const totalRevenue = filteredPayments.reduce(
     (sum, payment) =>
-      payment.status === "paid" ? sum + payment.amount : sum,
+      payment.status === "PAID" ? sum + payment.amount : sum,
     0
   );
 
   const paidCount = filteredPayments.filter(
-    (p) => p.status === "paid"
+    (p) => p.status === "PAID"
   ).length;
 
   const pendingCount = filteredPayments.filter(
-    (p) => p.status === "pending"
+    (p) => p.status === "PENDING"
   ).length;
 
   return (

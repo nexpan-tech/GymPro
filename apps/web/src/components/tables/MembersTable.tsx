@@ -89,7 +89,7 @@ export default function MembersTable({
                   <div className="flex justify-end gap-2">
                     <Button
                       size="sm"
-                      variant="outline"
+                      variant="secondary"
                       onClick={() =>
                         onEdit(member)
                       }

@@ -13,8 +13,9 @@ export default function ProgressPage() {
   const [members, setMembers] = useState<ProgressMember[]>([]);
 
   const load = useCallback(async () => {
-    const data = await memberService.getAll();
-    setMembers(Array.isArray(data) ? (data as ProgressMember[]) : []);
+    const res = await memberService.list();
+    const data = res.data?.members ?? [];
+    setMembers(Array.isArray(data) ? (data as unknown as ProgressMember[]) : []);
   }, []);
 
   useEffect(() => {

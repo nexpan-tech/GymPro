@@ -56,13 +56,11 @@ export default function MembersPage() {
     try {
       setLoading(true);
 
-      const response =
-        typeof memberService.getAll === "function"
-          ? await memberService.getAll()
-          : null;
+      const response = await memberService.list();
+      const data = response.data?.members ?? null;
 
-      if (Array.isArray(response)) {
-        setMembers(response as unknown as Member[]);
+      if (Array.isArray(data)) {
+        setMembers(data as unknown as Member[]);
       } else {
         setMembers(mockMembers);
       }

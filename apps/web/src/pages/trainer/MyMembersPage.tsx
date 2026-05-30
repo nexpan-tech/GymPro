@@ -39,11 +39,11 @@ export default function MyMembersPage() {
             className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow"
           >
             <h3 className="font-semibold text-lg">
-              {member.name || "Unnamed Member"}
+              {member.user?.name || "Unnamed Member"}
             </h3>
 
             <p className="text-sm text-gray-500">
-              {member.email || "No email"}
+              {member.user?.email || "No email"}
             </p>
 
             <p className="text-sm mt-2">

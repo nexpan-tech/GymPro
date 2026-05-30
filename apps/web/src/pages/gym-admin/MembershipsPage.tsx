@@ -59,12 +59,8 @@ export default function MembershipsPage() {
     try {
       setLoading(true);
 
-      const response =
-        typeof membershipService.getAll === "function"
-          ? await membershipService.getAll()
-          : null;
-
-      const data = response;
+      const response = await membershipService.list();
+      const data = response.data?.memberships ?? null;
 
       if (Array.isArray(data)) {
         setMemberships(data as unknown as Membership[]);

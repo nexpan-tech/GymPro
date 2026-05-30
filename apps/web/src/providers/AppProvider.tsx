@@ -1,14 +1,10 @@
+/**
+ * AppProvider — legacy named export kept for backward compatibility.
+ * New code should import AppProviders from "./AppProviders" instead.
+ */
 import type { PropsWithChildren } from "react";
-import { ThemeProvider } from "./ThemeProvider";
-import { QueryProvider } from "./QueryProvider";
-import { AuthProvider } from "@/context/AuthContext";
+import { AppProviders } from "./AppProviders";
 
 export function AppProvider({ children }: PropsWithChildren) {
-  return (
-    <ThemeProvider>
-      <QueryProvider>
-        <AuthProvider>{children}</AuthProvider>
-      </QueryProvider>
-    </ThemeProvider>
-  );
+  return <AppProviders>{children}</AppProviders>;
 }

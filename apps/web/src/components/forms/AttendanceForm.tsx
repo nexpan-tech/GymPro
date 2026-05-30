@@ -19,8 +19,8 @@ export default function AttendanceForm({
   attendance,
 }: AttendanceFormProps) {
   const [formData, setFormData] = useState({
+    gymId: attendance?.gymId || "",
     memberId: attendance?.memberId || "",
-    status: attendance?.status || "present",
     date: attendance?.date
       ? new Date(attendance.date).toISOString().slice(0, 16)
       : new Date().toISOString().slice(0, 16),
@@ -43,11 +43,7 @@ export default function AttendanceForm({
     try {
       setLoading(true);
 
-      if (attendance?.id) {
-        await attendanceService.update(attendance.id, formData);
-      } else {
-        await attendanceService.mark(formData);
-      }
+      await attendanceService.mark(formData);
 
       onSuccess();
       onClose();
@@ -63,25 +59,20 @@ export default function AttendanceForm({
     <Modal open={open} onClose={onClose} title="Attendance">
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
+          label="Gym ID"
+          name="gymId"
+          value={formData.gymId}
+          onChange={handleChange}
+          required
+        />
+
+        <Input
           label="Member ID"
           name="memberId"
           value={formData.memberId}
           onChange={handleChange}
           required
         />
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Status</label>
-          <select
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-            className="w-full border rounded-lg px-3 py-2"
-          >
-            <option value="present">Present</option>
-            <option value="absent">Absent</option>
-          </select>
-        </div>
 
         <Input
           label="Date & Time"

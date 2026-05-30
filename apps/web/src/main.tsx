@@ -12,12 +12,14 @@ import "@/styles/tailwind.css";
 import "@/styles/variables.css";
 import "@/styles/globals.css";
 
-import { ThemeProvider } from "@/context/ThemeContext";
+// AppProviders wraps the tree with ErrorBoundary, QueryClient, Theme,
+// Auth, and ToastContainer — all in one place.
+import { AppProviders } from "@/providers/AppProviders";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <ThemeProvider>
+    <AppProviders>
       <App />
-    </ThemeProvider>
+    </AppProviders>
   </React.StrictMode>
 );

@@ -19,11 +19,8 @@ export default function DietForm({ onSuccess }: DietFormProps) {
   ) => {
     e.preventDefault();
     await dietService.create({
-      ...form,
-      calories: Number(form.calories),
-      protein: Number(form.protein),
-      carbs: Number(form.carbs),
-      fats: Number(form.fats),
+      goal: form.name,
+      notes: `Calories: ${form.calories}, Protein: ${form.protein}g, Carbs: ${form.carbs}g, Fats: ${form.fats}g`,
     });
     onSuccess?.();
   };

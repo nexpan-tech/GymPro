@@ -7,9 +7,8 @@ interface WorkoutFormProps {
 
 export default function WorkoutForm({ onSuccess }: WorkoutFormProps) {
   const [form, setForm] = useState({
-    name: "",
-    level: "beginner",
-    duration: "",
+    goal: "",
+    notes: "",
   });
 
   const handleSubmit = async (
@@ -17,24 +16,16 @@ export default function WorkoutForm({ onSuccess }: WorkoutFormProps) {
   ) => {
     e.preventDefault();
     await workoutService.create({
-      ...form,
-      duration: Number(form.duration),
+      goal: form.goal,
+      notes: form.notes,
     });
     onSuccess?.();
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <input name="name" placeholder="Workout Name" onChange={(e) => setForm({ ...form, name: e.target.value })} className="input" />
-
-      <select onChange={(e) => setForm({ ...form, level: e.target.value })} className="input">
-        <option value="beginner">Beginner</option>
-        <option value="intermediate">Intermediate</option>
-        <option value="advanced">Advanced</option>
-      </select>
-
-      <input name="duration" placeholder="Duration (mins)" onChange={(e) => setForm({ ...form, duration: e.target.value })} className="input" />
-
+      <input name="goal" placeholder="Workout Goal" onChange={(e) => setForm({ ...form, goal: e.target.value })} className="input" />
+      <input name="notes" placeholder="Notes" onChange={(e) => setForm({ ...form, notes: e.target.value })} className="input" />
       <button className="btn-primary w-full">Create Workout</button>
     </form>
   );

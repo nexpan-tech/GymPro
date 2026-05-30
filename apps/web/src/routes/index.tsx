@@ -8,7 +8,6 @@ import RegisterGymPage from "@/pages/auth/RegisterGymPage";
 import ForgotPasswordPage from "@/pages/auth/ForgotPasswordPage";
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import PublicRoute from "@/routes/PublicRoute";
-import RoleRoute from "@/routes/RoleRoute";
 import GymAdminLayout from "@/layouts/GymAdminLayout";
 import SuperAdminLayout from "@/layouts/SuperAdminLayout";
 import TrainerLayout from "@/layouts/TrainerLayout";
@@ -49,7 +48,6 @@ import TrainerProgressPage from "@/pages/trainer/ProgressPage";
 
 // Member
 import MemberLayout from "@/layouts/MemberLayout";
-
 import { MemberExperiencePage } from "@/pages/experience/MemberExperiencePage";
 import MemberDashboardPage from "@/pages/member/DashboardPage";
 import AttendanceHistoryPage from "@/pages/member/AttendanceHistoryPage";
@@ -60,6 +58,7 @@ import DietPlanPage from "@/pages/member/DietPlanPage";
 import ProgressPage from "@/pages/member/ProgressPage";
 
 const router = createBrowserRouter([
+  // ── Public routes (redirect to dashboard when already authenticated) ──────
   {
     element: <PublicRoute />,
     children: [
@@ -70,100 +69,109 @@ const router = createBrowserRouter([
       { path: "/forgot-password", element: <ForgotPasswordPage /> },
     ],
   },
+
+  // ── Super Admin ───────────────────────────────────────────────────────────
+  {
+    path: "/super-admin",
+    element: <ProtectedRoute allowedRoles={["SUPER_ADMIN"]} />,
+    children: [
+      {
+        element: <SuperAdminLayout />,
+        children: [
+          { index: true, element: <SuperAdminDashboardPage /> },
+          { path: "dashboard", element: <SuperAdminDashboardPage /> },
+          { path: "analytics", element: <SuperAdminAnalyticsPage /> },
+          { path: "gyms", element: <SuperAdminGymsPage /> },
+          { path: "plans", element: <SuperAdminPlansPage /> },
+          { path: "billing", element: <SuperAdminBillingPage /> },
+          { path: "settings", element: <SuperAdminSettingsPage /> },
+        ],
+      },
+    ],
+  },
+
+  // ── Gym Admin (Admin, Branch Manager, Receptionist) ───────────────────────
+  {
+    path: "/gym-admin",
+    element: (
+      <ProtectedRoute
+        allowedRoles={["ADMIN", "GYM_ADMIN", "BRANCH_MANAGER", "RECEPTIONIST"]}
+      />
+    ),
+    children: [
+      {
+        element: <GymAdminLayout />,
+        children: [
+          { index: true, element: <GymAdminDashboardPage /> },
+          { path: "dashboard", element: <GymAdminDashboardPage /> },
+          { path: "analytics", element: <GymAdminAnalyticsPage /> },
+          { path: "members", element: <GymAdminMembersPage /> },
+          { path: "memberships", element: <GymAdminMembershipsPage /> },
+          { path: "attendance", element: <GymAdminAttendancePage /> },
+          { path: "payments", element: <GymAdminPaymentsPage /> },
+          { path: "trainers", element: <GymAdminTrainersPage /> },
+          { path: "workout-plans", element: <GymAdminWorkoutsPage /> },
+          { path: "diet-plans", element: <GymAdminDietsPage /> },
+          { path: "notifications", element: <GymAdminNotificationsPage /> },
+          { path: "settings", element: <GymAdminSettingsPage /> },
+        ],
+      },
+    ],
+  },
+
+  // ── Trainer ───────────────────────────────────────────────────────────────
+  {
+    path: "/trainer",
+    element: <ProtectedRoute allowedRoles={["TRAINER"]} />,
+    children: [
+      {
+        element: <TrainerLayout />,
+        children: [
+          { index: true, element: <TrainerDashboardPage /> },
+          { path: "dashboard", element: <TrainerDashboardPage /> },
+          { path: "my-members", element: <TrainerMembersPage /> },
+          { path: "attendance", element: <TrainerAttendancePage /> },
+          { path: "workout-plans", element: <TrainerWorkoutsPage /> },
+          { path: "diet-plans", element: <TrainerDietsPage /> },
+          { path: "progress", element: <TrainerProgressPage /> },
+        ],
+      },
+    ],
+  },
+
+  // ── Member ────────────────────────────────────────────────────────────────
+  {
+    path: "/member",
+    element: <ProtectedRoute allowedRoles={["MEMBER"]} />,
+    children: [
+      {
+        element: <MemberLayout />,
+        children: [
+          { index: true, element: <MemberDashboardPage /> },
+          { path: "experience", element: <MemberExperiencePage /> },
+          { path: "dashboard", element: <MemberDashboardPage /> },
+          { path: "attendance-history", element: <AttendanceHistoryPage /> },
+          { path: "membership-details", element: <MembershipDetailsPage /> },
+          { path: "payment-history", element: <PaymentHistoryPage /> },
+          { path: "workout-plan", element: <WorkoutPlanPage /> },
+          { path: "diet-plan", element: <DietPlanPage /> },
+          { path: "progress", element: <ProgressPage /> },
+        ],
+      },
+    ],
+  },
+
+  // ── Shared authenticated routes (any logged-in role) ──────────────────────
   {
     element: <ProtectedRoute />,
     children: [
-        {
-        path: "/gym-admin",
-        element: <RoleRoute allowedRoles={["ADMIN", "GYM_ADMIN"]} />,
-        children: [
-          {
-            element: <GymAdminLayout />,
-            children: [
-              { index: true, element: <GymAdminDashboardPage /> },
-              { path: "dashboard", element: <GymAdminDashboardPage /> },
-              { path: "analytics", element: <GymAdminAnalyticsPage /> },
-              { path: "members", element: <GymAdminMembersPage /> },
-              { path: "memberships", element: <GymAdminMembershipsPage /> },
-              { path: "attendance", element: <GymAdminAttendancePage /> },
-              { path: "payments", element: <GymAdminPaymentsPage /> },
-              { path: "trainers", element: <GymAdminTrainersPage /> },
-              { path: "workout-plans", element: <GymAdminWorkoutsPage /> },
-              { path: "diet-plans", element: <GymAdminDietsPage /> },
-              { path: "notifications", element: <GymAdminNotificationsPage /> },
-              { path: "settings", element: <GymAdminSettingsPage /> },
-            ],
-          },
-        ],
-      },
-      {
-        path: "/super-admin",
-        element: <RoleRoute allowedRoles={["SUPER_ADMIN"]} />,
-        children: [
-          {
-            element: <SuperAdminLayout />,
-            children: [
-              { index: true, element: <SuperAdminDashboardPage /> },
-              { path: "dashboard", element: <SuperAdminDashboardPage /> },
-              { path: "analytics", element: <SuperAdminAnalyticsPage /> },
-              { path: "gyms", element: <SuperAdminGymsPage /> },
-              { path: "plans", element: <SuperAdminPlansPage /> },
-              { path: "billing", element: <SuperAdminBillingPage /> },
-              { path: "settings", element: <SuperAdminSettingsPage /> },
-            ],
-          },
-        ],
-      },
-      {
-        path: "/trainer",
-        element: <RoleRoute allowedRoles={["TRAINER"]} />,
-        children: [
-          {
-            element: <TrainerLayout />,
-            children: [
-              { index: true, element: <TrainerDashboardPage /> },
-              { path: "dashboard", element: <TrainerDashboardPage /> },
-              { path: "my-members", element: <TrainerMembersPage /> },
-              { path: "attendance", element: <TrainerAttendancePage /> },
-              { path: "workout-plans", element: <TrainerWorkoutsPage /> },
-              { path: "diet-plans", element: <TrainerDietsPage /> },
-              { path: "progress", element: <TrainerProgressPage /> },
-            ],
-          },
-        ],
-      },
-      {
-        path: "/member",
-        element: <RoleRoute allowedRoles={["MEMBER"]} />,
-        children: [
-          {
-            element: <MemberLayout />,
-            children: [
-              { index: true, element: <MemberDashboardPage /> },
-              { path: "experience", element: <MemberExperiencePage /> },
-              { path: "dashboard", element: <MemberDashboardPage /> },
-              { path: "attendance-history", element: <AttendanceHistoryPage /> },
-              { path: "membership-details", element: <MembershipDetailsPage /> },
-              { path: "payment-history", element: <PaymentHistoryPage /> },
-              { path: "workout-plan", element: <WorkoutPlanPage /> },
-              { path: "diet-plan", element: <DietPlanPage /> },
-              { path: "progress", element: <ProgressPage /> },
-            ],
-          },
-        ],
-      },
-      // Shared routes for authenticated users
-      {
-        element: <ProtectedRoute />,
-        children: [
-          { path: "/profile", element: <ProfilePage /> },
-          { path: "/notifications", element: <NotificationsPage /> },
-        ],
-      },
-      // Fallback
-      { path: "*", element: <NotFoundPage /> },
+      { path: "/profile", element: <ProfilePage /> },
+      { path: "/notifications", element: <NotificationsPage /> },
     ],
   },
+
+  // ── Fallback ──────────────────────────────────────────────────────────────
+  { path: "*", element: <NotFoundPage /> },
 ]);
 
 export function AppRouter() {

@@ -64,7 +64,7 @@ export default function AnalyticsPage() {
       setLoading(true);
 
       const response =
-        (await analyticsService.getGymAnalytics()) as AnalyticsApiResponse;
+        (await analyticsService.getSuperAdminAnalytics()) as AnalyticsApiResponse;
 
       // Normalize API response safely
       function statValue(stats: unknown, key: string) {

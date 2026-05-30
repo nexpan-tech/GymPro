@@ -92,7 +92,7 @@ export default function MemberForm({
         <div className="flex justify-end gap-3 pt-2">
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             onClick={onClose}
           >
             Cancel

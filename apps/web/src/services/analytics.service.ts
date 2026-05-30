@@ -1,42 +1,117 @@
-import api from "@/lib/axios";
-import type { DashboardAnalytics } from "@/types/analytics.types";
+import { api } from '@/lib/api'
+import type { ApiResponse } from '@/lib/api'
+import type {
+  DashboardAnalytics,
+  StatCardData,
+  RevenueData,
+  AttendanceStats,
+  MembershipPoint,
+} from '@/types/analytics.types'
+
+export interface GymAnalyticsParams {
+  startDate?: string
+  endDate?: string
+  period?: 'day' | 'week' | 'month' | 'year'
+}
+
+export interface RevenueAnalytics {
+  totalRevenue: number
+  revenueByPeriod: RevenueData[]
+  revenueByMethod: { method: string; amount: number }[]
+  growthRate: number
+}
+
+export interface MemberGrowthAnalytics {
+  totalMembers: number
+  newMembersThisPeriod: number
+  churnRate: number
+  retentionRate: number
+  membersByPlan: { planName: string; count: number }[]
+}
+
+export interface AttendanceAnalytics {
+  averageDailyAttendance: number
+  peakHours: { hour: number; count: number }[]
+  attendanceByDay: AttendanceStats[]
+  attendanceRate: number
+}
+
+export interface MembershipAnalytics {
+  activeMemberships: number
+  expiredMemberships: number
+  expiringThisWeek: number
+  membershipsByPlan: MembershipPoint[]
+}
+
+export interface FullGymAnalytics {
+  stats: StatCardData[]
+  revenue: RevenueAnalytics
+  memberGrowth: MemberGrowthAnalytics
+  attendance: AttendanceAnalytics
+  memberships: MembershipAnalytics
+}
 
 export const analyticsService = {
-  getDashboardAnalytics: async (): Promise<DashboardAnalytics> => {
-    try {
-      const res = await api.get("/analytics/dashboard");
-      return res.data.data;
-    } catch {
-      // Mock data fallback for local development
-      return {
-        stats: [
-          { title: "Members", value: 120, change: 5 },
-          { title: "Revenue", value: "$3,200", change: 12 },
-          { title: "Active Plans", value: 48, change: -2 },
-          { title: "Sessions", value: 320, change: 3 },
-        ],
-        revenue: { labels: ["Jan", "Feb", "Mar"], series: [300, 400, 500] },
-        attendance: { labels: ["Mon", "Tue", "Wed"], series: [20, 30, 40] },
-        memberships: { labels: ["Basic", "Pro"], series: [30, 70] },
-        recentActivity: [
-          { id: "1", message: "New member John joined", time: "2h" },
-        ],
-      } as unknown as DashboardAnalytics;
-    }
+  /**
+   * Fetch aggregated analytics for a gym.
+   * GET /analytics/gym/:gymId
+   */
+  getGymAnalytics: async (gymId: string, params?: GymAnalyticsParams): Promise<ApiResponse<FullGymAnalytics>> => {
+    const res = await api.get<ApiResponse<FullGymAnalytics>>(`/analytics/gym/${gymId}`, { params })
+    return res.data
   },
 
-  getGymAnalytics: async (): Promise<DashboardAnalytics> => {
-    const res = await api.get("/analytics/gym");
-    return res.data.data;
+  /**
+   * Fetch revenue breakdown for a gym.
+   * GET /analytics/revenue/:gymId
+   */
+  getRevenue: async (gymId: string, params?: GymAnalyticsParams): Promise<ApiResponse<RevenueAnalytics>> => {
+    const res = await api.get<ApiResponse<RevenueAnalytics>>(`/analytics/revenue/${gymId}`, { params })
+    return res.data
   },
 
-  getTrainerAnalytics: async (): Promise<DashboardAnalytics> => {
-    const res = await api.get("/analytics/trainer");
-    return res.data.data;
+  /**
+   * Fetch member growth analytics for a gym.
+   * GET /analytics/members/:gymId
+   */
+  getMemberGrowth: async (gymId: string, params?: GymAnalyticsParams): Promise<ApiResponse<MemberGrowthAnalytics>> => {
+    const res = await api.get<ApiResponse<MemberGrowthAnalytics>>(`/analytics/members/${gymId}`, { params })
+    return res.data
   },
 
-  getSuperAdminAnalytics: async (): Promise<DashboardAnalytics> => {
-    const res = await api.get("/analytics/super-admin");
-    return res.data.data;
+  /**
+   * Fetch attendance analytics for a gym.
+   * GET /analytics/attendance/:gymId
+   */
+  getAttendanceAnalytics: async (gymId: string, params?: GymAnalyticsParams): Promise<ApiResponse<AttendanceAnalytics>> => {
+    const res = await api.get<ApiResponse<AttendanceAnalytics>>(`/analytics/attendance/${gymId}`, { params })
+    return res.data
   },
-};
+
+  /**
+   * Fetch the aggregated dashboard analytics for the current role.
+   * GET /analytics/dashboard
+   */
+  getDashboard: async (): Promise<ApiResponse<DashboardAnalytics>> => {
+    const res = await api.get<ApiResponse<DashboardAnalytics>>('/analytics/dashboard')
+    return res.data
+  },
+
+  /**
+   * Fetch analytics for a trainer's performance.
+   * GET /analytics/trainer/:trainerId
+   */
+  getTrainerAnalytics: async (trainerId: string, params?: GymAnalyticsParams): Promise<ApiResponse<DashboardAnalytics>> => {
+    const res = await api.get<ApiResponse<DashboardAnalytics>>(`/analytics/trainer/${trainerId}`, { params })
+    return res.data
+  },
+
+  /**
+   * Fetch platform-wide analytics for super admin.
+   * GET /analytics/super-admin
+   */
+  getSuperAdminAnalytics: async (params?: GymAnalyticsParams): Promise<ApiResponse<DashboardAnalytics>> => {
+    const res = await api.get<ApiResponse<DashboardAnalytics>>('/analytics/super-admin', { params })
+    return res.data
+  },
+}

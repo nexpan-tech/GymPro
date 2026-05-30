@@ -6,8 +6,8 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<DashboardAnalytics | null>(null);
 
   const loadDashboardAnalytics = useCallback(async () => {
-    const response = await analyticsService.getDashboardAnalytics();
-    setData(response ?? null);
+    const response = await analyticsService.getDashboard();
+    setData(response.data ?? null);
   }, []);
 
   useEffect(() => {

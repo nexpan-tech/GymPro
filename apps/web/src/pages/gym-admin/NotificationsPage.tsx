@@ -8,15 +8,15 @@ interface NotificationItem {
   id: string;
   title: string;
   message: string;
-  audience: "ALL_MEMBERS" | "ACTIVE_MEMBERS" | "EXPIRED_MEMBERS" | "TRAINERS";
+  audience: "ALL" | "MEMBERS" | "TRAINERS" | "STAFF";
   createdAt: string;
 }
 
 const audienceOptions = [
-  { value: "ALL_MEMBERS", label: "All Members" },
-  { value: "ACTIVE_MEMBERS", label: "Active Members" },
-  { value: "EXPIRED_MEMBERS", label: "Expired Members" },
+  { value: "ALL", label: "All" },
+  { value: "MEMBERS", label: "Members" },
   { value: "TRAINERS", label: "Trainers" },
+  { value: "STAFF", label: "Staff" },
 ];
 
 export default function NotificationsPage() {
@@ -27,20 +27,14 @@ export default function NotificationsPage() {
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [audience, setAudience] =
-    useState<NotificationItem["audience"]>("ALL_MEMBERS");
+    useState<NotificationItem["audience"]>("ALL");
 
   const loadNotifications = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await notificationService.getAll();
-
-      if (Array.isArray(data)) {
-        setNotifications(data);
-      } else if (Array.isArray(data?.data)) {
-        setNotifications(data.data);
-      } else {
-        setNotifications([]);
-      }
+      const res = await notificationService.list();
+      const data = res.data?.notifications ?? [];
+      setNotifications(data as unknown as NotificationItem[]);
     } catch (error) {
       console.error("Failed to load notifications:", error);
       setNotifications([]);
@@ -73,7 +67,7 @@ export default function NotificationsPage() {
 
       setTitle("");
       setMessage("");
-      setAudience("ALL_MEMBERS");
+      setAudience("ALL");
 
       await loadNotifications();
     } catch (error) {
@@ -92,7 +86,7 @@ export default function NotificationsPage() {
     if (!confirmed) return;
 
     try {
-      await notificationService.delete(id);
+      await notificationService.remove(id);
       await loadNotifications();
     } catch (error) {
       console.error("Failed to delete notification:", error);

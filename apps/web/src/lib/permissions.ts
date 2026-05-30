@@ -4,6 +4,8 @@ export const ROLE_DASHBOARD: Record<UserRole, string> = {
   SUPER_ADMIN: "/super-admin/dashboard",
   ADMIN: "/gym-admin/dashboard",
   GYM_ADMIN: "/gym-admin/dashboard",
+  REGIONAL_MANAGER: "/gym-admin/dashboard",
+  BRANCH_MANAGER: "/gym-admin/dashboard",
   RECEPTIONIST: "/gym-admin/dashboard",
   TRAINER: "/trainer/dashboard",
   MEMBER: "/member/dashboard",

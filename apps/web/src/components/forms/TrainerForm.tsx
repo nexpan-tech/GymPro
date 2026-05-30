@@ -41,9 +41,20 @@ export default function TrainerForm({ initialData, onSuccess }: Props) {
     };
 
     if (initialData?.id) {
-      await trainerService.update(initialData.id, payload);
+      await trainerService.update(initialData.id, {
+        name: payload.name,
+        specialization: payload.specialization,
+        experience: payload.experience,
+      });
     } else {
-      await trainerService.create(payload);
+      await trainerService.create({
+        gymId: "",
+        name: payload.name ?? "",
+        email: payload.email ?? "",
+        password: "",
+        specialization: payload.specialization,
+        experience: payload.experience,
+      });
     }
 
     onSuccess?.();
