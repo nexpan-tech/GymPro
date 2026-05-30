@@ -1,18 +1,12 @@
 import { prisma } from "../../config/db";
+import { Role } from "@prisma/client";
 import { CreateDietPlanInput, UpdateDietPlanInput } from "./diet.validation";
 import { AppError } from "../../utils/response";
 import { requireGym } from "../../utils/tenant";
 
-type AuthRole =
-  | "SUPER_ADMIN"
-  | "ADMIN"
-  | "RECEPTIONIST"
-  | "TRAINER"
-  | "MEMBER";
-
 interface AuthUser {
   id: string;
-  role: AuthRole;
+  role: Role;
   gymId: string | null;
 }
 

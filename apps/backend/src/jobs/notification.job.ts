@@ -1,5 +1,5 @@
 import { Worker } from "bullmq";
-import { redisConnection } from "../config/redis";
+import { redisConnection } from "../queues/redis";
 import { logger } from "../config/logger";
 import { prisma } from "../config/db";
 import { NotificationService } from "../modules/notification/notification.service";

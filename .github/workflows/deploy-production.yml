@@ -1,0 +1,42 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker image tag to deploy'
+        required: true
+      confirm:
+        description: 'Type DEPLOY to confirm'
+        required: true
+
+jobs:
+  preflight:
+    name: Preflight Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Validate confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "DEPLOY" ]; then
+            echo "Not confirmed. Aborting." && exit 1
+          fi
+          echo "Deploying tag: ${{ github.event.inputs.image_tag }} by ${{ github.actor }}"
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: [preflight]
+    environment: production
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy (configure SSH secrets to enable)
+        run: |
+          echo "=== DEPLOYMENT TEMPLATE ==="
+          echo "Configure these secrets: SERVER_HOST, SERVER_USER, SERVER_SSH_KEY, DEPLOY_PATH"
+          echo "Steps: SSH to server, docker compose pull, up -d, prisma migrate deploy, health check"
+          echo "Tag: ${{ github.event.inputs.image_tag }} | Triggered by: ${{ github.actor }}"
+      - name: Status
+        if: always()
+        run: echo "Deploy ${{ job.status }} for ${{ github.event.inputs.image_tag }}"

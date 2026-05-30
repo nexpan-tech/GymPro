@@ -32,7 +32,7 @@ export function ChallengeCarousel({ items = [] }: ChallengeCarouselProps) {
                 initial={{ opacity: 0, scale: 0.92 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.08 }}
-                className="min-w-[260px] rounded-2xl bg-slate-950 p-5"
+                className="min-w-65 rounded-2xl bg-slate-950 p-5"
               >
                 <p className="font-semibold text-white">{item.title}</p>
                 <p className="mt-1 text-sm text-slate-400">

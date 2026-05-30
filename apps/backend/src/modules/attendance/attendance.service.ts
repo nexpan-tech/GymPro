@@ -1,13 +1,12 @@
 import { prisma } from "../../config/db";
+import { Role } from "@prisma/client";
 import { startOfDay } from "../../utils/date";
 import { AppError } from "../../utils/response";
 import { requireGym } from "../../utils/tenant";
 
-type AuthRole = "SUPER_ADMIN" | "ADMIN" | "RECEPTIONIST" | "TRAINER" | "MEMBER";
-
 interface AuthUser {
   id: string;
-  role: AuthRole;
+  role: Role;
   gymId: string | null;
 }
 

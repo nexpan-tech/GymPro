@@ -1,0 +1,65 @@
+name: Backend CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths: ['apps/backend/**', 'pnpm-lock.yaml']
+  push:
+    branches: [main, develop]
+    paths: ['apps/backend/**']
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    name: TypeScript Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter backend exec prisma generate --schema=prisma/schema.prisma
+        env:
+          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/gympro_ci
+      - run: pnpm --filter backend exec tsc --noEmit
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [typecheck]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter backend exec prisma generate --schema=prisma/schema.prisma
+        env:
+          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/gympro_ci
+      - run: pnpm --filter backend build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-dist-${{ github.run_id }}
+          path: apps/backend/dist/
+          retention-days: 3
+
+  prisma-validate:
+    name: Prisma Schema
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter backend exec prisma validate --schema=prisma/schema.prisma

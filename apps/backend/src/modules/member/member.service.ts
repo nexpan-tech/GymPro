@@ -1,4 +1,5 @@
 import { prisma } from "../../config/db";
+import { Role } from "@prisma/client";
 import { hashPassword } from "../../utils/password";
 import { AppError } from "../../utils/response";
 import { requireGym } from "../../utils/tenant";
@@ -7,16 +8,9 @@ import {
   UpdateMemberInput,
 } from "./member.validation";
 
-type AuthRole =
-  | "SUPER_ADMIN"
-  | "ADMIN"
-  | "RECEPTIONIST"
-  | "TRAINER"
-  | "MEMBER";
-
 interface AuthUser {
   id: string;
-  role: AuthRole;
+  role: Role;
   gymId: string | null;
 }
 

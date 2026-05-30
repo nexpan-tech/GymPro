@@ -1,18 +1,15 @@
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import { Role } from "@prisma/client";
 import { env } from "../config/env";
 
-export type AuthRole =
-  | "SUPER_ADMIN"
-  | "ADMIN"
-  | "RECEPTIONIST"
-  | "TRAINER"
-  | "MEMBER";
+// AuthRole is now the canonical Prisma Role enum, keeping all roles in sync.
+export type AuthRole = Role;
 
 export type JwtPayload = {
   id: string;
   email: string;
-  role: AuthRole;
+  role: Role;
   gymId: string | null;
 };
 

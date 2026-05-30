@@ -1,9 +1,9 @@
-import { redisConnection } from "./redis";
+import { redisClient } from "../config/redis";
 
 export class CacheService {
   static async get<T>(key: string): Promise<T | null> {
     try {
-      const value = await redisConnection.get(key);
+      const value = await redisClient.get(key);
 
       if (!value) return null;
 
@@ -16,7 +16,7 @@ export class CacheService {
 
   static async set(key: string, value: any, ttlSeconds = 300) {
     try {
-      await redisConnection.set(key, JSON.stringify(value), "EX", ttlSeconds);
+      await redisClient.set(key, JSON.stringify(value), "EX", ttlSeconds);
     } catch (error) {
       console.error("Cache set failed", error);
     }
@@ -24,7 +24,7 @@ export class CacheService {
 
   static async del(key: string) {
     try {
-      await redisConnection.del(key);
+      await redisClient.del(key);
     } catch (error) {
       console.error("Cache delete failed", error);
     }

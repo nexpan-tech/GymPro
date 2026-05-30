@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Type Check and Prisma Validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter backend exec prisma validate --schema=prisma/schema.prisma
+      - run: pnpm --filter backend exec tsc --noEmit
+      - run: pnpm --filter web exec tsc --noEmit
+
+  build:
+    name: Build All Apps
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [validate]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        run: pnpm --filter backend exec prisma generate --schema=prisma/schema.prisma
+        env:
+          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+      - run: pnpm --filter backend build
+      - run: pnpm --filter web build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-dist
+          path: apps/backend/dist/
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: apps/web/dist/
+          retention-days: 7

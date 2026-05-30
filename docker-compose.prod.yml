@@ -2,10 +2,22 @@ services:
   redis:
     image: redis:7-alpine
     container_name: gympro-redis-prod
-    restart: always
-    command: redis-server --appendonly yes
+    # No host port exposure in production — internal network only
     volumes:
-      - redis-data:/data
+      - redis_data:/data
+    command: redis-server --appendonly yes --appendfsync everysec
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
 
   backend:
     build:
@@ -13,13 +25,26 @@ services:
       dockerfile: Dockerfile
     container_name: gympro-backend-prod
     env_file:
-      - .env.production
+      - apps/backend/.env.production
+    # Port 5050 is NOT exposed to the host — Nginx proxies to it internally
     expose:
       - "5050"
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     restart: always
     command: pnpm --filter backend start
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5050/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: "1.0"
 
   worker:
     build:
@@ -27,12 +52,19 @@ services:
       dockerfile: Dockerfile
     container_name: gympro-worker-prod
     env_file:
-      - .env.production
+      - apps/backend/.env.production
     depends_on:
-      - redis
-      - backend
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
     restart: always
     command: pnpm --filter backend worker
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
 
   nginx:
     image: nginx:alpine
@@ -44,8 +76,65 @@ services:
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./docker/ssl:/etc/nginx/ssl:ro
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "0.5"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: gympro-prometheus-prod
+    # No host port exposure in production — Grafana scrapes internally
+    expose:
+      - "9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+      - "--web.listen-address=0.0.0.0:9090"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: gympro-grafana-prod
+    # No host port exposure in production — access via SSH tunnel or internal Nginx route
+    expose:
+      - "3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_INSTALL_PLUGINS=
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/api-performance.json
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "0.5"
 
 volumes:
-  redis-data:
+  prometheus_data:
+  grafana_data:
+  redis_data:

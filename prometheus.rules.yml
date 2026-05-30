@@ -1,0 +1,75 @@
+groups:
+  - name: gympro.api
+    interval: 30s
+    rules:
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status_code=~"5.."}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "GymPro API 5xx error rate above 5%"
+          description: "Check backend logs and Sentry immediately."
+
+      - alert: HighP95Latency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "p95 API latency exceeds 2 seconds"
+
+      - alert: APIDown
+        expr: absent(http_requests_total)
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "GymPro API appears to be down"
+          description: "No HTTP metrics received for 2 minutes."
+
+  - name: gympro.queues
+    interval: 30s
+    rules:
+      - alert: QueueHighFailureRate
+        expr: rate(queue_jobs_failed_total[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "BullMQ failure rate elevated"
+
+      - alert: NoQueueActivity
+        expr: absent(queue_jobs_completed_total)
+        for: 10m
+        labels:
+          severity: info
+        annotations:
+          summary: "No queue completions in 10 minutes"
+
+  - name: gympro.system
+    interval: 30s
+    rules:
+      - alert: HighHeapUsage
+        expr: 100 * nodejs_heap_size_used_bytes / nodejs_heap_size_total_bytes > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Node.js heap above 85%"
+
+      - alert: HighEventLoopLag
+        expr: nodejs_eventloop_lag_seconds * 1000 > 500
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Event loop lag exceeds 500ms"
+
+      - alert: HighSocketConnections
+        expr: socket_active_connections > 5000
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Socket connections exceed 5000"

@@ -1,0 +1,151 @@
+{
+  "uid": "gympro-queue-health",
+  "title": "GymPro — Queue Health",
+  "tags": ["gympro", "queues"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "schemaVersion": 36,
+  "version": 1,
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Job Completion Rate (jobs/s)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(queue_jobs_completed_total[5m])) by (queue)",
+          "legendFormat": "{{queue}}",
+          "refId": "A"
+        }
+      ],
+      "options": {},
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Job Failure Rate (jobs/s)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(queue_jobs_failed_total[5m])) by (queue)",
+          "legendFormat": "{{queue}}",
+          "refId": "A"
+        }
+      ],
+      "options": {},
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Total Completed",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": { "x": 0, "y": 8, "w": 8, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum(queue_jobs_completed_total)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Total Failed",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": { "x": 8, "y": 8, "w": 8, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum(queue_jobs_failed_total)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 10 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Per-Queue Throughput",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(queue_jobs_completed_total[5m])",
+          "legendFormat": "{{queue}}",
+          "refId": "A"
+        }
+      ],
+      "options": {},
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    }
+  ]
+}

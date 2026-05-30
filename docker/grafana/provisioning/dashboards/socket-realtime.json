@@ -1,0 +1,142 @@
+{
+  "uid": "gympro-socket",
+  "title": "GymPro — Realtime and Socket.IO",
+  "tags": ["gympro", "realtime", "websocket"],
+  "refresh": "10s",
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "schemaVersion": 36,
+  "version": 1,
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Active Socket Connections",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 8,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "socket_active_connections",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 500},
+              {"color": "red", "value": 2000}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Active HTTP Connections",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 8,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "http_active_connections",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Socket Connections Over Time",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "socket_active_connections",
+          "legendFormat": "active connections",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Concurrent Connections",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "socket_active_connections",
+          "legendFormat": "WebSockets",
+          "refId": "A"
+        },
+        {
+          "expr": "http_active_connections",
+          "legendFormat": "HTTP",
+          "refId": "B"
+        }
+      ]
+    }
+  ]
+}

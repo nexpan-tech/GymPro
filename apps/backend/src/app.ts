@@ -7,7 +7,7 @@ import rateLimit from "express-rate-limit";
 import { env } from "./config/env";
 import { logger } from "./config/logger";
 import { errorMiddleware } from "./middleware/error.middleware";
-import { httpRequestCounter } from "./monitoring/metrics";
+import { metricsMiddleware } from "./middleware/metrics.middleware";
 
 import healthRoutes from "./modules/health/health.routes";
 import authRoutes from "./modules/auth/auth.routes";
@@ -49,7 +49,10 @@ import marketplaceRoutes from "./modules/marketplace/marketplace.routes";
 import apiPlatformRoutes from "./modules/api-platform/api-platform.routes";
 
 import auditRoutes from "./modules/audit/audit.routes";
-import { auditMiddleware } from "./modules/audit/audit.middleware";
+import { auditMiddleware } from "./modules/audit/audit.middleware"
+import { Sentry } from "./config/sentry";
+import { authLimiter, uploadLimiter } from './middleware/rateLimits'
+import { requestIdMiddleware } from './middleware/requestId.middleware'
 
 const app = express();
 
@@ -61,23 +64,37 @@ app.set("trust proxy", 1);
 /**
  * Core security middleware
  */
-app.use(helmet());
+app.use(helmet({
+  hsts: { maxAge: 31536000, includeSubDomains: true },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  crossOriginEmbedderPolicy: false,
+}));
 
 /**
  * CORS
  */
-app.use(
-  cors({
-   origin: process.env.CORS_ORIGIN || "*",
-    credentials: true,
-  })
-);
+const allowedOrigins = (process.env.CORS_ORIGIN || '').split(',').map(function(o) { return o.trim() }).filter(Boolean)
+app.use(cors({
+  credentials: true,
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true)
+    const isDev = process.env.NODE_ENV !== 'production'
+    const isLocalhost = /^https?:\/\/localhost(:\d+)?$/.test(origin)
+    if (allowedOrigins.includes(origin) || (isDev && isLocalhost)) return callback(null, true)
+    callback(new Error('CORS: origin not allowed'))
+  }
+}))
 
 /**
  * Body parsers
  */
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+/**
+ * Attach a unique request ID to every request for tracing.
+ */
+app.use(requestIdMiddleware);
 
 app.use(auditMiddleware);
 
@@ -109,19 +126,9 @@ app.use(
 );
 
 /**
- * Prometheus request counter
+ * Prometheus metrics middleware
  */
-app.use((req, res, next) => {
-  res.on("finish", () => {
-    httpRequestCounter.inc({
-      method: req.method,
-      route: req.route?.path || req.path,
-      status: String(res.statusCode),
-    });
-  });
-
-  next();
-});
+app.use(metricsMiddleware);
 
 /**
  * Basic root endpoint
@@ -143,7 +150,7 @@ app.use("/api/health", healthRoutes);
 /**
  * API v1 routes
  */
-app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/auth", authLimiter, authRoutes);
 app.use("/api/v1/gyms", gymRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/members", memberRoutes);
@@ -157,7 +164,7 @@ app.use("/api/v1/progress", progressRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
 app.use("/api/v1/automation", automationRoutes);
-app.use("/api/v1/uploads", uploadRoutes);
+app.use("/api/v1/uploads", uploadLimiter, uploadRoutes);
 app.use("/api/v1/communication", communicationRoutes);
 app.use("/api/v1/goals", goalRoutes);
 app.use("/api/v1/badges", badgeRoutes);
@@ -183,47 +190,6 @@ app.use("/api/v1/api-platform", apiPlatformRoutes);
 app.use("/api/v1/audit", auditRoutes);
 
 /**
- * Legacy / shorter API aliases
- */
-app.use("/api/auth", authRoutes);
-app.use("/api/gyms", gymRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/members", memberRoutes);
-app.use("/api/trainers", trainerRoutes);
-app.use("/api/workouts", workoutRoutes);
-app.use("/api/diets", dietRoutes);
-app.use("/api/attendance", attendanceRoutes);
-app.use("/api/memberships", membershipRoutes);
-app.use("/api/payments", paymentRoutes);
-app.use("/api/progress", progressRoutes);
-app.use("/api/notifications", notificationRoutes);
-app.use("/api/analytics", analyticsRoutes);
-app.use("/api/automation", automationRoutes);
-app.use("/api/uploads", uploadRoutes);
-app.use("/api/communication", communicationRoutes);
-app.use("/api/goals", goalRoutes);
-app.use("/api/badges", badgeRoutes);
-app.use("/api/transformations", transformationRoutes);
-app.use("/api/engagement", engagementRoutes);
-app.use("/api/dues", dueRoutes);
-app.use("/api/trainer-analytics", trainerAnalyticsRoutes);
-app.use("/api/exercises", exerciseRoutes);
-app.use("/api/diet-builder", dietBuilderRoutes);
-app.use("/api/reports", reportsRoutes);
-app.use("/api/intelligence", intelligenceRoutes);
-app.use("/api/leads", leadRoutes);
-app.use("/api/campaigns", campaignRoutes);
-app.use("/api/branches", branchRoutes);
-app.use("/api/scalability", scalabilityRoutes);
-app.use("/api/community", communityRoutes);
-app.use("/api/gamification", gamificationRoutes);
-app.use("/api/experience", experienceRoutes);
-app.use("/api/billing", billingRoutes);
-app.use("/api/white-label", whiteLabelRoutes);
-app.use("/api/marketplace", marketplaceRoutes);
-app.use("/api/api-platform", apiPlatformRoutes);
-app.use("/api/audit", auditRoutes);
-/**
  * 404 handler
  */
 app.use((req, res) => {
@@ -236,6 +202,7 @@ app.use((req, res) => {
 /**
  * Global error handler must be last.
  */
+Sentry.setupExpressErrorHandler(app);
 app.use(errorMiddleware);
 
 export default app;
