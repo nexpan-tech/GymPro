@@ -335,7 +335,8 @@ model User {
   sessions Session[]
   
   deviceTokens DeviceToken[]
-  
+  deviceSessions DeviceSession[]
+
   // relations
   memberProfile Member?
 
@@ -1338,6 +1339,26 @@ model Integration {
   updatedAt DateTime @updatedAt
 
   @@index([gymId])
+}
+
+model DeviceSession {
+  id          String   @id @default(cuid())
+  userId      String
+  gymId       String?
+  deviceId    String
+  platform    String
+  appVersion  String?
+  deviceName  String?
+  pushToken   String?
+  isActive    Boolean  @default(true)
+  lastSeenAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@index([gymId])
+  @@index([deviceId])
+  @@unique([userId, deviceId])
 }
 
 model AuditLog {

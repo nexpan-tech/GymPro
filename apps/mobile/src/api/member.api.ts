@@ -1,0 +1,104 @@
+import { api } from "./client";
+import type { MemberProfile, MemberStats, MembershipInfo } from "../types/member.types";
+
+function unwrap<T>(res: { data: { data?: T } | T }): T {
+  return ((res.data as { data?: T }).data ?? res.data) as T;
+}
+
+export interface WorkoutPlan {
+  id: string;
+  name: string;
+  description?: string | null;
+  exercises?: unknown[];
+}
+
+export interface DietPlan {
+  id: string;
+  name: string;
+  description?: string | null;
+  meals?: unknown[];
+}
+
+export interface XPInfo {
+  total: number;
+  level: number;
+  nextLevelXP?: number | null;
+}
+
+export interface Badge {
+  id: string;
+  name: string;
+  description?: string | null;
+  imageUrl?: string | null;
+  earnedAt: string;
+}
+
+export interface Goal {
+  id: string;
+  memberId: string;
+  title: string;
+  targetValue?: number | null;
+  currentValue?: number | null;
+  unit?: string | null;
+  status: "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  dueDate?: string | null;
+}
+
+export interface Payment {
+  id: string;
+  memberId: string;
+  amount: number;
+  currency?: string;
+  status: "PENDING" | "PAID" | "FAILED" | "REFUNDED";
+  method?: string | null;
+  paidAt?: string | null;
+  createdAt: string;
+}
+
+export const memberApi = {
+  getMyProfile: async (): Promise<MemberProfile> => {
+    const res = await api.get("/auth/me");
+    return unwrap<MemberProfile>(res);
+  },
+
+  getActiveMembership: async (): Promise<MembershipInfo | null> => {
+    const res = await api.get("/memberships", { params: { status: "ACTIVE" } });
+    const memberships = unwrap<MembershipInfo[]>(res);
+    return Array.isArray(memberships) ? memberships[0] ?? null : null;
+  },
+
+  getMyWorkoutPlan: async (): Promise<WorkoutPlan | null> => {
+    const res = await api.get("/workouts/my");
+    return unwrap<WorkoutPlan | null>(res);
+  },
+
+  getMyDietPlan: async (): Promise<DietPlan | null> => {
+    const res = await api.get("/diets/my");
+    return unwrap<DietPlan | null>(res);
+  },
+
+  getMyStats: async (): Promise<MemberStats> => {
+    const res = await api.get("/analytics/member-dashboard");
+    return unwrap<MemberStats>(res);
+  },
+
+  getMyXP: async (): Promise<XPInfo> => {
+    const res = await api.get("/gamification/xp");
+    return unwrap<XPInfo>(res);
+  },
+
+  getMyBadges: async (): Promise<Badge[]> => {
+    const res = await api.get("/badges/me");
+    return unwrap<Badge[]>(res);
+  },
+
+  getMyGoals: async (): Promise<Goal[]> => {
+    const res = await api.get("/goals");
+    return unwrap<Goal[]>(res);
+  },
+
+  getMyPayments: async (): Promise<Payment[]> => {
+    const res = await api.get("/payments");
+    return unwrap<Payment[]>(res);
+  },
+};

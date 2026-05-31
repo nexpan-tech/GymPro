@@ -6,3 +6,10 @@ export interface Attendance {
   date: string;
   createdAt?: string;
 }
+
+export interface QrScanResult {
+  memberId: string;
+  gymId: string;
+  token: string;
+  expiresAt?: string;
+}

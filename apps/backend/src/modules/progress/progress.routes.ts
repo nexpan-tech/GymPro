@@ -13,4 +13,8 @@ router.get("/summary/member/:memberId", ProgressController.getProgressSummary);
 router.delete("/measurements/:id", ProgressController.deleteMeasurement);
 router.get("/analytics/member/:memberId", ProgressController.getAnalytics);
 
+// Progress photos (mobile)
+router.get("/photos", ProgressController.getMyPhotos);
+router.delete("/photos/:id", ProgressController.deletePhoto);
+
 export default router;

@@ -95,4 +95,28 @@ export class ProgressController {
     data,
   });
 }
+
+  static async getMyPhotos(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    const data = await ProgressService.getMyPhotos(user);
+
+    return res.json({
+      success: true,
+      data,
+    });
+  }
+
+  static async deletePhoto(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    await ProgressService.deletePhoto(user, req.params.id as string);
+
+    return res.json({
+      success: true,
+      message: "Progress photo deleted successfully",
+    });
+  }
 }

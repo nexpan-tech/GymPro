@@ -1,4 +1,4 @@
-import { api } from "../lib/api";
+import { api } from "../api/client";
 import type { Member } from "../types/member.types";
 
 function unwrap<T>(res: { data: { data?: T } | T }): T {

@@ -12,11 +12,18 @@ export interface User {
   email: string;
   role: UserRole;
   gymId?: string | null;
+  branchId?: string | null;
 }
 
 export interface LoginPayload {
   email: string;
   password: string;
+}
+
+export interface LoginResponse {
+  user: User;
+  accessToken: string;
+  refreshToken: string;
 }
 
 export interface AuthResponse {

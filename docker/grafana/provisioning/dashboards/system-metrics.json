@@ -38,7 +38,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "nodejs_heap_size_used_bytes",
+          "expr": "gympro_nodejs_heap_size_used_bytes",
           "legendFormat": "Heap Used"
         },
         {
@@ -47,7 +47,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "nodejs_heap_size_total_bytes",
+          "expr": "gympro_nodejs_heap_size_total_bytes",
           "legendFormat": "Heap Total"
         }
       ],
@@ -95,7 +95,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "process_resident_memory_bytes",
+          "expr": "gympro_process_resident_memory_bytes",
           "legendFormat": "RSS"
         }
       ],
@@ -143,7 +143,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(process_cpu_user_seconds_total[1m]) * 100",
+          "expr": "rate(gympro_process_cpu_user_seconds_total[1m]) * 100",
           "legendFormat": "User %"
         },
         {
@@ -152,7 +152,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(process_cpu_system_seconds_total[1m]) * 100",
+          "expr": "rate(gympro_process_cpu_system_seconds_total[1m]) * 100",
           "legendFormat": "System %"
         }
       ],
@@ -201,7 +201,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "nodejs_eventloop_lag_seconds * 1000",
+          "expr": "gympro_nodejs_eventloop_lag_seconds * 1000",
           "legendFormat": "lag ms"
         }
       ],
@@ -250,7 +250,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "nodejs_active_handles_total"
+          "expr": "gympro_nodejs_active_handles_total"
         }
       ],
       "options": {
@@ -302,7 +302,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "process_uptime_seconds"
+          "expr": "gympro_uptime_seconds"
         }
       ],
       "options": {
@@ -355,7 +355,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "100 * nodejs_heap_size_used_bytes / nodejs_heap_size_total_bytes"
+          "expr": "100 * gympro_nodejs_heap_size_used_bytes / gympro_nodejs_heap_size_total_bytes"
         }
       ],
       "options": {

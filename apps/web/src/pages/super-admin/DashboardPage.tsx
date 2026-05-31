@@ -769,7 +769,7 @@ export default function DashboardPage() {
                 />
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[560px] text-sm">
+                  <table className="w-full min-w-140 text-sm">
                     <thead>
                       <tr className="border-b border-(--border) bg-(--surface-secondary)">
                         {["Gym Name", "Owner", "Plan", "Joined", "Status"].map(
@@ -961,7 +961,7 @@ export default function DashboardPage() {
                       {/* Vertical connector line */}
                       {!isLast && (
                         <span
-                          className="absolute left-4 top-8 -bottom-0 w-px bg-(--border)"
+                          className="absolute left-4 top-8 bottom-0 w-px bg-(--border)"
                           aria-hidden="true"
                         />
                       )}

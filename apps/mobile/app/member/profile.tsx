@@ -1,34 +1,51 @@
 import { router } from "expo-router";
-import { ArrowLeft, LogOut, Mail, Phone, Target, User } from "lucide-react-native";
+import {
+  Building2,
+  LogOut,
+  Mail,
+  Phone,
+  Target,
+  User,
+} from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   ScrollView,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 
 import AppCard from "../../src/components/AppCard";
 import AppButton from "../../src/components/AppButton";
 import { memberService } from "../../src/services/member.service";
-import { useAuthStore } from "../../src/store/auth.store";
+import { membershipService } from "../../src/services/membership.service";
+import { useAuthStore } from "../../src/stores/auth.store";
 import type { Member } from "../../src/types/member.types";
+
+// App version — update via package.json in real usage
+const APP_VERSION = "1.0.0";
+
+// ─── screen ──────────────────────────────────────────────────────────────────
 
 export default function ProfileScreen() {
   const { user, logout } = useAuthStore();
 
   const [member, setMember] = useState<Member | null>(null);
+  const [membership, setMembership] = useState<Awaited<
+    ReturnType<typeof membershipService.getMyMembership>
+  > | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadProfile = useCallback(async () => {
     try {
       const profile = await memberService.getMyProfile();
       setMember(profile);
-    } catch (error) {
-      console.log("Profile load failed", error);
-      setMember(null);
+
+      const mem = await membershipService.getMyMembership();
+      setMembership(mem);
+    } catch (err) {
+      console.log("Profile load failed", err);
     } finally {
       setLoading(false);
     }
@@ -46,7 +63,7 @@ export default function ProfileScreen() {
         style: "destructive",
         onPress: async () => {
           await logout();
-          router.replace("/login");
+          router.replace("/auth/login");
         },
       },
     ]);
@@ -55,38 +72,54 @@ export default function ProfileScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color="#818cf8" />
+        <ActivityIndicator color="#6366f1" />
       </View>
     );
   }
 
   const displayName = member?.user?.name || user?.name || "Member";
-  const displayEmail = member?.user?.email || user?.email || "N/A";
+  const displayEmail = member?.user?.email || user?.email || "—";
+  const initials = displayName
+    .split(" ")
+    .filter(Boolean)
+    .map((p) => p[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const statusColor =
+    membership?.status === "ACTIVE"
+      ? "#34d399"
+      : membership?.status === "EXPIRED"
+      ? "#f87171"
+      : "#f59e0b";
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Header />
+      {/* Title */}
+      <View style={{ marginBottom: 24 }}>
+        <Text style={styles.title}>Profile</Text>
+        <Text style={styles.subtitle}>Your personal fitness account</Text>
+      </View>
 
-      <AppCard style={{ marginBottom: 18 }}>
+      {/* Avatar card */}
+      <AppCard style={{ alignItems: "center", marginBottom: 20, paddingVertical: 28 }}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {displayName
-              .split(" ")
-              .filter(Boolean)
-              .map((part) => part[0])
-              .join("")
-              .slice(0, 2)
-              .toUpperCase()}
-          </Text>
+          <Text style={styles.avatarText}>{initials}</Text>
         </View>
-
         <Text style={styles.name}>{displayName}</Text>
-        <Text style={styles.role}>GymPro Member</Text>
+        <Text style={styles.roleLabel}>GymPro Member</Text>
       </AppCard>
 
-      <View style={{ gap: 12 }}>
+      {/* Personal info */}
+      <Text style={styles.sectionLabel}>Personal Info</Text>
+      <View style={{ gap: 10, marginBottom: 20 }}>
         <InfoRow icon={Mail} label="Email" value={displayEmail} />
-        <InfoRow icon={Phone} label="Phone" value={member?.phone || "N/A"} />
+        <InfoRow
+          icon={Phone}
+          label="Phone"
+          value={member?.phone || "Not set"}
+        />
         <InfoRow
           icon={Target}
           label="Fitness Goal"
@@ -97,14 +130,80 @@ export default function ProfileScreen() {
           label="Trainer"
           value={member?.trainer?.name || "Not assigned"}
         />
+        {user?.gymId && (
+          <InfoRow icon={Building2} label="Gym ID" value={user.gymId} />
+        )}
       </View>
 
+      {/* Membership info */}
+      {membership && (
+        <>
+          <Text style={styles.sectionLabel}>Membership</Text>
+          <AppCard style={{ marginBottom: 20 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 12,
+              }}
+            >
+              <Text
+                style={{ color: "#f8fafc", fontWeight: "900", fontSize: 16 }}
+              >
+                {membership.name}
+              </Text>
+              <View
+                style={{
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  borderRadius: 10,
+                  backgroundColor: `${statusColor}18`,
+                  borderWidth: 1,
+                  borderColor: `${statusColor}40`,
+                }}
+              >
+                <Text
+                  style={{
+                    color: statusColor,
+                    fontWeight: "800",
+                    fontSize: 12,
+                  }}
+                >
+                  {membership.status}
+                </Text>
+              </View>
+            </View>
+
+            <View style={{ gap: 6 }}>
+              {membership.startDate && (
+                <MembershipRow
+                  label="Start"
+                  value={new Date(membership.startDate).toLocaleDateString(
+                    "en-US",
+                    { month: "short", day: "numeric", year: "numeric" }
+                  )}
+                />
+              )}
+              {membership.endDate && (
+                <MembershipRow
+                  label="Expires"
+                  value={new Date(membership.endDate).toLocaleDateString(
+                    "en-US",
+                    { month: "short", day: "numeric", year: "numeric" }
+                  )}
+                />
+              )}
+            </View>
+          </AppCard>
+        </>
+      )}
+
+      {/* Settings / Actions */}
+      <Text style={styles.sectionLabel}>Settings</Text>
       <AppButton
         onPress={handleLogout}
-        style={{
-          marginTop: 22,
-          backgroundColor: "#dc2626",
-        }}
+        style={{ backgroundColor: "#dc2626", marginBottom: 36 }}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <LogOut color="#fff" size={20} />
@@ -113,24 +212,23 @@ export default function ProfileScreen() {
           </Text>
         </View>
       </AppButton>
+
+      {/* App version footer */}
+      <Text
+        style={{
+          color: "#334155",
+          fontSize: 12,
+          textAlign: "center",
+          fontWeight: "600",
+        }}
+      >
+        GymPro Member App v{APP_VERSION}
+      </Text>
     </ScrollView>
   );
 }
 
-function Header() {
-  return (
-    <View style={styles.header}>
-      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-        <ArrowLeft color="#f8fafc" size={22} />
-      </TouchableOpacity>
-
-      <View>
-        <Text style={styles.title}>Profile</Text>
-        <Text style={styles.subtitle}>Your personal fitness account</Text>
-      </View>
-    </View>
-  );
-}
+// ─── sub-components ──────────────────────────────────────────────────────────
 
 function InfoRow({
   icon: Icon,
@@ -143,19 +241,55 @@ function InfoRow({
 }) {
   return (
     <AppCard>
-      <View style={styles.infoRow}>
-        <View style={styles.infoIcon}>
-          <Icon color="#818cf8" size={22} />
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+        <View
+          style={{
+            height: 44,
+            width: 44,
+            borderRadius: 16,
+            backgroundColor: "#1e293b",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Icon color="#818cf8" size={20} />
         </View>
-
         <View style={{ flex: 1 }}>
-          <Text style={styles.infoLabel}>{label}</Text>
-          <Text style={styles.infoValue}>{value}</Text>
+          <Text style={{ color: "#64748b", fontSize: 12, fontWeight: "700" }}>
+            {label}
+          </Text>
+          <Text
+            style={{
+              color: "#f8fafc",
+              fontSize: 15,
+              fontWeight: "800",
+              marginTop: 2,
+            }}
+          >
+            {value}
+          </Text>
         </View>
       </View>
     </AppCard>
   );
 }
+
+function MembershipRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View
+      style={{ flexDirection: "row", justifyContent: "space-between" }}
+    >
+      <Text style={{ color: "#64748b", fontSize: 13, fontWeight: "700" }}>
+        {label}
+      </Text>
+      <Text style={{ color: "#f8fafc", fontSize: 13, fontWeight: "800" }}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+// ─── styles ──────────────────────────────────────────────────────────────────
 
 const styles = {
   screen: { flex: 1, backgroundColor: "#020617" },
@@ -166,33 +300,17 @@ const styles = {
     alignItems: "center" as const,
     justifyContent: "center" as const,
   },
-  header: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 14,
-    marginBottom: 24,
-  },
-  backButton: {
-    height: 44,
-    width: 44,
-    borderRadius: 16,
-    backgroundColor: "#0f172a",
-    borderWidth: 1,
-    borderColor: "rgba(148,163,184,0.18)",
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  title: {
-    color: "#f8fafc",
-    fontSize: 28,
-    fontWeight: "900" as const,
-  },
-  subtitle: {
-    color: "#94a3b8",
-    marginTop: 4,
+  title: { color: "#f8fafc", fontSize: 26, fontWeight: "900" as const },
+  subtitle: { color: "#94a3b8", marginTop: 4, fontSize: 13 },
+  sectionLabel: {
+    color: "#64748b",
+    fontSize: 11,
+    fontWeight: "800" as const,
+    letterSpacing: 1.5,
+    textTransform: "uppercase" as const,
+    marginBottom: 10,
   },
   avatar: {
-    alignSelf: "center" as const,
     height: 86,
     width: 86,
     borderRadius: 30,
@@ -201,44 +319,18 @@ const styles = {
     justifyContent: "center" as const,
     marginBottom: 16,
   },
-  avatarText: {
-    color: "#fff",
-    fontSize: 28,
-    fontWeight: "900" as const,
-  },
+  avatarText: { color: "#fff", fontSize: 28, fontWeight: "900" as const },
   name: {
     color: "#f8fafc",
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "900" as const,
     textAlign: "center" as const,
   },
-  role: {
+  roleLabel: {
     color: "#94a3b8",
     fontWeight: "700" as const,
     textAlign: "center" as const,
     marginTop: 6,
-  },
-  infoRow: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 14,
-  },
-  infoIcon: {
-    height: 46,
-    width: 46,
-    borderRadius: 18,
-    backgroundColor: "#1e293b",
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  infoLabel: {
-    color: "#94a3b8",
-    fontWeight: "700" as const,
-    marginBottom: 4,
-  },
-  infoValue: {
-    color: "#f8fafc",
-    fontSize: 15,
-    fontWeight: "900" as const,
+    fontSize: 13,
   },
 };

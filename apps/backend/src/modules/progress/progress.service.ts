@@ -274,4 +274,80 @@ export class ProgressService {
     timeline,
   };
 }
+
+  // ---------------------------------------------------------------------------
+  // Progress photos (mobile)
+  // ---------------------------------------------------------------------------
+
+  private static async getMyMember(user: AuthUser) {
+    if (user.role !== "MEMBER") {
+      throw new AppError("Only members can manage their own progress photos", 403);
+    }
+
+    if (!user.gymId) {
+      throw new AppError("Gym context missing", 403);
+    }
+
+    const member = await prisma.member.findFirst({
+      where: {
+        userId: user.id,
+        gymId: user.gymId,
+      },
+    });
+
+    if (!member) {
+      throw new AppError("Member profile not found", 404);
+    }
+
+    return member;
+  }
+
+  static async createPhoto(user: AuthUser, imageUrl: string, notes?: string) {
+    const member = await this.getMyMember(user);
+
+    return prisma.progressPhoto.create({
+      data: {
+        gymId: user.gymId!,
+        memberId: member.id,
+        imageUrl,
+        notes: notes || undefined,
+      },
+    });
+  }
+
+  static async getMyPhotos(user: AuthUser) {
+    const member = await this.getMyMember(user);
+
+    return prisma.progressPhoto.findMany({
+      where: {
+        gymId: user.gymId!,
+        memberId: member.id,
+      },
+      orderBy: {
+        takenAt: "desc",
+      },
+    });
+  }
+
+  static async deletePhoto(user: AuthUser, id: string) {
+    const member = await this.getMyMember(user);
+
+    const photo = await prisma.progressPhoto.findFirst({
+      where: {
+        id,
+        gymId: user.gymId!,
+        memberId: member.id,
+      },
+    });
+
+    if (!photo) {
+      throw new AppError("Progress photo not found", 404);
+    }
+
+    return prisma.progressPhoto.delete({
+      where: {
+        id: photo.id,
+      },
+    });
+  }
 }

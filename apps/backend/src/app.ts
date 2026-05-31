@@ -22,6 +22,7 @@ import membershipRoutes from "./modules/membership/membership.routes";
 import paymentRoutes from "./modules/payment/payment.routes";
 import progressRoutes from "./modules/progress/progress.routes";
 import notificationRoutes from "./modules/notification/notification.routes";
+import pushRoutes from "./modules/push/push.routes";
 import analyticsRoutes from "./modules/analytics/analytics.routes";
 import automationRoutes from "./modules/automation/automation.routes";
 import uploadRoutes from "./modules/upload/upload.routes";
@@ -47,6 +48,9 @@ import billingRoutes from "./modules/billing/billing.routes";
 import whiteLabelRoutes from "./modules/white-label/white-label.routes";
 import marketplaceRoutes from "./modules/marketplace/marketplace.routes";
 import apiPlatformRoutes from "./modules/api-platform/api-platform.routes";
+import deviceSessionRoutes from "./modules/device-sessions/device-session.routes";
+import qrAttendanceRoutes from "./modules/qr-attendance/qr-attendance.routes";
+import mobileRoutes from "./modules/mobile/mobile.routes";
 
 import auditRoutes from "./modules/audit/audit.routes";
 import { auditMiddleware } from "./modules/audit/audit.middleware"
@@ -162,6 +166,7 @@ app.use("/api/v1/memberships", membershipRoutes);
 app.use("/api/v1/payments", paymentRoutes);
 app.use("/api/v1/progress", progressRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
+app.use("/api/v1/push", pushRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
 app.use("/api/v1/automation", automationRoutes);
 app.use("/api/v1/uploads", uploadLimiter, uploadRoutes);
@@ -188,6 +193,9 @@ app.use("/api/v1/white-label", whiteLabelRoutes);
 app.use("/api/v1/marketplace", marketplaceRoutes);
 app.use("/api/v1/api-platform", apiPlatformRoutes);
 app.use("/api/v1/audit", auditRoutes);
+app.use("/api/v1/device-sessions", deviceSessionRoutes);
+app.use("/api/v1/qr-attendance", qrAttendanceRoutes);
+app.use("/api/v1/mobile", mobileRoutes);
 
 /**
  * 404 handler

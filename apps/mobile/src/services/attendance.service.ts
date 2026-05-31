@@ -1,4 +1,4 @@
-import { api } from "../lib/api";
+import { api } from "../api/client";
 import type { Attendance } from "../types/attendance.types";
 
 function unwrap<T>(res: { data: { data?: T } | T }): T {
@@ -16,11 +16,8 @@ export const attendanceService = {
     return unwrap<Attendance>(res);
   },
 
-  scan: async (gymId: string) => {
-    const res = await api.post("/attendance/scan", {
-        gymId,
-    });
-
-    return res.data.data;
-    },
+  scan: async (gymId: string): Promise<Attendance> => {
+    const res = await api.post("/attendance/scan", { gymId });
+    return unwrap<Attendance>(res);
+  },
 };
