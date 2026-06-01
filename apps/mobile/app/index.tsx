@@ -1,16 +1,20 @@
 import { Redirect } from "expo-router";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 import { useAuthStore } from "../src/stores/auth.store";
+import { useTheme } from "../src/theme";
+import { AppText } from "../src/components/ui";
 
 export default function Index() {
   const { user, loading, isAuthenticated } = useAuthStore();
+  const { theme } = useTheme();
+  const c = theme.colors;
 
   if (loading) {
     return (
       <View
         style={{
           flex: 1,
-          backgroundColor: "#020617",
+          backgroundColor: c.background,
           alignItems: "center",
           justifyContent: "center",
           gap: 16,
@@ -20,27 +24,17 @@ export default function Index() {
           style={{
             height: 56,
             width: 56,
-            borderRadius: 20,
-            backgroundColor: "#4f46e5",
+            borderRadius: theme.radius.lg,
+            backgroundColor: c.primary,
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <Text style={{ color: "#fff", fontSize: 22, fontWeight: "900" }}>
-            G
-          </Text>
+          <AppText style={{ color: "#fff", fontSize: 22, fontWeight: "900" }}>G</AppText>
         </View>
-        <Text
-          style={{
-            color: "#818cf8",
-            fontSize: 13,
-            fontWeight: "800",
-            letterSpacing: 2,
-            textTransform: "uppercase",
-          }}
-        >
+        <AppText variant="overline" color="primary">
           Loading…
-        </Text>
+        </AppText>
       </View>
     );
   }
@@ -62,7 +56,7 @@ export default function Index() {
     <View
       style={{
         flex: 1,
-        backgroundColor: "#020617",
+        backgroundColor: c.background,
         alignItems: "center",
         justifyContent: "center",
         padding: 32,
@@ -72,41 +66,24 @@ export default function Index() {
         style={{
           height: 72,
           width: 72,
-          borderRadius: 26,
-          backgroundColor: "#1e293b",
+          borderRadius: theme.radius.xl,
+          backgroundColor: c.surfaceElevated,
           borderWidth: 1,
-          borderColor: "rgba(148,163,184,0.2)",
+          borderColor: c.border,
           alignItems: "center",
           justifyContent: "center",
           marginBottom: 24,
         }}
       >
-        <Text style={{ fontSize: 32 }}>💻</Text>
+        <AppText style={{ fontSize: 32 }}>💻</AppText>
       </View>
-
-      <Text
-        style={{
-          color: "#f8fafc",
-          fontSize: 24,
-          fontWeight: "900",
-          textAlign: "center",
-          marginBottom: 12,
-        }}
-      >
+      <AppText variant="title" style={{ textAlign: "center", marginBottom: 12 }}>
         Use the Web Dashboard
-      </Text>
-
-      <Text
-        style={{
-          color: "#94a3b8",
-          fontSize: 15,
-          lineHeight: 24,
-          textAlign: "center",
-        }}
-      >
-        Your account role ({user?.role}) requires the GymPro web dashboard.
-        Please visit the web app to continue.
-      </Text>
+      </AppText>
+      <AppText variant="body" color="textSecondary" style={{ textAlign: "center" }}>
+        Your account role ({user?.role}) requires the GymPro web dashboard. Please visit the web app
+        to continue.
+      </AppText>
     </View>
   );
 }

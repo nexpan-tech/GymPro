@@ -1,8 +1,6 @@
 import { router } from "expo-router";
 import {
-  ArrowLeft,
   Bell,
-  BellOff,
   CheckCheck,
   CreditCard,
   Dumbbell,
@@ -12,24 +10,23 @@ import {
   Zap,
 } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { TouchableOpacity, View } from "react-native";
 
-import AppCard from "../../src/components/AppCard";
 import {
   getNotifications,
   markAllRead,
   markRead,
 } from "../../src/api/notification.api";
 import type { Notification } from "../../src/types/notification.types";
-
-// ─── helpers ─────────────────────────────────────────────────────────────────
+import { useTheme } from "../../src/theme";
+import {
+  AppCard,
+  AppEmptyState,
+  AppHeader,
+  AppLoadingState,
+  AppScreen,
+  AppText,
+} from "../../src/components/ui";
 
 function relativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -40,10 +37,7 @@ function relativeTime(dateStr: string): string {
   if (hrs < 24) return `${hrs}h ago`;
   const days = Math.floor(hrs / 24);
   if (days < 7) return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
+  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 type NotifIconKey =
@@ -55,17 +49,15 @@ type NotifIconKey =
   | "ALERT"
   | "DEFAULT";
 
-const ICON_MAP: Record<
-  NotifIconKey,
-  { icon: typeof Bell; color: string; bg: string }
-> = {
-  WORKOUT: { icon: Dumbbell, color: "#818cf8", bg: "#1e1b4b" },
-  DIET: { icon: Salad, color: "#34d399", bg: "#064e3b" },
-  MEMBERSHIP: { icon: CreditCard, color: "#f59e0b", bg: "#451a03" },
-  PAYMENT: { icon: CreditCard, color: "#f87171", bg: "#450a0a" },
-  ANNOUNCEMENT: { icon: Megaphone, color: "#60a5fa", bg: "#0c1a3b" },
-  ALERT: { icon: Zap, color: "#fb923c", bg: "#431407" },
-  DEFAULT: { icon: Info, color: "#94a3b8", bg: "#0f172a" },
+// Accent colors only — backgrounds derived as soft tint so both themes work.
+const ICON_MAP: Record<NotifIconKey, { icon: typeof Bell; color: string }> = {
+  WORKOUT: { icon: Dumbbell, color: "#818cf8" },
+  DIET: { icon: Salad, color: "#34d399" },
+  MEMBERSHIP: { icon: CreditCard, color: "#f59e0b" },
+  PAYMENT: { icon: CreditCard, color: "#f87171" },
+  ANNOUNCEMENT: { icon: Megaphone, color: "#60a5fa" },
+  ALERT: { icon: Zap, color: "#fb923c" },
+  DEFAULT: { icon: Info, color: "#94a3b8" },
 };
 
 function iconConfig(type: string) {
@@ -73,9 +65,10 @@ function iconConfig(type: string) {
   return ICON_MAP[key] ?? ICON_MAP.DEFAULT;
 }
 
-// ─── screen ──────────────────────────────────────────────────────────────────
-
 export default function NotificationsScreen() {
+  const { theme } = useTheme();
+  const c = theme.colors;
+
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -101,9 +94,7 @@ export default function NotificationsScreen() {
   async function handleMarkOne(id: string) {
     try {
       await markRead(id);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-      );
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
     } catch (err) {
       console.log("Mark read failed", err);
     }
@@ -125,80 +116,53 @@ export default function NotificationsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color="#6366f1" />
-      </View>
+      <AppScreen>
+        <AppHeader title="Notifications" onBack={() => router.back()} />
+        <AppLoadingState rows={4} />
+      </AppScreen>
     );
   }
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => load(true)}
-          tintColor="#6366f1"
-        />
-      }
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <ArrowLeft color="#f8fafc" size={22} />
-        </TouchableOpacity>
-
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Notifications</Text>
-          {unreadCount > 0 && (
-            <Text style={styles.subtitle}>
-              {unreadCount} unread
-            </Text>
-          )}
-        </View>
-
-        {unreadCount > 0 && (
-          <TouchableOpacity
-            onPress={handleMarkAll}
-            disabled={markingAll}
-            activeOpacity={0.8}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-              borderRadius: 12,
-              backgroundColor: "#0f172a",
-              borderWidth: 1,
-              borderColor: "rgba(148,163,184,0.18)",
-              opacity: markingAll ? 0.6 : 1,
-            }}
-          >
-            <CheckCheck color="#6366f1" size={16} />
-            <Text
-              style={{ color: "#6366f1", fontWeight: "800", fontSize: 12 }}
+    <AppScreen onRefresh={() => load(true)} refreshing={refreshing}>
+      <AppHeader
+        title="Notifications"
+        subtitle={unreadCount > 0 ? `${unreadCount} unread` : undefined}
+        onBack={() => router.back()}
+        right={
+          unreadCount > 0 ? (
+            <TouchableOpacity
+              onPress={handleMarkAll}
+              disabled={markingAll}
+              activeOpacity={0.8}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: theme.radius.sm,
+                backgroundColor: c.surface,
+                borderWidth: 1,
+                borderColor: c.border,
+                opacity: markingAll ? 0.6 : 1,
+              }}
             >
-              All read
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
+              <CheckCheck color={c.primary} size={16} />
+              <AppText variant="caption" color="primary">
+                All read
+              </AppText>
+            </TouchableOpacity>
+          ) : undefined
+        }
+      />
 
-      {/* Empty state */}
       {notifications.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <BellOff color="#334155" size={48} />
-          <Text style={styles.emptyTitle}>No notifications yet</Text>
-          <Text style={styles.emptyBody}>
-            You're all caught up. New alerts from your trainer and gym will
-            appear here.
-          </Text>
-        </View>
+        <AppEmptyState
+          emoji="🔕"
+          title="No notifications yet"
+          description="You're all caught up. New alerts from your trainer and gym will appear here."
+        />
       ) : (
         <View style={{ gap: 10 }}>
           {notifications.map((notif) => {
@@ -214,22 +178,17 @@ export default function NotificationsScreen() {
               >
                 <AppCard
                   style={{
-                    borderColor: notif.isRead
-                      ? "rgba(148,163,184,0.1)"
-                      : "rgba(99,102,241,0.3)",
+                    borderColor: notif.isRead ? c.border : c.primary,
                     opacity: notif.isRead ? 0.72 : 1,
                   }}
                 >
-                  <View
-                    style={{ flexDirection: "row", alignItems: "flex-start", gap: 14 }}
-                  >
-                    {/* Type icon */}
+                  <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 14 }}>
                     <View
                       style={{
                         height: 44,
                         width: 44,
-                        borderRadius: 16,
-                        backgroundColor: cfg.bg,
+                        borderRadius: theme.radius.md,
+                        backgroundColor: cfg.color + "22",
                         alignItems: "center",
                         justifyContent: "center",
                         flexShrink: 0,
@@ -238,7 +197,6 @@ export default function NotificationsScreen() {
                       <IconComp color={cfg.color} size={20} />
                     </View>
 
-                    {/* Text content */}
                     <View style={{ flex: 1 }}>
                       <View
                         style={{
@@ -248,67 +206,37 @@ export default function NotificationsScreen() {
                           marginBottom: 4,
                         }}
                       >
-                        <Text
-                          style={{
-                            color: notif.isRead ? "#94a3b8" : "#f8fafc",
-                            fontWeight: "900",
-                            fontSize: 14,
-                            flex: 1,
-                            marginRight: 8,
-                          }}
+                        <AppText
+                          variant="bodyStrong"
+                          color={notif.isRead ? "textSecondary" : "textPrimary"}
                           numberOfLines={1}
+                          style={{ flex: 1, marginRight: 8 }}
                         >
                           {notif.title}
-                        </Text>
-                        <Text
-                          style={{
-                            color: "#475569",
-                            fontSize: 11,
-                            fontWeight: "700",
-                            flexShrink: 0,
-                          }}
-                        >
+                        </AppText>
+                        <AppText variant="caption" color="textMuted">
                           {relativeTime(notif.createdAt)}
-                        </Text>
+                        </AppText>
                       </View>
 
-                      <Text
-                        style={{
-                          color: notif.isRead ? "#64748b" : "#94a3b8",
-                          fontSize: 13,
-                          lineHeight: 19,
-                        }}
+                      <AppText
+                        variant="body"
+                        color={notif.isRead ? "textMuted" : "textSecondary"}
+                        style={{ lineHeight: 19 }}
                       >
                         {notif.body}
-                      </Text>
+                      </AppText>
 
-                      {/* Unread dot + tap hint */}
                       {!notif.isRead && (
                         <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            gap: 6,
-                            marginTop: 8,
-                          }}
+                          style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 }}
                         >
                           <View
-                            style={{
-                              height: 6,
-                              width: 6,
-                              borderRadius: 3,
-                              backgroundColor: "#6366f1",
-                            }}
+                            style={{ height: 6, width: 6, borderRadius: 3, backgroundColor: c.primary }}
                           />
-                          <Text
-                            style={{
-                              color: "#6366f1",
-                              fontSize: 11,
-                              fontWeight: "700",
-                            }}
-                          >
+                          <AppText variant="caption" color="primary">
                             Tap to mark read
-                          </Text>
+                          </AppText>
                         </View>
                       )}
                     </View>
@@ -319,55 +247,6 @@ export default function NotificationsScreen() {
           })}
         </View>
       )}
-    </ScrollView>
+    </AppScreen>
   );
 }
-
-// ─── styles ──────────────────────────────────────────────────────────────────
-
-const styles = {
-  screen: { flex: 1, backgroundColor: "#020617" },
-  content: { padding: 20, paddingTop: 64, paddingBottom: 48 },
-  center: {
-    flex: 1,
-    backgroundColor: "#020617",
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  header: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 14,
-    marginBottom: 24,
-  },
-  backButton: {
-    height: 44,
-    width: 44,
-    borderRadius: 16,
-    backgroundColor: "#0f172a",
-    borderWidth: 1,
-    borderColor: "rgba(148,163,184,0.18)",
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  title: { color: "#f8fafc", fontSize: 26, fontWeight: "900" as const },
-  subtitle: { color: "#64748b", fontSize: 13, marginTop: 2 },
-  emptyContainer: {
-    alignItems: "center" as const,
-    paddingTop: 80,
-    paddingHorizontal: 32,
-    gap: 16,
-  },
-  emptyTitle: {
-    color: "#f8fafc",
-    fontSize: 20,
-    fontWeight: "900" as const,
-    textAlign: "center" as const,
-  },
-  emptyBody: {
-    color: "#64748b",
-    fontSize: 14,
-    lineHeight: 22,
-    textAlign: "center" as const,
-  },
-};

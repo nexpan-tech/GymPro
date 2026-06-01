@@ -1,28 +1,27 @@
 import { router } from "expo-router";
 import {
-  Bell,
   CalendarCheck,
-  ClipboardList,
   Dumbbell,
   User,
   Users,
 } from "lucide-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
-  RefreshControl,
   ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 
-import AppCard from "../../src/components/AppCard";
+import AppCard from "../../src/components/ui/AppCard";
+import { AppScreen } from "../../src/components/ui";
 import { trainerApi } from "../../src/api/trainer.api";
 import type { TrainerStats, WorkoutPlan } from "../../src/api/trainer.api";
 import { useAuthStore } from "../../src/stores/auth.store";
 import { useSocket } from "../../src/hooks/useSocket";
+import { useTheme, type Theme } from "../../src/theme";
 import type { AssignedMember } from "../../src/types/trainer.types";
 import type { Attendance } from "../../src/types/attendance.types";
 
@@ -31,29 +30,11 @@ function formatTime(isoString: string): string {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-function isToday(dateStr: string): boolean {
-  const now = new Date();
-  const target = new Date(dateStr);
-  return (
-    now.getFullYear() === target.getFullYear() &&
-    now.getMonth() === target.getMonth() &&
-    now.getDate() === target.getDate()
-  );
-}
-
-function daysAgo(dateStr: string): string {
-  const now = new Date();
-  const target = new Date(dateStr);
-  const diffMs = now.getTime() - target.getTime();
-  const days = Math.floor(diffMs / 86_400_000);
-  if (days === 0) return "Today";
-  if (days === 1) return "Yesterday";
-  return `${days} days ago`;
-}
-
 export default function TrainerDashboardScreen() {
   const { user } = useAuthStore();
   const { on } = useSocket();
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const [stats, setStats] = useState<TrainerStats | null>(null);
   const [members, setMembers] = useState<AssignedMember[]>([]);
@@ -87,13 +68,12 @@ export default function TrainerDashboardScreen() {
     void loadDashboard();
   }, [loadDashboard]);
 
+  // Realtime: refresh today's attendance when the backend emits an update.
   useEffect(() => {
     on("attendance:update", () => {
       void trainerApi
         .getTodayAttendance()
-        .then((data) =>
-          setTodayAttendance(Array.isArray(data) ? data : [])
-        )
+        .then((data) => setTodayAttendance(Array.isArray(data) ? data : []))
         .catch(() => {});
     });
   }, [on]);
@@ -104,19 +84,15 @@ export default function TrainerDashboardScreen() {
   }
 
   const checkedInMemberIds = new Set(
-    todayAttendance.map((a) => a.memberId).filter(Boolean)
+    todayAttendance.map((a) => a.memberId).filter(Boolean),
   );
-
-  const inactiveMembers = members.filter(
-    (m) => !checkedInMemberIds.has(m.id)
-  );
-
+  const inactiveMembers = members.filter((m) => !checkedInMemberIds.has(m.id));
   const previewMembers = members.slice(0, 5);
 
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color="#6366f1" />
+        <ActivityIndicator color={theme.colors.primary} />
       </View>
     );
   }
@@ -125,13 +101,7 @@ export default function TrainerDashboardScreen() {
   const gymId = user?.gymId ?? "";
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-      }
-    >
+    <AppScreen onRefresh={handleRefresh} refreshing={refreshing}>
       {/* Header */}
       <View style={styles.headerRow}>
         <View style={{ flex: 1 }}>
@@ -156,42 +126,20 @@ export default function TrainerDashboardScreen() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.statsRow}
       >
-        <EmojiStatCard
-          emoji="👥"
-          label="My Members"
-          value={stats?.totalAssignedMembers ?? members.length}
-          color="#4f46e5"
-        />
-        <EmojiStatCard
-          emoji="✅"
-          label="Today's Check-ins"
-          value={stats?.attendancesToday ?? todayAttendance.length}
-          color="#059669"
-        />
-        <EmojiStatCard
-          emoji="🔔"
-          label="Pending Reviews"
-          value={inactiveMembers.length}
-          color="#d97706"
-        />
-        <EmojiStatCard
-          emoji="📋"
-          label="Active Plans"
-          value={stats?.workoutPlansCreated ?? workoutPlans.length}
-          color="#7c3aed"
-        />
+        <EmojiStatCard emoji="👥" label="My Members" value={stats?.totalAssignedMembers ?? members.length} color={theme.colors.primary} />
+        <EmojiStatCard emoji="✅" label="Today's Check-ins" value={stats?.attendancesToday ?? todayAttendance.length} color={theme.colors.success} />
+        <EmojiStatCard emoji="🔔" label="Pending Reviews" value={inactiveMembers.length} color={theme.colors.warning} />
+        <EmojiStatCard emoji="📋" label="Active Plans" value={stats?.workoutPlansCreated ?? workoutPlans.length} color={theme.colors.info} />
       </ScrollView>
 
       {/* Members Needing Attention */}
-      <SectionHeader title="Members needing attention" />
+      <Text style={styles.sectionTitle}>Members needing attention</Text>
       {inactiveMembers.length === 0 ? (
         <AppCard style={{ marginBottom: 20 }}>
           <View style={styles.emptyAttention}>
             <Text style={styles.emptyEmoji}>🎉</Text>
             <Text style={styles.emptyTitle}>All members are active!</Text>
-            <Text style={styles.emptySubtitle}>
-              Everyone has checked in today.
-            </Text>
+            <Text style={styles.emptySubtitle}>Everyone has checked in today.</Text>
           </View>
         </AppCard>
       ) : (
@@ -201,28 +149,16 @@ export default function TrainerDashboardScreen() {
               <View style={styles.attentionRow}>
                 <View style={styles.attentionAvatar}>
                   <Text style={styles.attentionInitials}>
-                    {(m.user?.name ?? "M")
-                      .split(" ")
-                      .map((p) => p[0])
-                      .join("")
-                      .slice(0, 2)
-                      .toUpperCase()}
+                    {(m.user?.name ?? "M").split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase()}
                   </Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.attentionName}>
-                    {m.user?.name ?? "Member"}
-                  </Text>
+                  <Text style={styles.attentionName}>{m.user?.name ?? "Member"}</Text>
                   <Text style={styles.attentionSub}>Not checked in today</Text>
                 </View>
                 <TouchableOpacity
                   style={styles.viewBtn}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/trainer/member-detail",
-                      params: { memberId: m.id },
-                    })
-                  }
+                  onPress={() => router.push({ pathname: "/trainer/member-detail", params: { memberId: m.id } })}
                 >
                   <Text style={styles.viewBtnText}>View</Text>
                 </TouchableOpacity>
@@ -253,12 +189,7 @@ export default function TrainerDashboardScreen() {
             <TouchableOpacity
               key={m.id}
               activeOpacity={0.85}
-              onPress={() =>
-                router.push({
-                  pathname: "/trainer/member-detail",
-                  params: { memberId: m.id },
-                })
-              }
+              onPress={() => router.push({ pathname: "/trainer/member-detail", params: { memberId: m.id } })}
             >
               <MiniMemberCard member={m} />
             </TouchableOpacity>
@@ -267,12 +198,10 @@ export default function TrainerDashboardScreen() {
       )}
 
       {/* Today's Activity */}
-      <SectionHeader title="Today's Activity" />
+      <Text style={styles.sectionTitle}>Today's Activity</Text>
       {todayAttendance.length === 0 ? (
         <AppCard style={{ marginBottom: 20 }}>
-          <Text style={styles.emptySubtitle}>
-            No check-ins recorded yet today.
-          </Text>
+          <Text style={styles.emptySubtitle}>No check-ins recorded yet today.</Text>
         </AppCard>
       ) : (
         <View style={{ gap: 10, marginBottom: 20 }}>
@@ -281,12 +210,8 @@ export default function TrainerDashboardScreen() {
               <View style={styles.activityRow}>
                 <View style={styles.activityDot} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.activityName}>
-                    Member check-in
-                  </Text>
-                  <Text style={styles.activityTime}>
-                    {formatTime(a.checkInAt)}
-                  </Text>
+                  <Text style={styles.activityName}>Member check-in</Text>
+                  <Text style={styles.activityTime}>{formatTime(a.checkInAt)}</Text>
                 </View>
                 <View style={styles.checkBadge}>
                   <Text style={styles.checkBadgeText}>Checked In</Text>
@@ -298,40 +223,14 @@ export default function TrainerDashboardScreen() {
       )}
 
       {/* Quick Actions */}
-      <SectionHeader title="Quick Actions" />
+      <Text style={styles.sectionTitle}>Quick Actions</Text>
       <View style={styles.quickGrid}>
-        <QuickAction
-          icon={Users}
-          label="View Members"
-          color="#4f46e5"
-          onPress={() => router.push("/trainer/members")}
-        />
-        <QuickAction
-          icon={Dumbbell}
-          label="Manage Workouts"
-          color="#7c3aed"
-          onPress={() => router.push("/trainer/workouts")}
-        />
-        <QuickAction
-          icon={CalendarCheck}
-          label="View Attendance"
-          color="#059669"
-          onPress={() => router.push("/trainer/attendance")}
-        />
-        <QuickAction
-          icon={User}
-          label="My Profile"
-          color="#0891b2"
-          onPress={() => router.push("/trainer/profile")}
-        />
+        <QuickAction icon={Users} label="View Members" color={theme.colors.primary} onPress={() => router.push("/trainer/members")} />
+        <QuickAction icon={Dumbbell} label="Manage Workouts" color={theme.colors.info} onPress={() => router.push("/trainer/workouts")} />
+        <QuickAction icon={CalendarCheck} label="View Attendance" color={theme.colors.success} onPress={() => router.push("/trainer/attendance")} />
+        <QuickAction icon={User} label="My Profile" color={theme.colors.warning} onPress={() => router.push("/trainer/profile")} />
       </View>
-    </ScrollView>
-  );
-}
-
-function SectionHeader({ title }: { title: string }) {
-  return (
-    <Text style={styles.sectionTitle}>{title}</Text>
+    </AppScreen>
   );
 }
 
@@ -346,6 +245,8 @@ function EmojiStatCard({
   value: number;
   color: string;
 }) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   return (
     <View style={[styles.statCard, { borderLeftColor: color }]}>
       <Text style={styles.statEmoji}>{emoji}</Text>
@@ -356,25 +257,17 @@ function EmojiStatCard({
 }
 
 function MiniMemberCard({ member }: { member: AssignedMember }) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const name = member.user?.name ?? "Member";
-  const initials = name
-    .split(" ")
-    .map((p) => p[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-
+  const initials = name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
   return (
     <View style={styles.miniCard}>
       <View style={styles.miniAvatar}>
         <Text style={styles.miniInitials}>{initials}</Text>
       </View>
-      <Text style={styles.miniName} numberOfLines={1}>
-        {name}
-      </Text>
-      <Text style={styles.miniGoal} numberOfLines={1}>
-        {member.fitnessGoal ?? "General Fitness"}
-      </Text>
+      <Text style={styles.miniName} numberOfLines={1}>{name}</Text>
+      <Text style={styles.miniGoal} numberOfLines={1}>{member.fitnessGoal ?? "General Fitness"}</Text>
     </View>
   );
 }
@@ -390,12 +283,10 @@ function QuickAction({
   color: string;
   onPress: () => void;
 }) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   return (
-    <TouchableOpacity
-      style={styles.quickCard}
-      activeOpacity={0.85}
-      onPress={onPress}
-    >
+    <TouchableOpacity style={styles.quickCard} activeOpacity={0.85} onPress={onPress}>
       <View style={[styles.quickIcon, { backgroundColor: color }]}>
         <Icon color="#fff" size={22} />
       </View>
@@ -404,254 +295,118 @@ function QuickAction({
   );
 }
 
-const styles = {
-  screen: { flex: 1, backgroundColor: "#020617" },
-  content: { padding: 20, paddingTop: 64, paddingBottom: 40 },
-  center: {
-    flex: 1,
-    backgroundColor: "#020617",
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  headerRow: {
-    flexDirection: "row" as const,
-    alignItems: "flex-start" as const,
-    marginBottom: 24,
-  },
-  badgeRow: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 10,
-    marginBottom: 6,
-  },
-  badge: {
-    backgroundColor: "rgba(99,102,241,0.18)",
-    borderWidth: 1,
-    borderColor: "rgba(99,102,241,0.4)",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-  },
-  badgeText: {
-    color: "#818cf8",
-    fontSize: 11,
-    fontWeight: "900" as const,
-    letterSpacing: 1.5,
-  },
-  gymLabel: {
-    color: "#64748b",
-    fontSize: 12,
-    fontWeight: "700" as const,
-    flex: 1,
-  },
-  greeting: {
-    color: "#f8fafc",
-    fontSize: 30,
-    fontWeight: "900" as const,
-  },
-  subtitle: {
-    color: "#94a3b8",
-    marginTop: 6,
-  },
-  statsRow: {
-    gap: 12,
-    paddingRight: 4,
-    marginBottom: 24,
-  },
-  statCard: {
-    width: 140,
-    backgroundColor: "#0f172a",
-    borderWidth: 1,
-    borderColor: "rgba(148,163,184,0.18)",
-    borderLeftWidth: 4,
-    borderRadius: 20,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  statEmoji: { fontSize: 22, marginBottom: 8 },
-  statValue: {
-    color: "#f8fafc",
-    fontSize: 28,
-    fontWeight: "900" as const,
-  },
-  statLabel: {
-    color: "#94a3b8",
-    fontSize: 12,
-    fontWeight: "700" as const,
-    marginTop: 4,
-  },
-  sectionHeaderRow: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    justifyContent: "space-between" as const,
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    color: "#f8fafc",
-    fontSize: 18,
-    fontWeight: "900" as const,
-    marginBottom: 12,
-  },
-  viewAllText: {
-    color: "#6366f1",
-    fontWeight: "800" as const,
-    fontSize: 14,
-  },
-  attentionRow: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 12,
-  },
-  attentionAvatar: {
-    height: 42,
-    width: 42,
-    borderRadius: 14,
-    backgroundColor: "#312e81",
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  attentionInitials: {
-    color: "#c7d2fe",
-    fontSize: 14,
-    fontWeight: "900" as const,
-  },
-  attentionName: {
-    color: "#f8fafc",
-    fontSize: 15,
-    fontWeight: "900" as const,
-  },
-  attentionSub: {
-    color: "#94a3b8",
-    fontSize: 12,
-    marginTop: 2,
-  },
-  viewBtn: {
-    backgroundColor: "rgba(99,102,241,0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(99,102,241,0.35)",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-  },
-  viewBtnText: {
-    color: "#818cf8",
-    fontWeight: "900" as const,
-    fontSize: 13,
-  },
-  emptyAttention: {
-    alignItems: "center" as const,
-    paddingVertical: 8,
-  },
-  emptyEmoji: { fontSize: 36, marginBottom: 8 },
-  emptyTitle: {
-    color: "#f8fafc",
-    fontSize: 16,
-    fontWeight: "900" as const,
-    marginBottom: 4,
-  },
-  emptySubtitle: {
-    color: "#94a3b8",
-    fontSize: 14,
-    textAlign: "center" as const,
-  },
-  miniCard: {
-    width: 120,
-    backgroundColor: "#0f172a",
-    borderWidth: 1,
-    borderColor: "rgba(148,163,184,0.18)",
-    borderRadius: 20,
-    padding: 14,
-    alignItems: "center" as const,
-    gap: 8,
-  },
-  miniAvatar: {
-    height: 50,
-    width: 50,
-    borderRadius: 18,
-    backgroundColor: "#312e81",
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  miniInitials: {
-    color: "#c7d2fe",
-    fontSize: 16,
-    fontWeight: "900" as const,
-  },
-  miniName: {
-    color: "#f8fafc",
-    fontSize: 13,
-    fontWeight: "900" as const,
-    textAlign: "center" as const,
-  },
-  miniGoal: {
-    color: "#64748b",
-    fontSize: 11,
-    textAlign: "center" as const,
-  },
-  activityRow: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 12,
-  },
-  activityDot: {
-    height: 10,
-    width: 10,
-    borderRadius: 5,
-    backgroundColor: "#22c55e",
-  },
-  activityName: {
-    color: "#f8fafc",
-    fontSize: 14,
-    fontWeight: "800" as const,
-  },
-  activityTime: {
-    color: "#64748b",
-    fontSize: 12,
-    marginTop: 2,
-  },
-  checkBadge: {
-    backgroundColor: "rgba(34,197,94,0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(34,197,94,0.3)",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  checkBadgeText: {
-    color: "#4ade80",
-    fontSize: 11,
-    fontWeight: "900" as const,
-  },
-  quickGrid: {
-    flexDirection: "row" as const,
-    flexWrap: "wrap" as const,
-    gap: 12,
-    marginBottom: 20,
-  },
-  quickCard: {
-    width: "47%" as const,
-    backgroundColor: "#0f172a",
-    borderWidth: 1,
-    borderColor: "rgba(148,163,184,0.18)",
-    borderRadius: 20,
-    padding: 18,
-    alignItems: "center" as const,
-    gap: 12,
-  },
-  quickIcon: {
-    height: 52,
-    width: 52,
-    borderRadius: 18,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  quickLabel: {
-    color: "#f8fafc",
-    fontSize: 13,
-    fontWeight: "900" as const,
-    textAlign: "center" as const,
-  },
-};
+function makeStyles(theme: Theme) {
+  const c = theme.colors;
+  return StyleSheet.create({
+    center: { flex: 1, backgroundColor: c.background, alignItems: "center", justifyContent: "center" },
+    headerRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 8 },
+    badgeRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 6 },
+    badge: {
+      backgroundColor: c.primarySoft,
+      borderWidth: 1,
+      borderColor: c.primary,
+      borderRadius: 8,
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+    },
+    badgeText: { color: c.primary, fontSize: 11, fontWeight: "900", letterSpacing: 1.5 },
+    gymLabel: { color: c.textMuted, fontSize: 12, fontWeight: "700", flex: 1 },
+    greeting: { color: c.textPrimary, fontSize: 30, fontWeight: "900" },
+    subtitle: { color: c.textSecondary, marginTop: 6 },
+    statsRow: { gap: 12, paddingRight: 4 },
+    statCard: {
+      width: 140,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderLeftWidth: 4,
+      borderRadius: theme.radius.lg,
+      padding: 16,
+      ...theme.shadows.sm,
+    },
+    statEmoji: { fontSize: 22, marginBottom: 8 },
+    statValue: { color: c.textPrimary, fontSize: 28, fontWeight: "900" },
+    statLabel: { color: c.textSecondary, fontSize: 12, fontWeight: "700", marginTop: 4 },
+    sectionHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    sectionTitle: { color: c.textPrimary, fontSize: 18, fontWeight: "900" },
+    viewAllText: { color: c.primary, fontWeight: "800", fontSize: 14 },
+    attentionRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+    attentionAvatar: {
+      height: 42,
+      width: 42,
+      borderRadius: theme.radius.md,
+      backgroundColor: c.primarySoft,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    attentionInitials: { color: c.primary, fontSize: 14, fontWeight: "900" },
+    attentionName: { color: c.textPrimary, fontSize: 15, fontWeight: "900" },
+    attentionSub: { color: c.textSecondary, fontSize: 12, marginTop: 2 },
+    viewBtn: {
+      backgroundColor: c.primarySoft,
+      borderWidth: 1,
+      borderColor: c.primary,
+      borderRadius: theme.radius.sm,
+      paddingHorizontal: 14,
+      paddingVertical: 6,
+    },
+    viewBtnText: { color: c.primary, fontWeight: "900", fontSize: 13 },
+    emptyAttention: { alignItems: "center", paddingVertical: 8 },
+    emptyEmoji: { fontSize: 36, marginBottom: 8 },
+    emptyTitle: { color: c.textPrimary, fontSize: 16, fontWeight: "900", marginBottom: 4 },
+    emptySubtitle: { color: c.textSecondary, fontSize: 14, textAlign: "center" },
+    miniCard: {
+      width: 120,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: theme.radius.lg,
+      padding: 14,
+      alignItems: "center",
+      gap: 8,
+    },
+    miniAvatar: {
+      height: 50,
+      width: 50,
+      borderRadius: theme.radius.lg,
+      backgroundColor: c.primarySoft,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    miniInitials: { color: c.primary, fontSize: 16, fontWeight: "900" },
+    miniName: { color: c.textPrimary, fontSize: 13, fontWeight: "900", textAlign: "center" },
+    miniGoal: { color: c.textMuted, fontSize: 11, textAlign: "center" },
+    activityRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+    activityDot: { height: 10, width: 10, borderRadius: 5, backgroundColor: c.success },
+    activityName: { color: c.textPrimary, fontSize: 14, fontWeight: "800" },
+    activityTime: { color: c.textMuted, fontSize: 12, marginTop: 2 },
+    checkBadge: {
+      backgroundColor: c.successSoft,
+      borderWidth: 1,
+      borderColor: c.success,
+      borderRadius: 8,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    },
+    checkBadgeText: { color: c.success, fontSize: 11, fontWeight: "900" },
+    quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+    quickCard: {
+      width: "47%",
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: theme.radius.lg,
+      padding: 18,
+      alignItems: "center",
+      gap: 12,
+    },
+    quickIcon: {
+      height: 52,
+      width: 52,
+      borderRadius: theme.radius.lg,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    quickLabel: { color: c.textPrimary, fontSize: 13, fontWeight: "900", textAlign: "center" },
+  });
+}

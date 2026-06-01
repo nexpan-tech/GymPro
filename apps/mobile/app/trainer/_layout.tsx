@@ -7,20 +7,24 @@ import {
   User,
 } from "lucide-react-native";
 
+import { useTheme } from "../../src/theme";
+
 export default function TrainerTabsLayout() {
+  const { theme } = useTheme();
+  const c = theme.colors;
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
           height: 76,
-          backgroundColor: "#020617",
-          borderTopColor: "rgba(148,163,184,0.18)",
+          backgroundColor: c.surface,
+          borderTopColor: c.border,
           paddingTop: 10,
           paddingBottom: 12,
         },
-        tabBarActiveTintColor: "#6366f1",
-        tabBarInactiveTintColor: "#64748b",
+        tabBarActiveTintColor: c.primary,
+        tabBarInactiveTintColor: c.textMuted,
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: "800",

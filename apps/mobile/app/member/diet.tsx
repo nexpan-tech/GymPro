@@ -1,19 +1,21 @@
 import { router } from "expo-router";
-import { ArrowLeft, Salad, Utensils } from "lucide-react-native";
+import { Salad } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { TouchableOpacity, View } from "react-native";
 
-import AppCard from "../../src/components/AppCard";
 import { dietService, type DietPlan } from "../../src/services/diet.service";
 import { memberService } from "../../src/services/member.service";
+import { useTheme } from "../../src/theme";
+import {
+  AppCard,
+  AppEmptyState,
+  AppHeader,
+  AppLoadingState,
+  AppScreen,
+  AppText,
+} from "../../src/components/ui";
 
-// ─── types & helpers ─────────────────────────────────────────────────────────
+// ─── types & helpers (unchanged) ─────────────────────────────────────────────
 
 type DayKey =
   | "monday"
@@ -52,7 +54,6 @@ function shiftDay(base: DayKey, delta: -1 | 0 | 1): DayKey {
   return DAY_KEYS[(idx + 7) % 7];
 }
 
-// Meal types to look for when parsing free-text
 const MEAL_TYPE_PATTERNS: { label: string; keywords: string[] }[] = [
   { label: "Breakfast", keywords: ["breakfast"] },
   { label: "Pre Workout", keywords: ["pre workout", "pre-workout", "preworkout"] },
@@ -73,25 +74,23 @@ function parseMeals(raw: string | null | undefined): ParsedMeal[] {
   if (!raw) return [];
 
   const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
-
-  // Try structured parsing: look for lines starting with meal type keywords
   const meals: ParsedMeal[] = [];
   let currentMeal: ParsedMeal | null = null;
 
   for (const line of lines) {
     const lower = line.toLowerCase();
     const matchedType = MEAL_TYPE_PATTERNS.find((m) =>
-      m.keywords.some((kw) => lower.startsWith(kw) || lower.includes(`: ${kw}`) || lower === kw)
+      m.keywords.some(
+        (kw) => lower.startsWith(kw) || lower.includes(`: ${kw}`) || lower === kw,
+      ),
     );
 
     if (matchedType) {
       if (currentMeal) meals.push(currentMeal);
-      // Extract anything after the label on the same line
       const colonIdx = line.indexOf(":");
       const rest = colonIdx > -1 ? line.slice(colonIdx + 1).trim() : "";
       currentMeal = { type: matchedType.label, items: rest ? [rest] : [] };
     } else if (currentMeal) {
-      // Sub-items: calories/macros detection
       if (/cal(orie)?s?:/i.test(line) || /kcal/i.test(line)) {
         currentMeal.calories = line;
       } else if (/protein|carb|fat/i.test(line)) {
@@ -100,22 +99,16 @@ function parseMeals(raw: string | null | undefined): ParsedMeal[] {
         currentMeal.items.push(line);
       }
     } else {
-      // No structured type found — treat each line as a generic entry
       meals.push({ type: "Meal", items: [line] });
     }
   }
 
   if (currentMeal) meals.push(currentMeal);
-
-  // If nothing structured was found, present the raw lines grouped as one entry
   if (meals.length === 0) {
     return [{ type: "Today's Plan", items: lines }];
   }
-
   return meals;
 }
-
-// ─── screen ──────────────────────────────────────────────────────────────────
 
 type TabId = "yesterday" | "today" | "tomorrow";
 
@@ -126,6 +119,9 @@ const TABS: { id: TabId; label: string }[] = [
 ];
 
 export default function DietScreen() {
+  const { theme } = useTheme();
+  const c = theme.colors;
+
   const [plan, setPlan] = useState<DietPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("today");
@@ -158,53 +154,44 @@ export default function DietScreen() {
   const activeDay = dayKeyForTab[activeTab];
   const meals = parseMeals(plan?.[activeDay] ?? null);
 
+  // Meal-category accent hues (readable on both themes).
   const mealTypeColors: Record<string, string> = {
     Breakfast: "#f59e0b",
-    "Pre Workout": "#6366f1",
+    "Pre Workout": c.primary,
     Lunch: "#059669",
     "Post Workout": "#8b5cf6",
     Dinner: "#0ea5e9",
     Snack: "#f97316",
-    Meal: "#94a3b8",
-    "Today's Plan": "#94a3b8",
+    Meal: c.textSecondary,
+    "Today's Plan": c.textSecondary,
   };
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color="#6366f1" />
-      </View>
+      <AppScreen>
+        <AppHeader title="Diet Plan" onBack={() => router.back()} />
+        <AppLoadingState rows={4} />
+      </AppScreen>
     );
   }
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <ArrowLeft color="#f8fafc" size={22} />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Diet Plan</Text>
-          <Text style={styles.subtitle}>
-            {plan?.goal || "Your weekly nutrition schedule"}
-          </Text>
-        </View>
-      </View>
+    <AppScreen>
+      <AppHeader
+        title="Diet Plan"
+        subtitle={plan?.goal || "Your weekly nutrition schedule"}
+        onBack={() => router.back()}
+      />
 
-      {/* Today / Yesterday / Tomorrow tabs */}
+      {/* Day tabs */}
       <View
         style={{
           flexDirection: "row",
-          backgroundColor: "#0f172a",
-          borderRadius: 16,
+          backgroundColor: c.surface,
+          borderRadius: theme.radius.md,
           padding: 4,
-          marginBottom: 20,
           borderWidth: 1,
-          borderColor: "rgba(148,163,184,0.14)",
+          borderColor: c.border,
         }}
       >
         {TABS.map((tab) => {
@@ -217,73 +204,50 @@ export default function DietScreen() {
               style={{
                 flex: 1,
                 paddingVertical: 9,
-                borderRadius: 13,
+                borderRadius: theme.radius.sm,
                 alignItems: "center",
-                backgroundColor: isActive ? "#4f46e5" : "transparent",
+                backgroundColor: isActive ? c.primary : "transparent",
               }}
             >
-              <Text
-                style={{
-                  color: isActive ? "#fff" : "#64748b",
-                  fontWeight: "800",
-                  fontSize: 13,
-                }}
+              <AppText
+                variant="label"
+                style={{ color: isActive ? c.onPrimary : c.textMuted }}
               >
                 {tab.label}
-              </Text>
+              </AppText>
             </TouchableOpacity>
           );
         })}
       </View>
 
-      {/* Plan notes */}
-      {plan?.notes && (
-        <AppCard style={{ marginBottom: 16 }}>
+      {/* Trainer note */}
+      {plan?.notes ? (
+        <AppCard>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <Salad color="#059669" size={18} />
-            <Text style={{ color: "#94a3b8", fontWeight: "700", fontSize: 13 }}>
+            <Salad color={c.success} size={18} />
+            <AppText variant="label" color="textSecondary">
               Trainer Note
-            </Text>
+            </AppText>
           </View>
-          <Text
-            style={{
-              color: "#cbd5e1",
-              marginTop: 8,
-              lineHeight: 20,
-              fontSize: 14,
-            }}
-          >
+          <AppText variant="body" color="textSecondary" style={{ marginTop: 8 }}>
             {plan.notes}
-          </Text>
+          </AppText>
         </AppCard>
-      )}
+      ) : null}
 
       {/* Meals */}
       {meals.length === 0 ? (
-        <AppCard>
-          <View style={{ alignItems: "center", paddingVertical: 24 }}>
-            <Utensils color="#334155" size={34} />
-            <Text
-              style={{
-                color: "#475569",
-                marginTop: 12,
-                fontWeight: "700",
-                textAlign: "center",
-                lineHeight: 22,
-              }}
-            >
-              No diet plan assigned{"\n"}for this day.
-            </Text>
-          </View>
-        </AppCard>
+        <AppEmptyState
+          emoji="🍽️"
+          title="No diet plan"
+          description="No diet plan assigned for this day."
+        />
       ) : (
         <View style={{ gap: 12 }}>
           {meals.map((meal, idx) => {
-            const accentColor =
-              mealTypeColors[meal.type] ?? "#94a3b8";
+            const accentColor = mealTypeColors[meal.type] ?? c.textSecondary;
             return (
               <AppCard key={`${meal.type}-${idx}`}>
-                {/* Meal type header */}
                 <View
                   style={{
                     flexDirection: "row",
@@ -300,95 +264,40 @@ export default function DietScreen() {
                       backgroundColor: accentColor,
                     }}
                   />
-                  <Text
-                    style={{
-                      color: accentColor,
-                      fontWeight: "900",
-                      fontSize: 12,
-                      letterSpacing: 0.5,
-                      textTransform: "uppercase",
-                    }}
-                  >
+                  <AppText variant="overline" style={{ color: accentColor }}>
                     {meal.type}
-                  </Text>
+                  </AppText>
                 </View>
 
-                {/* Items */}
                 {meal.items.map((item, i) => (
-                  <Text
+                  <AppText
                     key={i}
-                    style={{
-                      color: "#f8fafc",
-                      fontSize: 14,
-                      lineHeight: 22,
-                      fontWeight: i === 0 ? "700" : "400",
-                    }}
+                    variant={i === 0 ? "bodyStrong" : "body"}
+                    style={{ lineHeight: 22 }}
                   >
                     {item}
-                  </Text>
+                  </AppText>
                 ))}
 
-                {/* Calories */}
-                {meal.calories && (
-                  <Text
-                    style={{
-                      color: "#f59e0b",
-                      fontSize: 13,
-                      fontWeight: "700",
-                      marginTop: 8,
-                    }}
+                {meal.calories ? (
+                  <AppText
+                    variant="label"
+                    style={{ color: "#f59e0b", marginTop: 8 }}
                   >
                     {meal.calories}
-                  </Text>
-                )}
+                  </AppText>
+                ) : null}
 
-                {/* Macros */}
-                {meal.macros && (
-                  <Text
-                    style={{
-                      color: "#64748b",
-                      fontSize: 12,
-                      marginTop: 4,
-                      lineHeight: 18,
-                    }}
-                  >
+                {meal.macros ? (
+                  <AppText variant="caption" color="textMuted" style={{ marginTop: 4 }}>
                     {meal.macros}
-                  </Text>
-                )}
+                  </AppText>
+                ) : null}
               </AppCard>
             );
           })}
         </View>
       )}
-    </ScrollView>
+    </AppScreen>
   );
 }
-
-const styles = {
-  screen: { flex: 1, backgroundColor: "#020617" },
-  content: { padding: 20, paddingTop: 64, paddingBottom: 48 },
-  center: {
-    flex: 1,
-    backgroundColor: "#020617",
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  header: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 14,
-    marginBottom: 24,
-  },
-  backButton: {
-    height: 44,
-    width: 44,
-    borderRadius: 16,
-    backgroundColor: "#0f172a",
-    borderWidth: 1,
-    borderColor: "rgba(148,163,184,0.18)",
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  title: { color: "#f8fafc", fontSize: 26, fontWeight: "900" as const },
-  subtitle: { color: "#94a3b8", marginTop: 4, fontSize: 13 },
-};

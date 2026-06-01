@@ -13,26 +13,25 @@ import {
   Target,
 } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Alert,
-  RefreshControl,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Alert, ScrollView, TouchableOpacity, View } from "react-native";
 
-import AppCard from "../../src/components/AppCard";
 import { attendanceService } from "../../src/services/attendance.service";
 import { memberService } from "../../src/services/member.service";
 import { membershipService } from "../../src/services/membership.service";
 import { workoutService } from "../../src/services/workout.service";
 import { dietService } from "../../src/services/diet.service";
 import { useAuthStore } from "../../src/stores/auth.store";
+import { useTheme } from "../../src/theme";
+import {
+  AppCard,
+  AppScreen,
+  AppText,
+  AppLoadingState,
+} from "../../src/components/ui";
 import type { Attendance } from "../../src/types/attendance.types";
 import type { Member } from "../../src/types/member.types";
 
-// ─── helpers ────────────────────────────────────────────────────────────────
+// ─── helpers (unchanged) ──────────────────────────────────────────────────────
 
 function greet(name: string) {
   const h = new Date().getHours();
@@ -65,10 +64,7 @@ function daysRemaining(endDate?: string | null) {
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
-function membershipProgress(
-  startDate?: string | null,
-  endDate?: string | null
-) {
+function membershipProgress(startDate?: string | null, endDate?: string | null) {
   if (!startDate || !endDate) return 0;
   const total = new Date(endDate).getTime() - new Date(startDate).getTime();
   const elapsed = Date.now() - new Date(startDate).getTime();
@@ -78,7 +74,7 @@ function membershipProgress(
 function currentStreak(records: Attendance[]) {
   if (!records.length) return 0;
   const sorted = [...records].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
   let streak = 0;
   let cursor = new Date();
@@ -86,9 +82,7 @@ function currentStreak(records: Attendance[]) {
   for (const r of sorted) {
     const d = new Date(r.date);
     d.setHours(0, 0, 0, 0);
-    const diff = Math.round(
-      (cursor.getTime() - d.getTime()) / (1000 * 60 * 60 * 24)
-    );
+    const diff = Math.round((cursor.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
     if (diff === 0 || diff === 1) {
       streak++;
       cursor = d;
@@ -106,33 +100,12 @@ function formatTime(dateStr: string) {
   });
 }
 
-// ─── skeleton ────────────────────────────────────────────────────────────────
-
-function SkeletonBox({
-  width,
-  height,
-  borderRadius = 12,
-}: {
-  width: number | string;
-  height: number;
-  borderRadius?: number;
-}) {
-  return (
-    <View
-      style={{
-        width: width as number,
-        height,
-        borderRadius,
-        backgroundColor: "#1e293b",
-      }}
-    />
-  );
-}
-
 // ─── main screen ─────────────────────────────────────────────────────────────
 
 export default function MemberDashboardScreen() {
   const { user } = useAuthStore();
+  const { theme } = useTheme();
+  const c = theme.colors;
 
   const [member, setMember] = useState<Member | null>(null);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
@@ -187,23 +160,19 @@ export default function MemberDashboardScreen() {
 
   const displayName = member?.user?.name || user?.name || "Member";
   const streak = useMemo(() => currentStreak(attendance), [attendance]);
-  const daysLeft = useMemo(
-    () => daysRemaining(membership?.endDate),
-    [membership]
-  );
+  const daysLeft = useMemo(() => daysRemaining(membership?.endDate), [membership]);
   const progress = useMemo(
     () => membershipProgress(membership?.startDate, membership?.endDate),
-    [membership]
+    [membership],
   );
   const recentAttendance = useMemo(
     () =>
       [...attendance]
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         .slice(0, 3),
-    [attendance]
+    [attendance],
   );
 
-  // Count exercises from today's workout day
   const todayDayName = new Date()
     .toLocaleDateString("en-US", { weekday: "long" })
     .toLowerCase() as keyof typeof workoutPlan;
@@ -212,7 +181,6 @@ export default function MemberDashboardScreen() {
     ? String(todayWorkout).split("\n").filter(Boolean).length
     : 0;
 
-  // Count diet meals
   const dietNotes = dietPlan?.[todayDayName as keyof typeof dietPlan];
   const mealCount = dietNotes
     ? String(dietNotes).split("\n").filter(Boolean).length
@@ -220,104 +188,58 @@ export default function MemberDashboardScreen() {
 
   if (loading) {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "#020617",
-          padding: 20,
-          paddingTop: 64,
-        }}
-      >
-        <SkeletonBox width="60%" height={18} borderRadius={8} />
-        <View style={{ height: 8 }} />
-        <SkeletonBox width="80%" height={32} borderRadius={10} />
-        <View style={{ height: 28 }} />
-        <View style={{ flexDirection: "row", gap: 12 }}>
-          {[0, 1, 2, 3].map((i) => (
-            <SkeletonBox key={i} width={76} height={90} borderRadius={20} />
-          ))}
+      <AppScreen>
+        <View style={{ gap: 8, marginBottom: 8 }}>
+          <AppText variant="overline" color="primary">
+            GymPro Member
+          </AppText>
+          <AppText variant="title">{greet(displayName)}</AppText>
         </View>
-        <View style={{ height: 20 }} />
-        <SkeletonBox width="100%" height={120} borderRadius={24} />
-        <View style={{ height: 12 }} />
-        <SkeletonBox width="100%" height={120} borderRadius={24} />
-      </View>
+        <AppLoadingState rows={3} />
+      </AppScreen>
     );
   }
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: "#020617" }}
-      contentContainerStyle={{ padding: 20, paddingTop: 64, paddingBottom: 48 }}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          tintColor="#6366f1"
-        />
-      }
-    >
-      {/* ── Header ────────────────────────────────────────── */}
-      <View style={{ marginBottom: 24 }}>
-        <Text
-          style={{
-            color: "#6366f1",
-            fontSize: 12,
-            fontWeight: "900",
-            letterSpacing: 2,
-            textTransform: "uppercase",
-          }}
-        >
+    <AppScreen onRefresh={handleRefresh} refreshing={refreshing}>
+      {/* Header */}
+      <View style={{ marginBottom: 8 }}>
+        <AppText variant="overline" color="primary">
           GymPro Member
-        </Text>
-        <Text
-          style={{
-            color: "#f8fafc",
-            fontSize: 28,
-            fontWeight: "900",
-            marginTop: 6,
-          }}
-        >
+        </AppText>
+        <AppText variant="title" style={{ marginTop: 6 }}>
           {greet(displayName)}
-        </Text>
-        <Text style={{ color: "#64748b", marginTop: 4, fontSize: 13 }}>
+        </AppText>
+        <AppText variant="caption" color="textMuted" style={{ marginTop: 4 }}>
           {todayLabel()}
-        </Text>
+        </AppText>
       </View>
 
-      {/* ── Stats Row ─────────────────────────────────────── */}
+      {/* Stats Row */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ gap: 10, paddingBottom: 4 }}
-        style={{ marginBottom: 20 }}
       >
         <StatBadge icon={<Flame color="#f97316" size={16} />} label="Streak" value={`${streak}d`} />
-        <StatBadge icon={<Star color="#f59e0b" size={16} />} label="XP" value={`${attendance.length * 50}`} />
-        <StatBadge icon={<Target color="#818cf8" size={16} />} label="Goals" value="0" />
+        <StatBadge icon={<Star color={c.warning} size={16} />} label="XP" value={`${attendance.length * 50}`} />
+        <StatBadge icon={<Target color={c.primary} size={16} />} label="Goals" value="0" />
         <StatBadge
-          icon={<Calendar color="#34d399" size={16} />}
+          icon={<Calendar color={c.success} size={16} />}
           label="Days Left"
           value={daysLeft !== null ? `${daysLeft}` : "—"}
         />
       </ScrollView>
 
-      {/* ── Today's Cards ─────────────────────────────────── */}
-      <View
-        style={{
-          flexDirection: "row",
-          gap: 12,
-          marginBottom: 20,
-        }}
-      >
-        {/* Workout card */}
+      {/* Today's Cards */}
+      <View style={{ flexDirection: "row", gap: 12 }}>
         <AppCard style={{ flex: 1 }}>
           <View
             style={{
               height: 38,
               width: 38,
-              borderRadius: 14,
-              backgroundColor: "#4f46e5",
+              borderRadius: theme.radius.md,
+              backgroundColor: c.primary,
               alignItems: "center",
               justifyContent: "center",
               marginBottom: 10,
@@ -325,51 +247,42 @@ export default function MemberDashboardScreen() {
           >
             <Dumbbell color="#fff" size={18} />
           </View>
-          <Text style={{ color: "#94a3b8", fontSize: 11, fontWeight: "700" }}>
+          <AppText variant="caption" color="textSecondary">
             Today's Workout
-          </Text>
-          <Text
-            style={{
-              color: "#f8fafc",
-              fontSize: 15,
-              fontWeight: "900",
-              marginTop: 4,
-            }}
-            numberOfLines={1}
-          >
+          </AppText>
+          <AppText variant="subtitle" numberOfLines={1} style={{ marginTop: 4 }}>
             {workoutPlan?.goal || "Not assigned"}
-          </Text>
-          {exerciseCount > 0 && (
-            <Text style={{ color: "#64748b", fontSize: 12, marginTop: 3 }}>
+          </AppText>
+          {exerciseCount > 0 ? (
+            <AppText variant="caption" color="textMuted" style={{ marginTop: 3 }}>
               {exerciseCount} exercise{exerciseCount !== 1 ? "s" : ""}
-            </Text>
-          )}
+            </AppText>
+          ) : null}
           <TouchableOpacity
             onPress={() => router.push("/member/workout")}
             activeOpacity={0.8}
             style={{
               marginTop: 12,
               height: 34,
-              borderRadius: 12,
-              backgroundColor: "#4f46e5",
+              borderRadius: theme.radius.sm,
+              backgroundColor: c.primary,
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Text style={{ color: "#fff", fontSize: 12, fontWeight: "900" }}>
+            <AppText variant="caption" style={{ color: c.onPrimary }}>
               Start Workout
-            </Text>
+            </AppText>
           </TouchableOpacity>
         </AppCard>
 
-        {/* Diet card */}
         <AppCard style={{ flex: 1 }}>
           <View
             style={{
               height: 38,
               width: 38,
-              borderRadius: 14,
-              backgroundColor: "#059669",
+              borderRadius: theme.radius.md,
+              backgroundColor: c.success,
               alignItems: "center",
               justifyContent: "center",
               marginBottom: 10,
@@ -377,46 +290,38 @@ export default function MemberDashboardScreen() {
           >
             <Salad color="#fff" size={18} />
           </View>
-          <Text style={{ color: "#94a3b8", fontSize: 11, fontWeight: "700" }}>
+          <AppText variant="caption" color="textSecondary">
             Today's Diet
-          </Text>
-          <Text
-            style={{
-              color: "#f8fafc",
-              fontSize: 15,
-              fontWeight: "900",
-              marginTop: 4,
-            }}
-            numberOfLines={1}
-          >
+          </AppText>
+          <AppText variant="subtitle" numberOfLines={1} style={{ marginTop: 4 }}>
             {dietPlan?.goal || "Not assigned"}
-          </Text>
-          {mealCount > 0 && (
-            <Text style={{ color: "#64748b", fontSize: 12, marginTop: 3 }}>
+          </AppText>
+          {mealCount > 0 ? (
+            <AppText variant="caption" color="textMuted" style={{ marginTop: 3 }}>
               {mealCount} meal{mealCount !== 1 ? "s" : ""}
-            </Text>
-          )}
+            </AppText>
+          ) : null}
           <TouchableOpacity
             onPress={() => router.push("/member/diet")}
             activeOpacity={0.8}
             style={{
               marginTop: 12,
               height: 34,
-              borderRadius: 12,
-              backgroundColor: "#059669",
+              borderRadius: theme.radius.sm,
+              backgroundColor: c.success,
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Text style={{ color: "#fff", fontSize: 12, fontWeight: "900" }}>
+            <AppText variant="caption" style={{ color: "#fff" }}>
               View Diet
-            </Text>
+            </AppText>
           </TouchableOpacity>
         </AppCard>
       </View>
 
-      {/* ── Membership Card ───────────────────────────────── */}
-      <AppCard style={{ marginBottom: 20 }}>
+      {/* Membership Card */}
+      <AppCard variant="elevated">
         <View
           style={{
             flexDirection: "row",
@@ -425,68 +330,48 @@ export default function MemberDashboardScreen() {
           }}
         >
           <View style={{ flex: 1 }}>
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
-            >
-              <CreditCard color="#818cf8" size={18} />
-              <Text
-                style={{
-                  color: "#818cf8",
-                  fontSize: 11,
-                  fontWeight: "800",
-                  letterSpacing: 1,
-                  textTransform: "uppercase",
-                }}
-              >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <CreditCard color={c.primary} size={18} />
+              <AppText variant="overline" color="primary">
                 Membership
-              </Text>
+              </AppText>
             </View>
-            <Text
-              style={{
-                color: "#f8fafc",
-                fontSize: 20,
-                fontWeight: "900",
-                marginTop: 8,
-              }}
-            >
+            <AppText variant="heading" style={{ marginTop: 8 }}>
               {membership?.name || "No active plan"}
-            </Text>
-            <Text style={{ color: "#64748b", marginTop: 4, fontSize: 13 }}>
+            </AppText>
+            <AppText variant="caption" color="textMuted" style={{ marginTop: 4 }}>
               {daysLeft !== null
                 ? `${daysLeft} day${daysLeft !== 1 ? "s" : ""} remaining`
                 : "—"}
-            </Text>
+            </AppText>
           </View>
 
-          {daysLeft !== null && daysLeft < 30 && (
+          {daysLeft !== null && daysLeft < 30 ? (
             <TouchableOpacity
               onPress={() => router.push("/member/membership")}
               activeOpacity={0.8}
               style={{
                 paddingHorizontal: 16,
                 paddingVertical: 8,
-                borderRadius: 12,
-                backgroundColor: "rgba(239,68,68,0.15)",
+                borderRadius: theme.radius.sm,
+                backgroundColor: c.dangerSoft,
                 borderWidth: 1,
-                borderColor: "rgba(239,68,68,0.3)",
+                borderColor: c.danger,
               }}
             >
-              <Text
-                style={{ color: "#f87171", fontWeight: "900", fontSize: 13 }}
-              >
+              <AppText variant="label" style={{ color: c.danger }}>
                 Renew
-              </Text>
+              </AppText>
             </TouchableOpacity>
-          )}
+          ) : null}
         </View>
 
-        {/* Progress bar */}
         <View
           style={{
             marginTop: 16,
             height: 6,
             borderRadius: 3,
-            backgroundColor: "#1e293b",
+            backgroundColor: c.muted,
             overflow: "hidden",
           }}
         >
@@ -495,45 +380,27 @@ export default function MemberDashboardScreen() {
               height: "100%",
               width: `${Math.round((1 - progress) * 100)}%`,
               borderRadius: 3,
-              backgroundColor:
-                daysLeft !== null && daysLeft < 10 ? "#ef4444" : "#6366f1",
+              backgroundColor: daysLeft !== null && daysLeft < 10 ? c.danger : c.primary,
             }}
           />
         </View>
       </AppCard>
 
-      {/* ── Quick Actions ─────────────────────────────────── */}
-      <Text
-        style={{
-          color: "#f8fafc",
-          fontSize: 16,
-          fontWeight: "900",
-          marginBottom: 12,
-        }}
-      >
-        Quick Actions
-      </Text>
-
-      <View
-        style={{
-          flexDirection: "row",
-          flexWrap: "wrap",
-          gap: 10,
-          marginBottom: 24,
-        }}
-      >
+      {/* Quick Actions */}
+      <AppText variant="heading">Quick Actions</AppText>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
         <QuickAction
-          icon={<Camera color="#6366f1" size={22} />}
+          icon={<Camera color={c.primary} size={22} />}
           label="Scan QR"
           onPress={() => router.push("/member/scanner")}
         />
         <QuickAction
-          icon={<ImagePlus color="#059669" size={22} />}
+          icon={<ImagePlus color={c.success} size={22} />}
           label="Progress"
           onPress={() => router.push("/member/progress")}
         />
         <QuickAction
-          icon={<Bell color="#f59e0b" size={22} />}
+          icon={<Bell color={c.warning} size={22} />}
           label="Alerts"
           onPress={() => router.push("/member/notifications")}
         />
@@ -543,118 +410,81 @@ export default function MemberDashboardScreen() {
           onPress={() =>
             Alert.alert(
               "Coming Soon",
-              "Goals tracking will be available in the next update."
+              "Goals tracking will be available in the next update.",
             )
           }
         />
       </View>
 
-      {/* ── Recent Attendance ─────────────────────────────── */}
-      <Text
-        style={{
-          color: "#f8fafc",
-          fontSize: 16,
-          fontWeight: "900",
-          marginBottom: 12,
-        }}
-      >
-        Recent Check-ins
-      </Text>
-
+      {/* Recent Check-ins */}
+      <AppText variant="heading">Recent Check-ins</AppText>
       {recentAttendance.length === 0 ? (
         <AppCard>
-          <View style={{ alignItems: "center", paddingVertical: 12 }}>
-            <Calendar color="#475569" size={28} />
-            <Text
-              style={{
-                color: "#64748b",
-                marginTop: 10,
-                fontWeight: "700",
-                textAlign: "center",
-              }}
+          <View style={{ alignItems: "center", paddingVertical: 12, gap: 10 }}>
+            <Calendar color={c.textMuted} size={28} />
+            <AppText
+              variant="bodyStrong"
+              color="textSecondary"
+              style={{ textAlign: "center" }}
             >
               No attendance records yet.{"\n"}Scan the QR code to check in.
-            </Text>
+            </AppText>
           </View>
         </AppCard>
       ) : (
         <View style={{ gap: 8 }}>
           {recentAttendance.map((record) => (
             <AppCard key={record.id}>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 12,
-                }}
-              >
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                 <View
                   style={{
                     height: 40,
                     width: 40,
-                    borderRadius: 14,
-                    backgroundColor: "#1e293b",
+                    borderRadius: theme.radius.md,
+                    backgroundColor: c.muted,
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
                   <CheckCircle2
-                    color={isToday(record.date) ? "#34d399" : "#6366f1"}
+                    color={isToday(record.date) ? c.success : c.primary}
                     size={20}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      color: "#f8fafc",
-                      fontWeight: "900",
-                      fontSize: 14,
-                    }}
-                  >
+                  <AppText variant="bodyStrong">
                     {new Date(record.date).toLocaleDateString("en-US", {
                       weekday: "short",
                       month: "short",
                       day: "numeric",
                     })}
-                  </Text>
-                  <Text
-                    style={{
-                      color: "#64748b",
-                      fontSize: 12,
-                      marginTop: 2,
-                    }}
-                  >
+                  </AppText>
+                  <AppText variant="caption" color="textMuted" style={{ marginTop: 2 }}>
                     Checked in at {formatTime(record.checkInAt || record.date)}
-                  </Text>
+                  </AppText>
                 </View>
-                {isToday(record.date) && (
+                {isToday(record.date) ? (
                   <View
                     style={{
                       paddingHorizontal: 10,
                       paddingVertical: 4,
-                      borderRadius: 8,
-                      backgroundColor: "rgba(52,211,153,0.12)",
+                      borderRadius: theme.radius.sm,
+                      backgroundColor: c.successSoft,
                       borderWidth: 1,
-                      borderColor: "rgba(52,211,153,0.3)",
+                      borderColor: c.success,
                     }}
                   >
-                    <Text
-                      style={{
-                        color: "#34d399",
-                        fontSize: 11,
-                        fontWeight: "800",
-                      }}
-                    >
+                    <AppText variant="caption" style={{ color: c.success }}>
                       Today
-                    </Text>
+                    </AppText>
                   </View>
-                )}
+                ) : null}
               </View>
             </AppCard>
           ))}
         </View>
       )}
-    </ScrollView>
+    </AppScreen>
   );
 }
 
@@ -669,13 +499,15 @@ function StatBadge({
   label: string;
   value: string;
 }) {
+  const { theme } = useTheme();
+  const c = theme.colors;
   return (
     <View
       style={{
-        backgroundColor: "#0f172a",
+        backgroundColor: c.surface,
         borderWidth: 1,
-        borderColor: "rgba(148,163,184,0.14)",
-        borderRadius: 18,
+        borderColor: c.border,
+        borderRadius: theme.radius.lg,
         paddingHorizontal: 16,
         paddingVertical: 12,
         alignItems: "center",
@@ -684,14 +516,12 @@ function StatBadge({
       }}
     >
       {icon}
-      <Text
-        style={{ color: "#f8fafc", fontWeight: "900", fontSize: 18, marginTop: 2 }}
-      >
+      <AppText style={{ fontSize: 18, fontWeight: "900", marginTop: 2 }}>
         {value}
-      </Text>
-      <Text style={{ color: "#64748b", fontSize: 11, fontWeight: "700" }}>
+      </AppText>
+      <AppText variant="caption" color="textMuted">
         {label}
-      </Text>
+      </AppText>
     </View>
   );
 }
@@ -705,6 +535,8 @@ function QuickAction({
   label: string;
   onPress: () => void;
 }) {
+  const { theme } = useTheme();
+  const c = theme.colors;
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -712,10 +544,10 @@ function QuickAction({
       style={{
         width: "22%",
         aspectRatio: 1,
-        backgroundColor: "#0f172a",
+        backgroundColor: c.surface,
         borderWidth: 1,
-        borderColor: "rgba(148,163,184,0.14)",
-        borderRadius: 20,
+        borderColor: c.border,
+        borderRadius: theme.radius.lg,
         alignItems: "center",
         justifyContent: "center",
         gap: 6,
@@ -724,9 +556,9 @@ function QuickAction({
       }}
     >
       {icon}
-      <Text style={{ color: "#94a3b8", fontSize: 11, fontWeight: "700" }}>
+      <AppText variant="caption" color="textSecondary">
         {label}
-      </Text>
+      </AppText>
     </TouchableOpacity>
   );
 }

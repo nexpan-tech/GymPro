@@ -2,9 +2,6 @@ import axios from 'axios';
 import { API_BASE_URL, TOKEN_KEYS } from '../utils/constants';
 import { getItem, saveItem, clearAll } from '../utils/storage';
 
-// TEMP DIAGNOSTIC: confirm the resolved base URL on device (remove later).
-console.log('MOBILE API_BASE_URL', API_BASE_URL);
-
 /**
  * Minimal, dependency-free event emitter.
  *

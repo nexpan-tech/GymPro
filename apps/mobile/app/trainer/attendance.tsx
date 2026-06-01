@@ -1,20 +1,23 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
   RefreshControl,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { trainerApi } from "../../src/api/trainer.api";
-import AppCard from "../../src/components/AppCard";
 import { useSocket } from "../../src/hooks/useSocket";
 import type { AssignedMember } from "../../src/types/trainer.types";
 import type { Attendance } from "../../src/types/attendance.types";
 import { api } from "../../src/api/client";
+import { useTheme, type Theme } from "../../src/theme";
+import { AppAvatar, AppCard, AppEmptyState, AppText } from "../../src/components/ui";
 
 function todayLabel(): string {
   return new Date().toLocaleDateString(undefined, {
@@ -26,10 +29,7 @@ function todayLabel(): string {
 }
 
 function formatTime(isoString: string): string {
-  return new Date(isoString).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return new Date(isoString).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 interface MemberRow {
@@ -39,6 +39,9 @@ interface MemberRow {
 
 export default function TrainerAttendanceScreen() {
   const { on } = useSocket();
+  const { theme } = useTheme();
+  const c = theme.colors;
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const [rows, setRows] = useState<MemberRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,9 +60,7 @@ export default function TrainerAttendanceScreen() {
         if (a.memberId) attendanceMap.set(a.memberId, a);
       }
 
-      const mapped: MemberRow[] = (
-        Array.isArray(members) ? members : []
-      ).map((m) => ({
+      const mapped: MemberRow[] = (Array.isArray(members) ? members : []).map((m) => ({
         member: m,
         attendance: attendanceMap.get(m.id) ?? null,
       }));
@@ -77,6 +78,7 @@ export default function TrainerAttendanceScreen() {
     void loadData();
   }, [loadData]);
 
+  // Realtime refresh on backend attendance updates.
   useEffect(() => {
     on("attendance:update", () => {
       void loadData();
@@ -89,43 +91,36 @@ export default function TrainerAttendanceScreen() {
   }
 
   async function handleManualCheckIn(member: AssignedMember) {
-    Alert.alert(
-      "Manual Check-in",
-      `Mark attendance for ${member.user?.name ?? "this member"}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Check In",
-          onPress: async () => {
-            setCheckingIn(member.id);
-            try {
-              const today = new Date().toISOString().split("T")[0];
-              await api.post("/attendance", {
-                memberId: member.id,
-                gymId: member.gymId,
-                date: today,
-                checkInAt: new Date().toISOString(),
-                method: "MANUAL",
-              });
-              await loadData();
-            } catch (error) {
-              Alert.alert(
-                "Check-in failed",
-                "Could not record attendance. Please try again."
-              );
-            } finally {
-              setCheckingIn(null);
-            }
-          },
+    Alert.alert("Manual Check-in", `Mark attendance for ${member.user?.name ?? "this member"}?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Check In",
+        onPress: async () => {
+          setCheckingIn(member.id);
+          try {
+            const today = new Date().toISOString().split("T")[0];
+            await api.post("/attendance", {
+              memberId: member.id,
+              gymId: member.gymId,
+              date: today,
+              checkInAt: new Date().toISOString(),
+              method: "MANUAL",
+            });
+            await loadData();
+          } catch {
+            Alert.alert("Check-in failed", "Could not record attendance. Please try again.");
+          } finally {
+            setCheckingIn(null);
+          }
         },
-      ]
-    );
+      },
+    ]);
   }
 
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color="#6366f1" />
+        <ActivityIndicator color={c.primary} />
       </View>
     );
   }
@@ -133,22 +128,16 @@ export default function TrainerAttendanceScreen() {
   const checkedInCount = rows.filter((r) => r.attendance !== null).length;
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView edges={["top"]} style={styles.screen}>
       <View style={styles.headerArea}>
-        <Text style={styles.title}>Today's Attendance</Text>
-        <Text style={styles.dateLabel}>{todayLabel()}</Text>
-        <View style={styles.summaryRow}>
-          <SummaryBadge
-            label="Checked In"
-            value={checkedInCount}
-            color="#22c55e"
-          />
-          <SummaryBadge
-            label="Not Yet"
-            value={rows.length - checkedInCount}
-            color="#f59e0b"
-          />
-          <SummaryBadge label="Total" value={rows.length} color="#6366f1" />
+        <AppText variant="title">Today's Attendance</AppText>
+        <AppText variant="caption" color="textSecondary" style={{ marginTop: 4, marginBottom: 16 }}>
+          {todayLabel()}
+        </AppText>
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <SummaryBadge label="Checked In" value={checkedInCount} color={c.success} />
+          <SummaryBadge label="Not Yet" value={rows.length - checkedInCount} color={c.warning} />
+          <SummaryBadge label="Total" value={rows.length} color={c.primary} />
         </View>
       </View>
 
@@ -157,16 +146,14 @@ export default function TrainerAttendanceScreen() {
         keyExtractor={(item) => item.member.id}
         contentContainerStyle={styles.list}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={c.primary} />
         }
         ListEmptyComponent={
-          <View style={styles.emptyWrap}>
-            <Text style={styles.emptyEmoji}>📅</Text>
-            <Text style={styles.emptyTitle}>No members assigned</Text>
-            <Text style={styles.emptySubtitle}>
-              Once members are assigned to you, their attendance will appear here.
-            </Text>
-          </View>
+          <AppEmptyState
+            emoji="📅"
+            title="No members assigned"
+            description="Once members are assigned to you, their attendance will appear here."
+          />
         }
         renderItem={({ item }) => (
           <AttendanceRow
@@ -176,7 +163,7 @@ export default function TrainerAttendanceScreen() {
           />
         )}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -189,36 +176,32 @@ function AttendanceRow({
   checkingIn: boolean;
   onCheckIn: () => void;
 }) {
+  const { theme } = useTheme();
+  const c = theme.colors;
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const name = row.member.user?.name ?? "Member";
-  const initials = name
-    .split(" ")
-    .map((p) => p[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
   const checked = row.attendance !== null;
 
   return (
     <AppCard style={{ marginBottom: 12 }}>
-      <View style={styles.rowLayout}>
-        <View style={[styles.avatar, checked && styles.avatarChecked]}>
-          <Text style={styles.initials}>{initials}</Text>
-        </View>
-
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+        <AppAvatar name={name} size={46} />
         <View style={{ flex: 1 }}>
-          <Text style={styles.memberName}>{name}</Text>
+          <AppText variant="bodyStrong">{name}</AppText>
           {checked ? (
-            <Text style={styles.checkedTime}>
+            <AppText variant="caption" style={{ color: c.success, marginTop: 2 }}>
               {formatTime(row.attendance!.checkInAt)}
-            </Text>
+            </AppText>
           ) : (
-            <Text style={styles.notYetText}>Not checked in yet</Text>
+            <AppText variant="caption" color="textMuted" style={{ marginTop: 2 }}>
+              Not checked in yet
+            </AppText>
           )}
         </View>
 
         {checked ? (
           <View style={styles.checkedBadge}>
-            <Text style={styles.checkedBadgeText}>✓ In</Text>
+            <Text style={{ color: c.success, fontWeight: "900", fontSize: 13 }}>✓ In</Text>
           </View>
         ) : (
           <TouchableOpacity
@@ -230,7 +213,7 @@ function AttendanceRow({
             {checkingIn ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={styles.checkInBtnText}>Check In</Text>
+              <Text style={{ color: c.onPrimary, fontWeight: "900", fontSize: 13 }}>Check In</Text>
             )}
           </TouchableOpacity>
         )}
@@ -239,153 +222,49 @@ function AttendanceRow({
   );
 }
 
-function SummaryBadge({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: number;
-  color: string;
-}) {
+function SummaryBadge({ label, value, color }: { label: string; value: number; color: string }) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   return (
-    <View style={[styles.summaryCard, { borderColor: color + "44" }]}>
-      <Text style={[styles.summaryValue, { color }]}>{value}</Text>
-      <Text style={styles.summaryLabel}>{label}</Text>
+    <View style={[styles.summaryCard, { borderColor: color }]}>
+      <Text style={{ fontSize: 22, fontWeight: "900", color }}>{value}</Text>
+      <AppText variant="caption" color="textMuted" style={{ marginTop: 2 }}>
+        {label}
+      </AppText>
     </View>
   );
 }
 
-const styles = {
-  screen: { flex: 1, backgroundColor: "#020617" },
-  center: {
-    flex: 1,
-    backgroundColor: "#020617",
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  headerArea: {
-    paddingHorizontal: 20,
-    paddingTop: 64,
-    paddingBottom: 16,
-  },
-  title: {
-    color: "#f8fafc",
-    fontSize: 30,
-    fontWeight: "900" as const,
-  },
-  dateLabel: {
-    color: "#94a3b8",
-    marginTop: 4,
-    marginBottom: 16,
-    fontSize: 13,
-  },
-  summaryRow: {
-    flexDirection: "row" as const,
-    gap: 10,
-  },
-  summaryCard: {
-    flex: 1,
-    backgroundColor: "#0f172a",
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 12,
-    alignItems: "center" as const,
-  },
-  summaryValue: {
-    fontSize: 22,
-    fontWeight: "900" as const,
-  },
-  summaryLabel: {
-    color: "#64748b",
-    fontSize: 11,
-    fontWeight: "700" as const,
-    marginTop: 2,
-  },
-  list: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 40,
-  },
-  rowLayout: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 12,
-  },
-  avatar: {
-    height: 46,
-    width: 46,
-    borderRadius: 16,
-    backgroundColor: "#1e293b",
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  avatarChecked: {
-    backgroundColor: "#14532d",
-  },
-  initials: {
-    color: "#94a3b8",
-    fontSize: 15,
-    fontWeight: "900" as const,
-  },
-  memberName: {
-    color: "#f8fafc",
-    fontSize: 15,
-    fontWeight: "900" as const,
-  },
-  checkedTime: {
-    color: "#4ade80",
-    fontSize: 12,
-    marginTop: 2,
-    fontWeight: "700" as const,
-  },
-  notYetText: {
-    color: "#64748b",
-    fontSize: 12,
-    marginTop: 2,
-  },
-  checkedBadge: {
-    backgroundColor: "rgba(34,197,94,0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(34,197,94,0.3)",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  checkedBadgeText: {
-    color: "#4ade80",
-    fontWeight: "900" as const,
-    fontSize: 13,
-  },
-  checkInBtn: {
-    backgroundColor: "#4f46e5",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    minWidth: 80,
-    alignItems: "center" as const,
-  },
-  checkInBtnText: {
-    color: "#fff",
-    fontWeight: "900" as const,
-    fontSize: 13,
-  },
-  emptyWrap: {
-    flex: 1,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    paddingTop: 60,
-    gap: 10,
-  },
-  emptyEmoji: { fontSize: 48, marginBottom: 8 },
-  emptyTitle: {
-    color: "#f8fafc",
-    fontSize: 18,
-    fontWeight: "900" as const,
-  },
-  emptySubtitle: {
-    color: "#94a3b8",
-    textAlign: "center" as const,
-    lineHeight: 22,
-  },
-};
+function makeStyles(theme: Theme) {
+  const c = theme.colors;
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: c.background },
+    center: { flex: 1, backgroundColor: c.background, alignItems: "center", justifyContent: "center" },
+    headerArea: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 },
+    summaryCard: {
+      flex: 1,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderRadius: theme.radius.md,
+      padding: 12,
+      alignItems: "center",
+    },
+    list: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40 },
+    checkedBadge: {
+      backgroundColor: c.successSoft,
+      borderWidth: 1,
+      borderColor: c.success,
+      borderRadius: theme.radius.sm,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+    },
+    checkInBtn: {
+      backgroundColor: c.primary,
+      borderRadius: theme.radius.sm,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      minWidth: 80,
+      alignItems: "center",
+    },
+  });
+}

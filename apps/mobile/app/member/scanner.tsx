@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  ActivityIndicator,
 } from "react-native";
 import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
 import { LinearGradient } from "expo-linear-gradient";
@@ -13,10 +13,14 @@ import { router } from "expo-router";
 import { QrCode, ArrowLeft, CircleCheck } from "lucide-react-native";
 
 import { attendanceService } from "../../src/services/attendance.service";
+import { useTheme } from "../../src/theme";
+import { AppButton, AppScreen, AppText } from "../../src/components/ui";
 
 export default function ScannerPage() {
-  const [permission, requestPermission] = useCameraPermissions();
+  const { theme } = useTheme();
+  const c = theme.colors;
 
+  const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -33,15 +37,7 @@ export default function ScannerPage() {
       setScanned(true);
       setLoading(true);
 
-      /**
-       * QR FORMAT
-       * ----------
-       * gym:<gymId>
-       *
-       * Example:
-       * gym:cmparldim0000ugempycpqy5j
-       */
-
+      // QR FORMAT: gym:<gymId>
       if (!data.startsWith("gym:")) {
         Alert.alert("Invalid QR", "This QR code is not valid.");
         setScanned(false);
@@ -50,26 +46,16 @@ export default function ScannerPage() {
       }
 
       const gymId = data.replace("gym:", "");
-
       await attendanceService.scan(gymId);
 
-      Alert.alert(
-        "Check-in Successful",
-        "Your attendance has been marked.",
-        [
-          {
-            text: "OK",
-            onPress: () => router.replace("/member/dashboard"),
-          },
-        ]
-      );
+      Alert.alert("Check-in Successful", "Your attendance has been marked.", [
+        { text: "OK", onPress: () => router.replace("/member/dashboard") },
+      ]);
     } catch (error: any) {
       Alert.alert(
         "Check-in Failed",
-        error?.response?.data?.message ||
-          "Unable to mark attendance."
+        error?.response?.data?.message || "Unable to mark attendance.",
       );
-
       setScanned(false);
     } finally {
       setLoading(false);
@@ -78,55 +64,51 @@ export default function ScannerPage() {
 
   if (!permission) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator color="#818cf8" />
+      <View style={[styles.centered, { backgroundColor: c.background }]}>
+        <ActivityIndicator color={c.primary} />
       </View>
     );
   }
 
+  // Themed permission screen
   if (!permission.granted) {
     return (
-      <LinearGradient
-        colors={["#020617", "#0f172a"]}
-        style={styles.permissionContainer}
-      >
-        <QrCode color="#818cf8" size={72} />
-
-        <Text style={styles.permissionTitle}>
-          Camera Permission Required
-        </Text>
-
-        <Text style={styles.permissionText}>
-          Enable camera access to scan gym QR codes.
-        </Text>
-
-        <TouchableOpacity
-          style={styles.permissionButton}
-          onPress={() => requestPermission()}
+      <AppScreen scroll={false} contentStyle={{ justifyContent: "center", alignItems: "center", gap: 16 }}>
+        <View
+          style={{
+            height: 96,
+            width: 96,
+            borderRadius: theme.radius.xl,
+            backgroundColor: c.primarySoft,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
         >
-          <Text style={styles.permissionButtonText}>
-            Allow Camera
-          </Text>
-        </TouchableOpacity>
-      </LinearGradient>
+          <QrCode color={c.primary} size={56} />
+        </View>
+        <AppText variant="heading" style={{ textAlign: "center" }}>
+          Camera Permission Required
+        </AppText>
+        <AppText variant="body" color="textSecondary" style={{ textAlign: "center" }}>
+          Enable camera access to scan gym QR codes.
+        </AppText>
+        <AppButton onPress={() => void requestPermission()} style={{ marginTop: 8 }}>
+          Allow Camera
+        </AppButton>
+      </AppScreen>
     );
   }
 
+  // Camera viewfinder — intentionally dark overlay in both themes (standard QR UX).
   return (
     <View style={styles.container}>
       <CameraView
         style={StyleSheet.absoluteFillObject}
         facing={"back" as CameraType}
-        barcodeScannerSettings={{
-          barcodeTypes: ["qr"],
-        }}
+        barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
         onBarcodeScanned={
-            scanned
-                ? undefined
-                : (event: { data: string }) => {
-                    void handleScan(event.data);
-                }
-            }
+          scanned ? undefined : (event: { data: string }) => void handleScan(event.data)
+        }
       />
 
       <LinearGradient
@@ -135,53 +117,34 @@ export default function ScannerPage() {
       />
 
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <ArrowLeft color="#fff" size={22} />
         </TouchableOpacity>
-
         <Text style={styles.headerTitle}>Scan Gym QR</Text>
-
         <View style={{ width: 44 }} />
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.title}>
-          Place the QR inside the frame
-        </Text>
-
-        <Text style={styles.subtitle}>
-          Scan the gym QR code to mark attendance
-        </Text>
+        <Text style={styles.title}>Place the QR inside the frame</Text>
+        <Text style={styles.subtitle}>Scan the gym QR code to mark attendance</Text>
 
         <View style={styles.scanFrameWrapper}>
-          <View style={styles.scanFrame} />
-
-          <View style={styles.cornerTopLeft} />
-          <View style={styles.cornerTopRight} />
-          <View style={styles.cornerBottomLeft} />
-          <View style={styles.cornerBottomRight} />
+          <View style={[styles.corner, styles.cornerTL, { borderColor: c.primary }]} />
+          <View style={[styles.corner, styles.cornerTR, { borderColor: c.primary }]} />
+          <View style={[styles.corner, styles.cornerBL, { borderColor: c.primary }]} />
+          <View style={[styles.corner, styles.cornerBR, { borderColor: c.primary }]} />
         </View>
 
         {loading && (
-          <View style={styles.loadingBox}>
-            <ActivityIndicator color="#818cf8" />
-
-            <Text style={styles.loadingText}>
-              Marking attendance...
-            </Text>
+          <View style={styles.statusBox}>
+            <ActivityIndicator color="#fff" />
+            <Text style={styles.statusText}>Marking attendance...</Text>
           </View>
         )}
-
         {scanned && !loading && (
-          <View style={styles.successBox}>
+          <View style={styles.statusBox}>
             <CircleCheck color="#10b981" size={20} />
-
-            <Text style={styles.successText}>
-              QR scanned successfully
-            </Text>
+            <Text style={styles.statusText}>QR scanned successfully</Text>
           </View>
         )}
       </View>
@@ -190,56 +153,12 @@ export default function ScannerPage() {
 }
 
 const FRAME_SIZE = 260;
+const CORNER = 36;
+const THICK = 4;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#020617",
-  },
-
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#020617",
-  },
-
-  permissionContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 28,
-  },
-
-  permissionTitle: {
-    color: "#fff",
-    fontSize: 28,
-    fontWeight: "800",
-    marginTop: 24,
-  },
-
-  permissionText: {
-    color: "#94a3b8",
-    fontSize: 16,
-    textAlign: "center",
-    marginTop: 12,
-    lineHeight: 24,
-  },
-
-  permissionButton: {
-    marginTop: 32,
-    backgroundColor: "#6366f1",
-    paddingHorizontal: 28,
-    paddingVertical: 16,
-    borderRadius: 18,
-  },
-
-  permissionButtonText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 16,
-  },
-
+  container: { flex: 1, backgroundColor: "#020617" },
+  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: {
     position: "absolute",
     top: 60,
@@ -250,7 +169,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-
   backButton: {
     width: 44,
     height: 44,
@@ -261,131 +179,25 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
   },
-
-  headerTitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "800",
-  },
-
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 24,
-  },
-
-  title: {
-    color: "#fff",
-    fontSize: 28,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-
-  subtitle: {
-    color: "#94a3b8",
-    fontSize: 15,
-    textAlign: "center",
-    marginTop: 12,
-    lineHeight: 22,
-  },
-
-  scanFrameWrapper: {
-    marginTop: 48,
-    width: FRAME_SIZE,
-    height: FRAME_SIZE,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  scanFrame: {
-    width: FRAME_SIZE,
-    height: FRAME_SIZE,
-    borderRadius: 32,
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
-  },
-
-  cornerTopLeft: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: 48,
-    height: 48,
-    borderTopWidth: 6,
-    borderLeftWidth: 6,
-    borderColor: "#818cf8",
-    borderTopLeftRadius: 20,
-  },
-
-  cornerTopRight: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    width: 48,
-    height: 48,
-    borderTopWidth: 6,
-    borderRightWidth: 6,
-    borderColor: "#818cf8",
-    borderTopRightRadius: 20,
-  },
-
-  cornerBottomLeft: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    width: 48,
-    height: 48,
-    borderBottomWidth: 6,
-    borderLeftWidth: 6,
-    borderColor: "#818cf8",
-    borderBottomLeftRadius: 20,
-  },
-
-  cornerBottomRight: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: 48,
-    height: 48,
-    borderBottomWidth: 6,
-    borderRightWidth: 6,
-    borderColor: "#818cf8",
-    borderBottomRightRadius: 20,
-  },
-
-  loadingBox: {
-    marginTop: 36,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: "rgba(15,23,42,0.88)",
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    borderRadius: 18,
-  },
-
-  loadingText: {
-    color: "#fff",
-    fontWeight: "700",
-  },
-
-  successBox: {
-    marginTop: 36,
+  headerTitle: { color: "#fff", fontSize: 18, fontWeight: "800" },
+  content: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 24 },
+  title: { color: "#fff", fontSize: 26, fontWeight: "800", textAlign: "center" },
+  subtitle: { color: "#94a3b8", fontSize: 15, textAlign: "center", marginTop: 12, lineHeight: 22 },
+  scanFrameWrapper: { marginTop: 48, width: FRAME_SIZE, height: FRAME_SIZE },
+  corner: { position: "absolute", width: CORNER, height: CORNER },
+  cornerTL: { top: 0, left: 0, borderTopWidth: THICK, borderLeftWidth: THICK, borderTopLeftRadius: 12 },
+  cornerTR: { top: 0, right: 0, borderTopWidth: THICK, borderRightWidth: THICK, borderTopRightRadius: 12 },
+  cornerBL: { bottom: 0, left: 0, borderBottomWidth: THICK, borderLeftWidth: THICK, borderBottomLeftRadius: 12 },
+  cornerBR: { bottom: 0, right: 0, borderBottomWidth: THICK, borderRightWidth: THICK, borderBottomRightRadius: 12 },
+  statusBox: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: "rgba(16,185,129,0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(16,185,129,0.3)",
+    marginTop: 40,
+    backgroundColor: "rgba(15,23,42,0.8)",
     paddingHorizontal: 18,
-    paddingVertical: 14,
-    borderRadius: 18,
+    paddingVertical: 12,
+    borderRadius: 14,
   },
-
-  successText: {
-    color: "#10b981",
-    fontWeight: "700",
-  },
+  statusText: { color: "#fff", fontSize: 14, fontWeight: "700" },
 });
