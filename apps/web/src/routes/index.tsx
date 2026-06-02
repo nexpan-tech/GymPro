@@ -16,6 +16,7 @@ import TrainerLayout from "@/layouts/TrainerLayout";
 import ProfilePage from "@/pages/shared/ProfilePage";
 import NotificationsPage from "@/pages/shared/NotificationsPage";
 import NotFoundPage from "@/pages/shared/NotFoundPage";
+import AuditLogsPage from "@/pages/shared/AuditLogsPage";
 
 // Super Admin
 import SuperAdminDashboardPage from "@/pages/super-admin/DashboardPage";
@@ -28,6 +29,8 @@ import SuperAdminSettingsPage from "@/pages/super-admin/SettingsPage";
 // Gym Admin
 import GymAdminDashboardPage from "@/pages/gym-admin/DashboardPage";
 import GymAdminAnalyticsPage from "@/pages/gym-admin/AnalyticsPage";
+import GymAdminUsersPage from "@/pages/gym-admin/UsersPage";
+import GymAdminBranchesPage from "@/pages/gym-admin/BranchesPage";
 import GymAdminMembersPage from "@/pages/gym-admin/MembersPage";
 import GymAdminMembershipsPage from "@/pages/gym-admin/MembershipsPage";
 import GymAdminAttendancePage from "@/pages/gym-admin/AttendancePage";
@@ -84,6 +87,7 @@ const router = createBrowserRouter([
           { path: "gyms", element: <SuperAdminGymsPage /> },
           { path: "plans", element: <SuperAdminPlansPage /> },
           { path: "billing", element: <SuperAdminBillingPage /> },
+          { path: "audit", element: <AuditLogsPage /> },
           { path: "settings", element: <SuperAdminSettingsPage /> },
         ],
       },
@@ -105,6 +109,8 @@ const router = createBrowserRouter([
           { index: true, element: <GymAdminDashboardPage /> },
           { path: "dashboard", element: <GymAdminDashboardPage /> },
           { path: "analytics", element: <GymAdminAnalyticsPage /> },
+          { path: "users", element: <GymAdminUsersPage /> },
+          { path: "branches", element: <GymAdminBranchesPage /> },
           { path: "members", element: <GymAdminMembersPage /> },
           { path: "memberships", element: <GymAdminMembershipsPage /> },
           { path: "attendance", element: <GymAdminAttendancePage /> },
@@ -112,6 +118,7 @@ const router = createBrowserRouter([
           { path: "trainers", element: <GymAdminTrainersPage /> },
           { path: "workout-plans", element: <GymAdminWorkoutsPage /> },
           { path: "diet-plans", element: <GymAdminDietsPage /> },
+          { path: "audit", element: <AuditLogsPage /> },
           { path: "notifications", element: <GymAdminNotificationsPage /> },
           { path: "settings", element: <GymAdminSettingsPage /> },
         ],

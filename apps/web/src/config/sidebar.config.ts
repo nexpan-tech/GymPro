@@ -13,6 +13,8 @@ import {
   FileText,
   UserCheck,
   TrendingUp,
+  ScrollText,
+  MapPin,
 } from "lucide-react";
 
 export interface SidebarItem {
@@ -35,11 +37,14 @@ export const sidebarConfig: SidebarConfig = {
     { label: "Plans", path: "/super-admin/plans", icon: CreditCard },
     { label: "Analytics", path: "/super-admin/analytics", icon: BarChart3 },
     { label: "Billing", path: "/super-admin/billing", icon: FileText },
+    { label: "Audit Logs", path: "/super-admin/audit", icon: ScrollText },
     { label: "Settings", path: "/super-admin/settings", icon: Settings },
   ],
 
   gym_admin: [
     { label: "Dashboard", path: "/gym-admin/dashboard", icon: LayoutDashboard },
+    { label: "Users", path: "/gym-admin/users", icon: UserCheck },
+    { label: "Branches", path: "/gym-admin/branches", icon: MapPin },
     { label: "Members", path: "/gym-admin/members", icon: Users },
     { label: "Memberships", path: "/gym-admin/memberships", icon: CreditCard },
     { label: "Attendance", path: "/gym-admin/attendance", icon: CalendarCheck },
@@ -48,6 +53,7 @@ export const sidebarConfig: SidebarConfig = {
     { label: "Workout Plans", path: "/gym-admin/workout-plans", icon: Dumbbell },
     { label: "Diet Plans", path: "/gym-admin/diet-plans", icon: ClipboardList },
     { label: "Analytics", path: "/gym-admin/analytics", icon: BarChart3 },
+    { label: "Audit Logs", path: "/gym-admin/audit", icon: ScrollText },
     { label: "Notifications", path: "/gym-admin/notifications", icon: Bell },
     { label: "Settings", path: "/gym-admin/settings", icon: Settings },
   ],

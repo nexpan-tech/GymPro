@@ -26,6 +26,7 @@ export const authMiddleware: RequestHandler = (
       email: decoded.email,
       role: decoded.role,
       gymId: decoded.gymId,
+      branchId: decoded.branchId ?? null,
     };
 
     next();

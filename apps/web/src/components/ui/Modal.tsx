@@ -1,7 +1,6 @@
 import {
   type ReactNode,
   useEffect,
-  useCallback,
   useRef,
 } from "react";
 import { createPortal } from "react-dom";
@@ -49,33 +48,42 @@ export default function Modal({
 }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  // Keyboard — Escape closes the modal
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    },
-    [onClose]
-  );
+  // Keep the latest onClose in a ref so the open/close effect can stay
+  // dependency-stable. Without this, a new `onClose` identity on every parent
+  // render would re-run the effect below and steal focus on every keystroke.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
-  // Prevent body scroll when open
+  // Body-scroll lock, Escape handling, and one-time focus trap.
+  // Depends ONLY on `open` so it runs when the modal opens/closes — never on
+  // every render — which is what keeps inputs focused while typing.
   useEffect(() => {
     if (!open) return;
 
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCloseRef.current();
+    };
     document.addEventListener("keydown", handleKeyDown);
 
-    // Focus trap: move focus into dialog
-    const firstFocusable = dialogRef.current?.querySelector<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    firstFocusable?.focus();
+    // Focus the first focusable element after paint, once, on open.
+    const timeout = window.setTimeout(() => {
+      const firstFocusable = dialogRef.current?.querySelector<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      firstFocusable?.focus();
+    }, 0);
 
     return () => {
+      window.clearTimeout(timeout);
       document.body.style.overflow = prev;
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open, handleKeyDown]);
+  }, [open]);
 
   if (!open) return null;
 

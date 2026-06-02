@@ -11,6 +11,7 @@ export type JwtPayload = {
   email: string;
   role: Role;
   gymId: string | null;
+  branchId: string | null;
 };
 
 export const generateAccessToken = (payload: JwtPayload): string => {

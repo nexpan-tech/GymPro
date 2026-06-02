@@ -14,6 +14,15 @@ interface AuditInput {
   userAgent?: string | null;
 }
 
+/**
+ * Persist a semantic audit log entry.
+ *
+ * The AuditLog model stores the entity name in `entityType` and keeps the
+ * before/after snapshots inside the `metadata` JSON column. Callers still pass
+ * the friendlier `entity` / `oldData` / `newData` shape; we map it here so the
+ * write actually matches the Prisma schema (previously these field names did
+ * not exist on the model, so every audit write silently failed at runtime).
+ */
 export async function createAuditLog(input: AuditInput) {
   try {
     await prisma.auditLog.create({
@@ -21,10 +30,16 @@ export async function createAuditLog(input: AuditInput) {
         gymId: input.gymId ?? null,
         userId: input.userId ?? null,
         action: input.action,
-        entity: input.entity,
+        entityType: input.entity,
         entityId: input.entityId ?? null,
-        oldData: input.oldData as object,
-        newData: input.newData as object,
+        metadata: {
+          ...(input.oldData !== undefined
+            ? { oldData: input.oldData as object }
+            : {}),
+          ...(input.newData !== undefined
+            ? { newData: input.newData as object }
+            : {}),
+        },
         ipAddress: input.ipAddress ?? null,
         userAgent: input.userAgent ?? null,
       },

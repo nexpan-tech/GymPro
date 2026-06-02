@@ -46,6 +46,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       gymId: user.gymId,
+      branchId: user.branchId,
     });
 
     const refreshToken = generateRefreshToken();
@@ -86,6 +87,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       gymId: user.gymId,
+      branchId: user.branchId,
     });
 
     const refreshToken = generateRefreshToken();
@@ -131,6 +133,7 @@ export class AuthService {
       email: session.user.email,
       role: session.user.role,
       gymId: session.user.gymId,
+      branchId: session.user.branchId,
     });
 
     return {

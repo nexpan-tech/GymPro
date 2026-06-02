@@ -31,6 +31,7 @@ const SUPER_ADMIN_NAV: NavItem[] = [
 const ADMIN_NAV: NavItem[] = [
   // Core
   { label: "Dashboard",    path: "/gym-admin/dashboard",    icon: "LayoutDashboard", group: "Core" },
+  { label: "Users",        path: "/gym-admin/users",        icon: "UserCheck",       group: "Core" },
   { label: "Members",      path: "/gym-admin/members",      icon: "Users",           group: "Core" },
   { label: "Trainers",     path: "/gym-admin/trainers",     icon: "UserCheck",       group: "Core" },
   { label: "Attendance",   path: "/gym-admin/attendance",   icon: "CalendarCheck",   group: "Core" },
@@ -45,6 +46,7 @@ const ADMIN_NAV: NavItem[] = [
 
   // Communication
   { label: "Communication", path: "/gym-admin/notifications", icon: "Bell",          group: "Communication" },
+  { label: "Audit Logs",    path: "/gym-admin/audit",         icon: "ScrollText",    group: "Communication" },
 
   // Multi-branch
   { label: "Branches",    path: "/gym-admin/branches",     icon: "GitBranch",       group: "Multi-branch" },

@@ -10,6 +10,16 @@ type UserRole =
   | "TRAINER"
   | "MEMBER";
 
+// Roles a gym admin is permitted to provision inside their own gym. This
+// prevents privilege escalation (e.g. a gym admin minting a SUPER_ADMIN or a
+// cross-gym manager role) — the create route is already gym-scoped via gymId.
+const GYM_ASSIGNABLE_ROLES: ReadonlyArray<CreateUserInput["role"]> = [
+  "ADMIN",
+  "RECEPTIONIST",
+  "TRAINER",
+  "MEMBER",
+];
+
 const safeUserSelect = {
   id: true,
   name: true,
@@ -25,6 +35,13 @@ export const createUser = async (
   gymId: string,
   payload: CreateUserInput
 ) => {
+  if (!GYM_ASSIGNABLE_ROLES.includes(payload.role)) {
+    throw new AppError(
+      `Gym admins cannot create users with the role ${payload.role}`,
+      403
+    );
+  }
+
   const existing = await prisma.user.findUnique({
     where: {
       email: payload.email,
@@ -90,6 +107,13 @@ export const updateUser = async (
   id: string,
   payload: UpdateUserInput
 ) => {
+  if (payload.role && !GYM_ASSIGNABLE_ROLES.includes(payload.role)) {
+    throw new AppError(
+      `Gym admins cannot assign the role ${payload.role}`,
+      403
+    );
+  }
+
   const user = await prisma.user.findFirst({
     where: {
       id,

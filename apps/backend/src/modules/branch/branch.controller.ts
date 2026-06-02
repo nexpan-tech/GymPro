@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
+import { AuditAction } from "@prisma/client";
 import { BranchService } from "./branch.service";
+import { createAuditLog } from "../../utils/audit";
 
 function requireAuth(req: Request, res: Response) {
   if (!req.user) {
@@ -16,6 +18,17 @@ export class BranchController {
     if (!user) return;
 
     const data = await BranchService.create(user, req.body);
+
+    await createAuditLog({
+      gymId: user.gymId,
+      userId: user.id,
+      action: AuditAction.CREATE,
+      entity: "Branch",
+      entityId: (data as { id?: string }).id ?? null,
+      newData: data,
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"] || null,
+    });
 
     return res.status(201).json({
       success: true,

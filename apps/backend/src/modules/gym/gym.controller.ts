@@ -1,11 +1,24 @@
 import { Request, Response } from "express";
+import { AuditAction } from "@prisma/client";
 import { GymService } from "./gym.service";
+import { createAuditLog } from "../../utils/audit";
 import { createGymSchema, updateGymSchema } from "./gym.validation";
 
 export class GymController {
   static async create(req: Request, res: Response) {
     const data = createGymSchema.parse(req.body);
     const result = await GymService.create(data);
+
+    await createAuditLog({
+      gymId: result.gym.id,
+      userId: req.user?.id ?? null,
+      action: AuditAction.CREATE,
+      entity: "Gym",
+      entityId: result.gym.id,
+      newData: { gym: result.gym, adminCreated: Boolean(result.admin) },
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"] || null,
+    });
 
     return res.status(201).json({
       success: true,
