@@ -62,9 +62,11 @@ export const memberApi = {
   },
 
   getActiveMembership: async (): Promise<MembershipInfo | null> => {
-    const res = await api.get("/memberships", { params: { status: "ACTIVE" } });
-    const memberships = unwrap<MembershipInfo[]>(res);
-    return Array.isArray(memberships) ? memberships[0] ?? null : null;
+    // Member-accessible endpoint; returns { current, history }.
+    const res = await api.get("/memberships/my");
+    const data = unwrap<{ current: MembershipInfo | null } | MembershipInfo[]>(res);
+    if (Array.isArray(data)) return data[0] ?? null;
+    return data?.current ?? null;
   },
 
   getMyWorkoutPlan: async (): Promise<WorkoutPlan | null> => {

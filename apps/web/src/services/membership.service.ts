@@ -1,137 +1,164 @@
 import { api } from '@/lib/api'
 import type { ApiResponse } from '@/lib/api'
-import type { Membership } from '@/types/membership.types'
 
-export interface MembershipListParams {
-  gymId?: string
-  memberId?: string
-  status?: 'active' | 'expired' | 'paused'
-  page?: number
-  limit?: number
+// ─── Types (match the Stage 2 backend contract) ──────────────────────────────
+
+export type MembershipStatus = 'ACTIVE' | 'EXPIRED' | 'FROZEN' | 'CANCELLED'
+export type PaymentStatus = 'PAID' | 'PENDING' | 'OVERDUE'
+
+export interface MembershipPlan {
+  id: string
+  gymId: string
+  branchId?: string | null
+  name: string
+  description?: string | null
+  durationDays: number
+  price: number
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface MembershipRecord {
+  id: string
+  gymId: string
+  memberId: string
+  planId?: string | null
+  planRef?: MembershipPlan | null
+  plan?: string | null
+  startDate: string
+  endDate: string
+  amount: number
+  paymentStatus: PaymentStatus
+  status: MembershipStatus
+  effectiveStatus: MembershipStatus
+  daysRemaining: number
+  freezeStartDate?: string | null
+  freezeEndDate?: string | null
+  extensionDays: number
+  renewedFromId?: string | null
+  createdAt: string
+  member?: { id: string; user?: { name: string; email: string } }
+}
+
+export interface MembershipAnalytics {
+  totalMembers: number
+  activeMembers: number
+  inactiveMembers: number
+  expiredMembers: number
+  activeMemberships: number
+  expiredMemberships: number
+  frozenMemberships: number
+  renewalsDueThisWeek: number
+  renewalsDueThisMonth: number
+  branchCounts: { branchId: string; branchName: string; memberCount: number }[]
 }
 
 export interface CreateMembershipPayload {
-  gymId: string
   memberId: string
-  planName: string
-  startDate: string
-  endDate: string
-  price: number
-  status?: 'active' | 'expired' | 'paused'
-}
-
-export interface UpdateMembershipPayload {
-  planName?: string
+  planId?: string
+  plan?: 'MONTHLY' | 'QUARTERLY' | 'HALF_YEARLY' | 'YEARLY'
   startDate?: string
-  endDate?: string
-  price?: number
-  status?: 'active' | 'expired' | 'paused'
+  amount?: number
+  paymentStatus?: PaymentStatus
 }
 
 export interface RenewMembershipPayload {
+  planId?: string
+  startDate?: string
+  amount?: number
+  paymentStatus?: PaymentStatus
+}
+
+export interface CreatePlanPayload {
+  name: string
+  description?: string
   durationDays: number
   price: number
-  planName?: string
+  branchId?: string
+  isActive?: boolean
 }
 
-export interface MembershipListResponse {
-  memberships: Membership[]
-}
+// ─── Service ─────────────────────────────────────────────────────────────────
 
 export const membershipService = {
-  /**
-   * List membership records with optional filters.
-   * GET /memberships?gymId=&memberId=
-   */
-  list: async (params?: MembershipListParams): Promise<ApiResponse<MembershipListResponse>> => {
-    const res = await api.get<ApiResponse<MembershipListResponse>>('/memberships', { params })
-    return res.data
-  },
-
-  /**
-   * Fetch a single membership by ID.
-   * GET /memberships/:id
-   */
-  getById: async (id: string): Promise<ApiResponse<Membership>> => {
-    const res = await api.get<ApiResponse<Membership>>(`/memberships/${id}`)
-    return res.data
-  },
-
-  /**
-   * Fetch the active membership for a specific member.
-   * GET /memberships?gymId=&memberId=&status=active
-   */
-  getActiveMembership: async (memberId: string, gymId?: string): Promise<ApiResponse<Membership | null>> => {
-    const res = await api.get<ApiResponse<MembershipListResponse>>('/memberships', {
-      params: { memberId, gymId, status: 'active' },
+  // Memberships ---------------------------------------------------------------
+  list: async (params: { currentOnly?: boolean } = {}): Promise<MembershipRecord[]> => {
+    const res = await api.get<ApiResponse<MembershipRecord[]>>('/memberships', {
+      params: params.currentOnly ? { currentOnly: true } : undefined,
     })
-    const memberships = res.data.data?.memberships ?? []
-    return {
-      ...res.data,
-      data: memberships[0] ?? null,
-    }
+    return res.data.data ?? []
   },
 
-  /**
-   * Create a new membership for a member.
-   * POST /memberships
-   */
-  create: async (payload: CreateMembershipPayload): Promise<ApiResponse<Membership>> => {
-    const res = await api.post<ApiResponse<Membership>>('/memberships', payload)
-    return res.data
+  getByMember: async (memberId: string): Promise<MembershipRecord[]> => {
+    const res = await api.get<ApiResponse<MembershipRecord[]>>(`/memberships/member/${memberId}`)
+    return res.data.data ?? []
   },
 
-  /**
-   * Update an existing membership.
-   * PUT /memberships/:id
-   */
-  update: async (id: string, payload: UpdateMembershipPayload): Promise<ApiResponse<Membership>> => {
-    const res = await api.put<ApiResponse<Membership>>(`/memberships/${id}`, payload)
-    return res.data
+  create: async (payload: CreateMembershipPayload): Promise<MembershipRecord> => {
+    const res = await api.post<ApiResponse<MembershipRecord>>('/memberships', payload)
+    return res.data.data
   },
 
-  /**
-   * Renew an existing membership by extending its end date.
-   * POST /memberships/:id/renew
-   */
-  renew: async (id: string, payload: RenewMembershipPayload): Promise<ApiResponse<Membership>> => {
-    const res = await api.post<ApiResponse<Membership>>(`/memberships/${id}/renew`, payload)
-    return res.data
+  renew: async (id: string, payload: RenewMembershipPayload = {}): Promise<MembershipRecord> => {
+    const res = await api.post<ApiResponse<MembershipRecord>>(`/memberships/${id}/renew`, payload)
+    return res.data.data
   },
 
-  /**
-   * Pause an active membership.
-   * PATCH /memberships/:id/pause
-   */
-  pause: async (id: string): Promise<ApiResponse<Membership>> => {
-    const res = await api.patch<ApiResponse<Membership>>(`/memberships/${id}/pause`)
-    return res.data
+  freeze: async (
+    id: string,
+    payload: { freezeStartDate?: string; freezeEndDate?: string } = {}
+  ): Promise<MembershipRecord> => {
+    const res = await api.post<ApiResponse<MembershipRecord>>(`/memberships/${id}/freeze`, payload)
+    return res.data.data
   },
 
-  /**
-   * Resume a paused membership.
-   * PATCH /memberships/:id/resume
-   */
-  resume: async (id: string): Promise<ApiResponse<Membership>> => {
-    const res = await api.patch<ApiResponse<Membership>>(`/memberships/${id}/resume`)
-    return res.data
+  extend: async (id: string, days: number): Promise<MembershipRecord> => {
+    const res = await api.post<ApiResponse<MembershipRecord>>(`/memberships/${id}/extend`, { days })
+    return res.data.data
   },
 
-  /**
-   * Delete a membership record.
-   * DELETE /memberships/:id
-   */
-  remove: async (id: string): Promise<ApiResponse<null>> => {
-    const res = await api.delete<ApiResponse<null>>(`/memberships/${id}`)
-    return res.data
+  remove: async (id: string): Promise<void> => {
+    await api.delete(`/memberships/${id}`)
   },
 
-  /**
-   * Fetch the active membership for the currently logged-in member.
-   * GET /memberships/my/active
-   */
-  getMyActive: async (): Promise<Membership | null> => {
-    const res = await api.get<ApiResponse<Membership>>('/memberships/my/active')
-    return res.data.data ?? null
+  analytics: async (): Promise<MembershipAnalytics> => {
+    const res = await api.get<ApiResponse<MembershipAnalytics>>('/memberships/analytics')
+    return res.data.data
+  },
+
+  // Member self-service -------------------------------------------------------
+  getMy: async (): Promise<{ current: MembershipRecord | null; history: MembershipRecord[] }> => {
+    const res = await api.get<ApiResponse<{ current: MembershipRecord | null; history: MembershipRecord[] }>>(
+      '/memberships/my'
+    )
+    return res.data.data ?? { current: null, history: [] }
+  },
+
+  getMyActive: async (): Promise<MembershipRecord | null> => {
+    const { current } = await membershipService.getMy()
+    return current
+  },
+
+  // Plans ---------------------------------------------------------------------
+  listPlans: async (includeInactive = true): Promise<MembershipPlan[]> => {
+    const res = await api.get<ApiResponse<MembershipPlan[]>>('/memberships/plans', {
+      params: { includeInactive },
+    })
+    return res.data.data ?? []
+  },
+
+  createPlan: async (payload: CreatePlanPayload): Promise<MembershipPlan> => {
+    const res = await api.post<ApiResponse<MembershipPlan>>('/memberships/plans', payload)
+    return res.data.data
+  },
+
+  updatePlan: async (id: string, payload: Partial<CreatePlanPayload>): Promise<MembershipPlan> => {
+    const res = await api.patch<ApiResponse<MembershipPlan>>(`/memberships/plans/${id}`, payload)
+    return res.data.data
+  },
+
+  removePlan: async (id: string): Promise<void> => {
+    await api.delete(`/memberships/plans/${id}`)
   },
 }

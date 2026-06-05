@@ -10,45 +10,30 @@ const router = Router();
 router.use(authMiddleware);
 router.use(gymMiddleware);
 
-/**
- * MEMBER scans QR pasted in gym.
- * Body:
- * {
- *   "gymId": "scanned-gym-id"
- * }
- */
+// ─── Member self-service (QR scan model: body { gymId }) ─────────────────────
+router.post("/scan", roleMiddleware(["MEMBER"]), asyncHandler(AttendanceController.memberQrCheckIn));
+router.post("/checkout", roleMiddleware(["MEMBER"]), asyncHandler(AttendanceController.checkOut));
+router.get("/my", roleMiddleware(["MEMBER"]), asyncHandler(AttendanceController.getMyAttendance));
+
+// ─── Admin / Receptionist dashboards ─────────────────────────────────────────
+router.get("/qr", roleMiddleware(["ADMIN", "RECEPTIONIST"]), asyncHandler(AttendanceController.getQr));
+router.get("/today", roleMiddleware(["ADMIN", "RECEPTIONIST"]), asyncHandler(AttendanceController.getToday));
+router.get("/daily", roleMiddleware(["ADMIN", "RECEPTIONIST"]), asyncHandler(AttendanceController.getDailyAttendance));
+router.get("/live", roleMiddleware(["ADMIN", "RECEPTIONIST"]), asyncHandler(AttendanceController.getLive));
+router.get("/analytics", roleMiddleware(["ADMIN", "RECEPTIONIST"]), asyncHandler(AttendanceController.getAnalytics));
+
+router.post("/manual", roleMiddleware(["ADMIN", "RECEPTIONIST"]), asyncHandler(AttendanceController.manualCheckIn));
 router.post(
-  "/scan",
-  roleMiddleware(["MEMBER"]),
-  asyncHandler(AttendanceController.memberQrCheckIn)
+  "/member/:memberId/checkout",
+  roleMiddleware(["ADMIN", "RECEPTIONIST"]),
+  asyncHandler(AttendanceController.checkOutMember)
 );
 
-/**
- * MEMBER views own attendance.
- */
-router.get(
-  "/my",
-  roleMiddleware(["MEMBER"]),
-  asyncHandler(AttendanceController.getMyAttendance)
-);
-
-/**
- * ADMIN / RECEPTIONIST view any member in own gym.
- * TRAINER views assigned members only.
- */
+// ─── Shared (parameterised — declared last) ──────────────────────────────────
 router.get(
   "/member/:memberId",
   roleMiddleware(["ADMIN", "RECEPTIONIST", "TRAINER", "MEMBER"]),
   asyncHandler(AttendanceController.getMemberAttendance)
-);
-
-/**
- * ADMIN / RECEPTIONIST daily attendance.
- */
-router.get(
-  "/daily",
-  roleMiddleware(["ADMIN", "RECEPTIONIST"]),
-  asyncHandler(AttendanceController.getDailyAttendance)
 );
 
 export default router;

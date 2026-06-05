@@ -282,7 +282,8 @@ export class IntelligenceService {
 
   const planPerformance = memberships.reduce<Record<string, number>>(
     (acc, membership) => {
-      acc[membership.plan] = (acc[membership.plan] || 0) + 1;
+      const key = membership.planId ?? membership.plan ?? "UNSPECIFIED";
+      acc[key] = (acc[key] || 0) + 1;
       return acc;
     },
     {}

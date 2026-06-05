@@ -4,6 +4,7 @@ import type { Member } from '@/types/member.types'
 
 export interface MemberListParams {
   gymId?: string
+  branchId?: string
   search?: string
   page?: number
   limit?: number
@@ -12,8 +13,9 @@ export interface MemberListParams {
 }
 
 export interface CreateMemberPayload {
-  gymId: string
-  userId?: string
+  name: string
+  email: string
+  password: string
   phone: string
   gender?: string
   dateOfBirth?: string
@@ -21,22 +23,18 @@ export interface CreateMemberPayload {
   height?: number
   weight?: number
   fitnessGoal?: string
+  branchId?: string
   trainerId?: string
-  // Inline user creation when userId is not provided
-  name?: string
-  email?: string
-  password?: string
+  // Health profile
+  emergencyContactName?: string
+  emergencyContactPhone?: string
+  healthNotes?: string
+  injuryNotes?: string
+  medicalConditions?: string
 }
 
-export interface UpdateMemberPayload {
-  phone?: string
-  gender?: string
-  dateOfBirth?: string
-  address?: string
-  height?: number
-  weight?: number
-  fitnessGoal?: string
-  trainerId?: string
+export type UpdateMemberPayload = Partial<Omit<CreateMemberPayload, 'password'>> & {
+  status?: 'ACTIVE' | 'INACTIVE'
 }
 
 export interface MemberListResponse {
@@ -45,63 +43,42 @@ export interface MemberListResponse {
 
 export const memberService = {
   /**
-   * List all members with optional filtering and pagination.
-   * GET /members?gymId=&search=&page=&limit=
+   * List members in the caller's gym. The backend returns a bare array; we
+   * normalise it to `{ members }` so existing consumers keep working.
+   * GET /members?branchId=
    */
   list: async (params?: MemberListParams): Promise<ApiResponse<MemberListResponse>> => {
-    const res = await api.get<ApiResponse<MemberListResponse>>('/members', { params })
-    return res.data
+    const res = await api.get<ApiResponse<Member[]>>('/members', {
+      params: params?.branchId ? { branchId: params.branchId } : undefined,
+    })
+    return { ...res.data, data: { members: res.data.data ?? [] } }
   },
 
-  /**
-   * Fetch a single member by ID.
-   * GET /members/:id
-   */
+  /** GET /members/:id — full member detail incl. membership history. */
   getById: async (id: string): Promise<ApiResponse<Member>> => {
     const res = await api.get<ApiResponse<Member>>(`/members/${id}`)
     return res.data
   },
 
-  /**
-   * Create a new member record.
-   * POST /members
-   */
+  /** POST /members — creates the member + linked login. */
   create: async (payload: CreateMemberPayload): Promise<ApiResponse<Member>> => {
     const res = await api.post<ApiResponse<Member>>('/members', payload)
     return res.data
   },
 
-  /**
-   * Update an existing member by ID.
-   * PUT /members/:id
-   */
+  /** PUT /members/:id */
   update: async (id: string, payload: UpdateMemberPayload): Promise<ApiResponse<Member>> => {
     const res = await api.put<ApiResponse<Member>>(`/members/${id}`, payload)
     return res.data
   },
 
-  /**
-   * Delete a member by ID.
-   * DELETE /members/:id
-   */
+  /** DELETE /members/:id — soft delete (member becomes INACTIVE). */
   remove: async (id: string): Promise<ApiResponse<null>> => {
     const res = await api.delete<ApiResponse<null>>(`/members/${id}`)
     return res.data
   },
 
-  /**
-   * Assign a trainer to a member.
-   * PATCH /members/:id/assign-trainer
-   */
-  assignTrainer: async (memberId: string, trainerId: string): Promise<ApiResponse<Member>> => {
-    const res = await api.patch<ApiResponse<Member>>(`/members/${memberId}/assign-trainer`, { trainerId })
-    return res.data
-  },
-
-  /**
-   * Fetch the current logged-in user's member profile.
-   * GET /members/me
-   */
+  /** Fetch the current logged-in user's member profile. */
   getMyProfile: async (): Promise<Member | null> => {
     const res = await api.get<ApiResponse<Member>>('/members/me')
     return res.data.data ?? null

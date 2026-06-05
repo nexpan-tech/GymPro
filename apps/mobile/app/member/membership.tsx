@@ -17,17 +17,33 @@ import {
   AppText,
 } from "../../src/components/ui";
 
+function toneFor(status?: string) {
+  if (status === "ACTIVE") return "success" as const;
+  if (status === "EXPIRED" || status === "CANCELLED") return "danger" as const;
+  return "warning" as const;
+}
+
+function planLabel(m?: Membership | null) {
+  return m?.planRef?.name ?? m?.plan ?? "No active plan";
+}
+
+function fmt(d?: string) {
+  return d ? new Date(d).toLocaleDateString() : "—";
+}
+
 export default function MembershipScreen() {
   const { theme } = useTheme();
   const c = theme.colors;
 
-  const [membership, setMembership] = useState<Membership | null>(null);
+  const [current, setCurrent] = useState<Membership | null>(null);
+  const [history, setHistory] = useState<Membership[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadMembership = useCallback(async () => {
     try {
-      const data = await membershipService.getMyMembership();
-      setMembership(data);
+      const { current: cur, history: hist } = await membershipService.getMy();
+      setCurrent(cur);
+      setHistory(hist);
     } catch (error) {
       console.log(error);
     } finally {
@@ -48,16 +64,15 @@ export default function MembershipScreen() {
     );
   }
 
-  const statusTone =
-    membership?.status === "ACTIVE"
-      ? "success"
-      : membership?.status === "EXPIRED"
-        ? "danger"
-        : "warning";
+  const status = current?.effectiveStatus ?? current?.status;
 
   return (
     <AppScreen>
-      <AppHeader title="Membership" subtitle="Your active subscription" onBack={() => router.back()} />
+      <AppHeader
+        title="Membership"
+        subtitle="Your subscription"
+        onBack={() => router.back()}
+      />
 
       <AppCard variant="elevated">
         <View style={{ alignItems: "center", marginBottom: 24, gap: 12 }}>
@@ -73,19 +88,59 @@ export default function MembershipScreen() {
           >
             <Crown color="#fff" size={28} />
           </View>
-          <AppText variant="title">{membership?.name || "No active plan"}</AppText>
-          <AppBadge label={membership?.status || "UNKNOWN"} tone={statusTone} />
+          <AppText variant="title">{planLabel(current)}</AppText>
+          <AppBadge label={status ?? "NONE"} tone={toneFor(status)} />
         </View>
 
-        <Row label="Price" value={`₹${membership?.price ?? 0}`} />
-        <Row label="Duration" value={`${membership?.durationInDays ?? 0} Days`} />
-        <Row
-          label="Expires"
-          value={
-            membership?.endDate ? new Date(membership.endDate).toLocaleDateString() : "N/A"
-          }
-        />
+        {current ? (
+          <>
+            <Row label="Valid until" value={fmt(current.endDate)} />
+            <Row label="Days remaining" value={`${current.daysRemaining ?? 0} days`} />
+            <Row label="Amount" value={`₹${current.amount ?? 0}`} />
+            <Row label="Payment" value={current.paymentStatus ?? "—"} />
+            {status === "FROZEN" && (
+              <Row
+                label="Frozen"
+                value={`${fmt(current.freezeStartDate ?? undefined)} → ${fmt(
+                  current.freezeEndDate ?? undefined
+                )}`}
+              />
+            )}
+          </>
+        ) : (
+          <AppText variant="body" color="textSecondary" style={{ textAlign: "center" }}>
+            You don't have a membership yet. Please contact your gym.
+          </AppText>
+        )}
       </AppCard>
+
+      {history.length > 0 && (
+        <View style={{ marginTop: 8, gap: 12 }}>
+          <AppText variant="bodyStrong" color="textSecondary">
+            History
+          </AppText>
+          {history.map((m) => (
+            <AppCard key={m.id}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 8,
+                }}
+              >
+                <AppText variant="bodyStrong">{planLabel(m)}</AppText>
+                <AppBadge
+                  label={m.effectiveStatus ?? m.status ?? "—"}
+                  tone={toneFor(m.effectiveStatus ?? m.status)}
+                />
+              </View>
+              <Row label="Period" value={`${fmt(m.startDate)} → ${fmt(m.endDate)}`} />
+              <Row label="Amount" value={`₹${m.amount ?? 0}`} />
+            </AppCard>
+          ))}
+        </View>
+      )}
     </AppScreen>
   );
 }

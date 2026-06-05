@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { QrCode, ArrowLeft, CircleCheck } from "lucide-react-native";
 
 import { attendanceService } from "../../src/services/attendance.service";
@@ -19,6 +19,9 @@ import { AppButton, AppScreen, AppText } from "../../src/components/ui";
 export default function ScannerPage() {
   const { theme } = useTheme();
   const c = theme.colors;
+
+  const params = useLocalSearchParams<{ action?: string }>();
+  const action = params.action === "checkout" ? "checkout" : "checkin";
 
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
@@ -37,24 +40,44 @@ export default function ScannerPage() {
       setScanned(true);
       setLoading(true);
 
-      // QR FORMAT: gym:<gymId>
-      if (!data.startsWith("gym:")) {
-        Alert.alert("Invalid QR", "This QR code is not valid.");
+      // Accept all gym QR formats: "gym:<gymId>", raw "<gymId>", or JSON { gymId }.
+      let gymId = data.trim();
+      if (gymId.startsWith("gym:")) {
+        gymId = gymId.slice(4);
+      } else if (gymId.startsWith("{")) {
+        try {
+          const parsed = JSON.parse(gymId) as { gymId?: string };
+          gymId = parsed.gymId ?? "";
+        } catch {
+          gymId = "";
+        }
+      }
+
+      if (!gymId) {
+        Alert.alert("Invalid QR", "This QR code is not a valid gym code.");
         setScanned(false);
         setLoading(false);
         return;
       }
 
-      const gymId = data.replace("gym:", "");
-      await attendanceService.scan(gymId);
-
-      Alert.alert("Check-in Successful", "Your attendance has been marked.", [
-        { text: "OK", onPress: () => router.replace("/member/dashboard") },
-      ]);
+      if (action === "checkout") {
+        await attendanceService.checkout({ gymId });
+        Alert.alert("Check-out Successful", "You have been checked out.", [
+          { text: "OK", onPress: () => router.replace("/member/dashboard") },
+        ]);
+      } else {
+        await attendanceService.scan(gymId);
+        Alert.alert("Check-in Successful", "Your attendance has been marked.", [
+          { text: "OK", onPress: () => router.replace("/member/dashboard") },
+        ]);
+      }
     } catch (error: any) {
       Alert.alert(
-        "Check-in Failed",
-        error?.response?.data?.message || "Unable to mark attendance.",
+        action === "checkout" ? "Check-out Failed" : "Check-in Failed",
+        error?.response?.data?.message ||
+          (action === "checkout"
+            ? "Unable to check out."
+            : "Unable to mark attendance."),
       );
       setScanned(false);
     } finally {
@@ -120,13 +143,19 @@ export default function ScannerPage() {
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <ArrowLeft color="#fff" size={22} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Scan Gym QR</Text>
+        <Text style={styles.headerTitle}>
+          {action === "checkout" ? "Check Out" : "Check In"}
+        </Text>
         <View style={{ width: 44 }} />
       </View>
 
       <View style={styles.content}>
         <Text style={styles.title}>Place the QR inside the frame</Text>
-        <Text style={styles.subtitle}>Scan the gym QR code to mark attendance</Text>
+        <Text style={styles.subtitle}>
+          {action === "checkout"
+            ? "Scan the gym QR code to mark your exit"
+            : "Scan the gym QR code to mark attendance"}
+        </Text>
 
         <View style={styles.scanFrameWrapper}>
           <View style={[styles.corner, styles.cornerTL, { borderColor: c.primary }]} />

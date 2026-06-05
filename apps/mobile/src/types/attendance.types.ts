@@ -3,7 +3,10 @@ export interface Attendance {
   gymId?: string;
   memberId?: string;
   checkInAt: string;
+  checkOutAt?: string | null;
   date: string;
+  status?: "CHECKED_IN" | "CHECKED_OUT";
+  source?: "QR" | "MANUAL" | "ADMIN";
   createdAt?: string;
 }
 

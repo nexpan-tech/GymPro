@@ -134,7 +134,7 @@ export default function ProfileScreen() {
                 marginBottom: 12,
               }}
             >
-              <AppText variant="subtitle">{membership.name}</AppText>
+              <AppText variant="subtitle">{membership.planRef?.name ?? membership.plan ?? "Membership"}</AppText>
               <AppBadge label={membership.status ?? "UNKNOWN"} tone={statusTone} />
             </View>
             <View style={{ gap: 6 }}>

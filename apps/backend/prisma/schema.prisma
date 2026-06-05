@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 //////////////////////////////////////////////////////
@@ -32,6 +33,29 @@ enum PaymentStatus {
   PAID
   PENDING
   OVERDUE
+}
+
+enum MemberStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum MembershipStatus {
+  ACTIVE
+  EXPIRED
+  FROZEN
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  CHECKED_IN
+  CHECKED_OUT
+}
+
+enum AttendanceSource {
+  QR
+  MANUAL
+  ADMIN
 }
 
 enum NotificationType {
@@ -264,54 +288,54 @@ model Gym {
   logo     String?
   isActive Boolean @default(true)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   auditLogs AuditLog[]
-  dues          Due[]
+  dues      Due[]
 
   bodyMeasurements BodyMeasurement[]
-  goals Goal[]
-  memberBadges MemberBadge[]
-  progressPhotos ProgressPhoto[]
+  goals            Goal[]
+  memberBadges     MemberBadge[]
+  progressPhotos   ProgressPhoto[]
 
-  users         User[]
-  members       Member[]
-  memberships   Membership[]
-  attendances   Attendance[]
-  dietPlans     DietPlan[]
-  workoutPlans  WorkoutPlan[]
-  notifications Notification[]
-  payments      Payment[]
+  users           User[]
+  members         Member[]
+  memberships     Membership[]
+  membershipPlans GymMembershipPlan[]
+  attendances     Attendance[]
+  dietPlans       DietPlan[]
+  workoutPlans    WorkoutPlan[]
+  notifications   Notification[]
+  payments        Payment[]
 
-  exercises Exercise[]
-  leads Lead[]
-  campaigns Campaign[]
+  exercises       Exercise[]
+  leads           Lead[]
+  campaigns       Campaign[]
   communityGroups CommunityGroup[]
 
   workoutCompletions WorkoutCompletion[]
-  
-  trainerMessages TrainerMessage[]
+
+  trainerMessages  TrainerMessage[]
   trainerFeedbacks TrainerFeedback[]
 
-  challenges Challenge[]
-  memberXps MemberXP[]
+  challenges    Challenge[]
+  memberXps     MemberXP[]
   dailyMissions DailyMission[]
-  rewards Reward[]
+  rewards       Reward[]
 
-  branches Branch[]
+  branches                Branch[]
   regionalManagerBranches RegionalManagerBranch[]
 
   subscriptions GymSubscription[]
-  saasInvoices SaaSInvoice[]
+  saasInvoices  SaaSInvoice[]
 
   whiteLabelSetting WhiteLabelSetting?
 
   marketplaceItems MarketplaceItem[]
 
-  apiKeys ApiKey[]
+  apiKeys          ApiKey[]
   webhookEndpoints WebhookEndpoint[]
-  integrations Integration[]
-
+  integrations     Integration[]
 }
 
 //////////////////////////////////////////////////////
@@ -329,31 +353,31 @@ model User {
   gymId String?
   gym   Gym?    @relation(fields: [gymId], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   auditLogs AuditLog[]
-  sessions Session[]
-  
-  deviceTokens DeviceToken[]
+  sessions  Session[]
+
+  deviceTokens   DeviceToken[]
   deviceSessions DeviceSession[]
 
   // relations
   memberProfile Member?
 
   assignedLeads Lead[]
-  campaigns Campaign[]
+  campaigns     Campaign[]
 
   // trainer → members mapping
   trainedMembers Member[] @relation("TrainerMembers")
 
   trainerWorkoutPlans WorkoutPlan[] @relation("TrainerWorkoutPlans")
 
-  trainerMessages TrainerMessage[] @relation("TrainerMessages")
-  sentMessages TrainerMessage[] @relation("MessageSender")
+  trainerMessages  TrainerMessage[]  @relation("TrainerMessages")
+  sentMessages     TrainerMessage[]  @relation("MessageSender")
   trainerFeedbacks TrainerFeedback[] @relation("TrainerFeedbacks")
 
-  branchId String?
-  branch   Branch? @relation(fields: [branchId], references: [id])
+  branchId         String?
+  branch           Branch?                 @relation(fields: [branchId], references: [id])
   regionalBranches RegionalManagerBranch[]
   marketplaceItems MarketplaceItem[]
 }
@@ -380,24 +404,34 @@ model Member {
   weight      Float?
   fitnessGoal String?
 
+  // Stage 2 — lifecycle + health profile
+  status   MemberStatus @default(ACTIVE)
+  joinedAt DateTime     @default(now())
+
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  healthNotes           String?
+  injuryNotes           String?
+  medicalConditions     String?
+
   trainerId String?
   trainer   User?   @relation("TrainerMembers", fields: [trainerId], references: [id])
-  
+
   bodyMeasurements BodyMeasurement[]
-  goals Goal[]
-  memberBadges MemberBadge[]
-  progressPhotos ProgressPhoto[]
+  goals            Goal[]
+  memberBadges     MemberBadge[]
+  progressPhotos   ProgressPhoto[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  dues          Due[]
+  dues      Due[]
 
-  workoutPlans WorkoutPlan[]
+  workoutPlans    WorkoutPlan[]
   communityGroups CommunityGroupMember[]
 
   challengeParticipants ChallengeParticipant[]
-  memberXp MemberXP?
-  missionCompletions MissionCompletion[]
+  memberXp              MemberXP?
+  missionCompletions    MissionCompletion[]
 
   memberships   Membership[]
   attendances   Attendance[]
@@ -407,7 +441,7 @@ model Member {
 
   workoutCompletions WorkoutCompletion[]
 
-  trainerMessages TrainerMessage[]
+  trainerMessages  TrainerMessage[]
   trainerFeedbacks TrainerFeedback[]
 
   branchId String?
@@ -427,15 +461,61 @@ model Membership {
   memberId String
   member   Member @relation(fields: [memberId], references: [id])
 
-  plan          MembershipPlan
+  // Legacy enum kept for backward compatibility; new memberships reference a
+  // GymMembershipPlan via planId.
+  plan    MembershipPlan?
+  planId  String?
+  planRef GymMembershipPlan? @relation(fields: [planId], references: [id])
+
   startDate     DateTime
   endDate       DateTime
   amount        Float
-  paymentStatus PaymentStatus  @default(PENDING)
+  paymentStatus PaymentStatus @default(PENDING)
+
+  // Stage 2 — lifecycle
+  status          MembershipStatus @default(ACTIVE)
+  freezeStartDate DateTime?
+  freezeEndDate   DateTime?
+  extensionDays   Int              @default(0)
+
+  // Renewal chain (self relation)
+  renewedFromId String?
+  renewedFrom   Membership?  @relation("MembershipRenewals", fields: [renewedFromId], references: [id])
+  renewals      Membership[] @relation("MembershipRenewals")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  dues          Due[]
+  dues      Due[]
+
+  @@index([gymId])
+  @@index([memberId])
+}
+
+//////////////////////////////////////////////////////
+// GYM MEMBERSHIP PLANS (named, priced, per-gym)
+//////////////////////////////////////////////////////
+
+model GymMembershipPlan {
+  id String @id @default(uuid())
+
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id])
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
+
+  name         String
+  description  String?
+  durationDays Int
+  price        Float
+  isActive     Boolean @default(true)
+
+  memberships Membership[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gymId])
 }
 
 //////////////////////////////////////////////////////
@@ -451,12 +531,22 @@ model Attendance {
   memberId String
   member   Member @relation(fields: [memberId], references: [id])
 
-  checkInAt DateTime @default(now())
-  date      DateTime
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
+
+  checkInAt  DateTime  @default(now())
+  checkOutAt DateTime?
+  date       DateTime
+
+  status AttendanceStatus @default(CHECKED_IN)
+  source AttendanceSource @default(QR)
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
 
   @@unique([gymId, memberId, date])
+  @@index([gymId, date])
+  @@index([gymId, status])
 }
 
 //////////////////////////////////////////////////////
@@ -537,12 +627,11 @@ model Payment {
   updatedAt DateTime @updatedAt
 }
 
-
 model Session {
   id String @id @default(uuid())
 
   userId String
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   refreshTokenHash String
   deviceName       String?
@@ -563,7 +652,7 @@ model Due {
   id String @id @default(uuid())
 
   gymId String
-  gym   Gym @relation(fields: [gymId], references: [id])
+  gym   Gym    @relation(fields: [gymId], references: [id])
 
   memberId String
   member   Member @relation(fields: [memberId], references: [id])
@@ -580,7 +669,7 @@ model Due {
   dueDate DateTime
   paidAt  DateTime?
 
-  reminderCount Int       @default(0)
+  reminderCount  Int       @default(0)
   lastReminderAt DateTime?
 
   notes String?
@@ -599,7 +688,7 @@ model DeviceToken {
   id String @id @default(uuid())
 
   userId String
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   token    String @unique
   platform String
@@ -614,17 +703,17 @@ model BodyMeasurement {
   id String @id @default(uuid())
 
   gymId String
-  gym   Gym @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  gym   Gym    @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
   memberId String
   member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   weight Float?
 
-  chest Float?
-  waist Float?
-  hips Float?
-  arms Float?
+  chest  Float?
+  waist  Float?
+  hips   Float?
+  arms   Float?
   thighs Float?
 
   bodyFatPercentage Float?
@@ -644,7 +733,7 @@ model Goal {
   id String @id @default(uuid())
 
   gymId String
-  gym   Gym @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  gym   Gym    @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
   memberId String
   member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
@@ -659,7 +748,7 @@ model Goal {
 
   unit String?
 
-  startDate DateTime
+  startDate  DateTime
   targetDate DateTime?
 
   status GoalStatus @default(ACTIVE)
@@ -689,13 +778,13 @@ model MemberBadge {
   id String @id @default(uuid())
 
   gymId String
-  gym   Gym @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  gym   Gym    @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
   memberId String
   member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   badgeId String
-  badge   Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  badge   Badge  @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
   earnedAt DateTime @default(now())
 
@@ -708,7 +797,7 @@ model ProgressPhoto {
   id String @id @default(uuid())
 
   gymId String
-  gym   Gym @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  gym   Gym    @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
   memberId String
   member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
@@ -729,7 +818,7 @@ model ProgressPhoto {
 }
 
 model Exercise {
-  id              String              @id @default(uuid())
+  id              String           @id @default(uuid())
   gymId           String?
   name            String
   description     String?
@@ -742,37 +831,37 @@ model Exercise {
   imageUrl        String?
   caloriesBurned  Int?
   durationMinutes Int?
-  isPublic        Boolean             @default(true)
+  isPublic        Boolean          @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   gym Gym? @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
+  workoutExercises WorkoutExercise[]
+
   @@index([category])
   @@index([muscleGroup])
   @@index([difficulty])
-
-  workoutExercises WorkoutExercise[]
 }
 
 model WorkoutPlan {
-  id          String   @id @default(uuid())
-  gymId       String
-  trainerId   String
-  memberId    String?
-  title       String
-  description String?
-  difficulty  DifficultyLevel
+  id            String          @id @default(uuid())
+  gymId         String
+  trainerId     String
+  memberId      String?
+  title         String
+  description   String?
+  difficulty    DifficultyLevel
   durationWeeks Int?
-  isTemplate  Boolean  @default(false)
+  isTemplate    Boolean         @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  gym      Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
-  trainer  User     @relation("TrainerWorkoutPlans", fields: [trainerId], references: [id], onDelete: Cascade)
-  member   Member?  @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  gym     Gym     @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  trainer User    @relation("TrainerWorkoutPlans", fields: [trainerId], references: [id], onDelete: Cascade)
+  member  Member? @relation(fields: [memberId], references: [id], onDelete: SetNull)
 
   exercises WorkoutExercise[]
 
@@ -788,9 +877,9 @@ model WorkoutExercise {
   workoutPlanId String
   exerciseId    String
 
-  dayNumber Int
-  sets      Int
-  reps      String
+  dayNumber   Int
+  sets        Int
+  reps        String
   restSeconds Int?
 
   notes String?
@@ -800,7 +889,7 @@ model WorkoutExercise {
 
   workoutPlan WorkoutPlan @relation(fields: [workoutPlanId], references: [id], onDelete: Cascade)
   exercise    Exercise    @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
-   
+
   completions WorkoutCompletion[]
 
   @@index([workoutPlanId])
@@ -811,7 +900,7 @@ model WorkoutCompletion {
   id String @id @default(uuid())
 
   gymId String
-  gym   Gym @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  gym   Gym    @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
   memberId String
   member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
@@ -864,16 +953,16 @@ model TrainerMessage {
   id String @id @default(uuid())
 
   gymId String
-  gym   Gym @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  gym   Gym    @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
   trainerId String
-  trainer   User @relation("TrainerMessages", fields: [trainerId], references: [id], onDelete: Cascade)
+  trainer   User   @relation("TrainerMessages", fields: [trainerId], references: [id], onDelete: Cascade)
 
   memberId String
   member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   senderId String
-  sender   User @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  sender   User   @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
 
   type    MessageType @default(TEXT)
   message String
@@ -890,10 +979,10 @@ model TrainerFeedback {
   id String @id @default(uuid())
 
   gymId String
-  gym   Gym @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  gym   Gym    @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
   trainerId String
-  trainer   User @relation("TrainerFeedbacks", fields: [trainerId], references: [id], onDelete: Cascade)
+  trainer   User   @relation("TrainerFeedbacks", fields: [trainerId], references: [id], onDelete: Cascade)
 
   memberId String
   member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
@@ -909,85 +998,87 @@ model TrainerFeedback {
 }
 
 model Lead {
-  id             String      @id @default(cuid())
-  gymId          String
-  gym            Gym         @relation(fields: [gymId], references: [id])
+  id    String @id @default(cuid())
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id])
 
-  assignedToId   String?
-  assignedTo     User?       @relation(fields: [assignedToId], references: [id])
+  assignedToId String?
+  assignedTo   User?   @relation(fields: [assignedToId], references: [id])
 
-  name           String
-  phone          String
-  email          String?
+  name  String
+  phone String
+  email String?
 
-  source         LeadSource
-  status         LeadStatus  @default(NEW)
+  source LeadSource
+  status LeadStatus @default(NEW)
 
-  fitnessGoal    String?
-  notes          String?
+  fitnessGoal String?
+  notes       String?
 
-  trialDate      DateTime?
-  followUpDate   DateTime?
+  trialDate    DateTime?
+  followUpDate DateTime?
 
-  convertedAt    DateTime?
-  lostReason     String?
+  convertedAt DateTime?
+  lostReason  String?
 
-  leadScore      Int         @default(0)
+  leadScore Int @default(0)
 
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Campaign {
-  id            String        @id @default(cuid())
+  id String @id @default(cuid())
 
-  gymId         String
-  gym           Gym           @relation(fields: [gymId], references: [id])
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id])
 
-  createdById   String
-  createdBy     User          @relation(fields: [createdById], references: [id])
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
 
-  type          CampaignType
+  type CampaignType
 
-  title         String
-  message       String
+  title   String
+  message String
 
-  targetCount   Int           @default(0)
-  sentCount     Int           @default(0)
+  targetCount Int @default(0)
+  sentCount   Int @default(0)
 
-  scheduledAt   DateTime?
-  sentAt        DateTime?
+  scheduledAt DateTime?
+  sentAt      DateTime?
 
-  isActive      Boolean       @default(true)
+  isActive Boolean @default(true)
 
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Branch {
-  id            String      @id @default(cuid())
+  id String @id @default(cuid())
 
-  gymId         String
-  gym           Gym         @relation(fields: [gymId], references: [id])
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id])
 
-  name          String
-  code          String      @unique
+  name String
+  code String @unique
 
-  phone         String?
-  email         String?
+  phone String?
+  email String?
 
-  address       String?
-  city          String?
-  state         String?
-  country       String?
+  address String?
+  city    String?
+  state   String?
+  country String?
 
-  isActive      Boolean     @default(true)
+  isActive Boolean @default(true)
 
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  users         User[]
-  members       Member[]
+  users            User[]
+  members          Member[]
+  membershipPlans  GymMembershipPlan[]
+  attendances      Attendance[]
   regionalManagers RegionalManagerBranch[]
 }
 
@@ -995,10 +1086,10 @@ model RegionalManagerBranch {
   id String @id @default(cuid())
 
   gymId String
-  gym   Gym @relation(fields: [gymId], references: [id])
+  gym   Gym    @relation(fields: [gymId], references: [id])
 
   managerId String
-  manager   User @relation(fields: [managerId], references: [id])
+  manager   User   @relation(fields: [managerId], references: [id])
 
   branchId String
   branch   Branch @relation(fields: [branchId], references: [id])
@@ -1009,9 +1100,9 @@ model RegionalManagerBranch {
 }
 
 model Challenge {
-  id          String @id @default(cuid())
-  gymId       String
-  gym         Gym    @relation(fields: [gymId], references: [id])
+  id    String @id @default(cuid())
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id])
 
   title       String
   description String?
@@ -1040,8 +1131,8 @@ model ChallengeParticipant {
   memberId String
   member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
-  progress Int @default(0)
-  rank     Int?
+  progress    Int     @default(0)
+  rank        Int?
   isCompleted Boolean @default(false)
 
   joinedAt DateTime @default(now())
@@ -1054,13 +1145,13 @@ model MemberXP {
   id String @id @default(cuid())
 
   gymId String
-  gym   Gym @relation(fields: [gymId], references: [id])
+  gym   Gym    @relation(fields: [gymId], references: [id])
 
   memberId String @unique
   member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
-  xp Int @default(0)
-  level Int @default(1)
+  xp     Int @default(0)
+  level  Int @default(1)
   streak Int @default(0)
 
   updatedAt DateTime @updatedAt
@@ -1070,12 +1161,12 @@ model DailyMission {
   id String @id @default(cuid())
 
   gymId String
-  gym   Gym @relation(fields: [gymId], references: [id])
+  gym   Gym    @relation(fields: [gymId], references: [id])
 
-  title String
+  title       String
   description String?
-  type MissionType
-  xpReward Int @default(10)
+  type        MissionType
+  xpReward    Int         @default(10)
 
   isActive Boolean @default(true)
 
@@ -1104,12 +1195,12 @@ model Reward {
   id String @id @default(cuid())
 
   gymId String
-  gym   Gym @relation(fields: [gymId], references: [id])
+  gym   Gym    @relation(fields: [gymId], references: [id])
 
-  title String
+  title       String
   description String?
-  type RewardType
-  xpCost Int?
+  type        RewardType
+  xpCost      Int?
 
   isActive Boolean @default(true)
 
@@ -1121,9 +1212,9 @@ model CommunityGroup {
   id String @id @default(cuid())
 
   gymId String
-  gym   Gym @relation(fields: [gymId], references: [id])
+  gym   Gym    @relation(fields: [gymId], references: [id])
 
-  name String
+  name        String
   description String?
 
   type CommunityGroupType
@@ -1155,15 +1246,15 @@ model CommunityGroupMember {
 model SaaSPlan {
   id String @id @default(cuid())
 
-  name String
+  name        String
   description String?
 
   interval SaaSPlanInterval
-  price Float
+  price    Float
 
   maxBranches Int?
-  maxMembers Int?
-  maxStaff Int?
+  maxMembers  Int?
+  maxStaff    Int?
 
   isActive Boolean @default(true)
 
@@ -1177,7 +1268,7 @@ model GymSubscription {
   id String @id @default(cuid())
 
   gymId String
-  gym   Gym @relation(fields: [gymId], references: [id])
+  gym   Gym    @relation(fields: [gymId], references: [id])
 
   planId String
   plan   SaaSPlan @relation(fields: [planId], references: [id])
@@ -1185,7 +1276,7 @@ model GymSubscription {
   status GymSubscriptionStatus @default(TRIALING)
 
   startDate DateTime
-  endDate DateTime
+  endDate   DateTime
 
   autoRenew Boolean @default(true)
 
@@ -1203,24 +1294,24 @@ model SaaSInvoice {
   id String @id @default(cuid())
 
   gymId String
-  gym   Gym @relation(fields: [gymId], references: [id])
+  gym   Gym    @relation(fields: [gymId], references: [id])
 
   subscriptionId String
   subscription   GymSubscription @relation(fields: [subscriptionId], references: [id])
 
   invoiceNumber String @unique
 
-  amount Float
-  gstAmount Float
+  amount      Float
+  gstAmount   Float
   totalAmount Float
 
   status SaaSInvoiceStatus @default(ISSUED)
 
-  dueDate DateTime
-  paidAt DateTime?
+  dueDate  DateTime
+  paidAt   DateTime?
   failedAt DateTime?
 
-  retryCount Int @default(0)
+  retryCount  Int       @default(0)
   lastRetryAt DateTime?
 
   createdAt DateTime @default(now())
@@ -1235,22 +1326,22 @@ model WhiteLabelSetting {
   id String @id @default(cuid())
 
   gymId String @unique
-  gym   Gym @relation(fields: [gymId], references: [id])
+  gym   Gym    @relation(fields: [gymId], references: [id])
 
-  appName String?
-  logoUrl String?
+  appName    String?
+  logoUrl    String?
   faviconUrl String?
 
-  primaryColor String?
+  primaryColor   String?
   secondaryColor String?
-  accentColor String?
+  accentColor    String?
 
-  customDomain String? @unique
+  customDomain     String? @unique
   isDomainVerified Boolean @default(false)
 
   mobileAppName String?
-  playStoreUrl String?
-  appStoreUrl String?
+  playStoreUrl  String?
+  appStoreUrl   String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1260,20 +1351,20 @@ model MarketplaceItem {
   id String @id @default(cuid())
 
   gymId String
-  gym   Gym @relation(fields: [gymId], references: [id])
+  gym   Gym    @relation(fields: [gymId], references: [id])
 
   createdById String
-  createdBy   User @relation(fields: [createdById], references: [id])
+  createdBy   User   @relation(fields: [createdById], references: [id])
 
-  type MarketplaceItemType
+  type   MarketplaceItemType
   status MarketplaceItemStatus @default(DRAFT)
 
-  title String
+  title       String
   description String?
-  price Float @default(0)
+  price       Float   @default(0)
 
   imageUrl String?
-  tags String[]
+  tags     String[]
 
   isFeatured Boolean @default(false)
 
@@ -1289,9 +1380,9 @@ model ApiKey {
   id String @id @default(cuid())
 
   gymId String
-  gym   Gym @relation(fields: [gymId], references: [id])
+  gym   Gym    @relation(fields: [gymId], references: [id])
 
-  name String
+  name    String
   keyHash String @unique
 
   status ApiKeyStatus @default(ACTIVE)
@@ -1309,9 +1400,9 @@ model WebhookEndpoint {
   id String @id @default(cuid())
 
   gymId String
-  gym   Gym @relation(fields: [gymId], references: [id])
+  gym   Gym    @relation(fields: [gymId], references: [id])
 
-  url String
+  url    String
   events WebhookEvent[]
 
   secret String
@@ -1328,10 +1419,10 @@ model Integration {
   id String @id @default(cuid())
 
   gymId String
-  gym   Gym @relation(fields: [gymId], references: [id])
+  gym   Gym    @relation(fields: [gymId], references: [id])
 
   provider String
-  status IntegrationStatus @default(ACTIVE)
+  status   IntegrationStatus @default(ACTIVE)
 
   config Json?
 
@@ -1342,46 +1433,47 @@ model Integration {
 }
 
 model DeviceSession {
-  id          String   @id @default(cuid())
-  userId      String
-  gymId       String?
-  deviceId    String
-  platform    String
-  appVersion  String?
-  deviceName  String?
-  pushToken   String?
-  isActive    Boolean  @default(true)
-  lastSeenAt  DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  userId     String
+  gymId      String?
+  deviceId   String
+  platform   String
+  appVersion String?
+  deviceName String?
+  pushToken  String?
+  isActive   Boolean  @default(true)
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceId])
   @@index([userId])
   @@index([gymId])
   @@index([deviceId])
-  @@unique([userId, deviceId])
 }
 
 model AuditLog {
-  id          String   @id @default(cuid())
-  gymId       String?
-  userId      String?
+  id     String  @id @default(cuid())
+  gymId  String?
+  userId String?
 
   action AuditAction
 
-  entityType  String?
-  entityId    String?
+  entityType String?
+  entityId   String?
 
-  method      String?  @default("UNKNOWN")
-  path        String?  @default("UNKNOWN")
+  method String? @default("UNKNOWN")
+  path   String? @default("UNKNOWN")
 
-  ipAddress   String?
-  userAgent   String?
-  metadata    Json?
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  gym         Gym?     @relation(fields: [gymId], references: [id])
-  user        User?    @relation(fields: [userId], references: [id])
+  gym  Gym?  @relation(fields: [gymId], references: [id])
+  user User? @relation(fields: [userId], references: [id])
 
   @@index([gymId])
   @@index([userId])

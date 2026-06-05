@@ -1,18 +1,20 @@
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import {
   Bell,
   Calendar,
-  Camera,
   CheckCircle2,
   CreditCard,
+  DoorOpen,
   Dumbbell,
   Flame,
   ImagePlus,
+  LogIn,
+  LogOut,
   Salad,
   Star,
   Target,
 } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Alert, ScrollView, TouchableOpacity, View } from "react-native";
 
 import { attendanceService } from "../../src/services/attendance.service";
@@ -149,9 +151,13 @@ export default function MemberDashboardScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    void loadDashboard();
-  }, [loadDashboard]);
+  // Refetch whenever the dashboard regains focus (e.g. returning from the
+  // QR scanner) so Recent Check-ins / occupancy never show stale data.
+  useFocusEffect(
+    useCallback(() => {
+      void loadDashboard();
+    }, [loadDashboard]),
+  );
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -172,6 +178,11 @@ export default function MemberDashboardScreen() {
         .slice(0, 3),
     [attendance],
   );
+  const todayActive = useMemo(
+    () => attendance.find((r) => isToday(r.date) && r.status === "CHECKED_IN") ?? null,
+    [attendance],
+  );
+  const isInside = todayActive !== null;
 
   const todayDayName = new Date()
     .toLocaleDateString("en-US", { weekday: "long" })
@@ -337,7 +348,7 @@ export default function MemberDashboardScreen() {
               </AppText>
             </View>
             <AppText variant="heading" style={{ marginTop: 8 }}>
-              {membership?.name || "No active plan"}
+              {membership?.planRef?.name ?? membership?.plan ?? "No active plan"}
             </AppText>
             <AppText variant="caption" color="textMuted" style={{ marginTop: 4 }}>
               {daysLeft !== null
@@ -386,14 +397,86 @@ export default function MemberDashboardScreen() {
         </View>
       </AppCard>
 
+      {/* Attendance — two clear QR actions */}
+      <AppText variant="heading">Attendance</AppText>
+      <AppCard>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 }}>
+          <View
+            style={{
+              height: 44,
+              width: 44,
+              borderRadius: theme.radius.md,
+              backgroundColor: isInside ? c.successSoft : c.muted,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <DoorOpen color={isInside ? c.success : c.textMuted} size={22} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <AppText variant="bodyStrong">
+              Status: {isInside ? "Inside" : "Outside"}
+            </AppText>
+            <AppText variant="caption" color="textSecondary" style={{ marginTop: 2 }}>
+              {isInside && todayActive
+                ? `Checked in at ${formatTime(todayActive.checkInAt || todayActive.date)}`
+                : "You are not checked in"}
+            </AppText>
+          </View>
+        </View>
+
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <TouchableOpacity
+            disabled={isInside}
+            activeOpacity={0.8}
+            onPress={() => router.push("/member/scanner?action=checkin")}
+            style={{
+              flex: 1,
+              padding: 14,
+              borderRadius: theme.radius.md,
+              borderWidth: 1,
+              borderColor: c.success,
+              backgroundColor: c.muted,
+              opacity: isInside ? 0.45 : 1,
+            }}
+          >
+            <LogIn color={c.success} size={20} />
+            <AppText variant="bodyStrong" style={{ marginTop: 8 }}>
+              Check In
+            </AppText>
+            <AppText variant="caption" color="textSecondary" style={{ marginTop: 2 }}>
+              {isInside ? "Already checked in" : "Scan gym QR to enter"}
+            </AppText>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            disabled={!isInside}
+            activeOpacity={0.8}
+            onPress={() => router.push("/member/scanner?action=checkout")}
+            style={{
+              flex: 1,
+              padding: 14,
+              borderRadius: theme.radius.md,
+              borderWidth: 1,
+              borderColor: c.primary,
+              backgroundColor: c.muted,
+              opacity: !isInside ? 0.45 : 1,
+            }}
+          >
+            <LogOut color={c.primary} size={20} />
+            <AppText variant="bodyStrong" style={{ marginTop: 8 }}>
+              Check Out
+            </AppText>
+            <AppText variant="caption" color="textSecondary" style={{ marginTop: 2 }}>
+              {isInside ? "Scan gym QR to exit" : "No active check-in"}
+            </AppText>
+          </TouchableOpacity>
+        </View>
+      </AppCard>
+
       {/* Quick Actions */}
       <AppText variant="heading">Quick Actions</AppText>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-        <QuickAction
-          icon={<Camera color={c.primary} size={22} />}
-          label="Scan QR"
-          onPress={() => router.push("/member/scanner")}
-        />
         <QuickAction
           icon={<ImagePlus color={c.success} size={22} />}
           label="Progress"
@@ -460,25 +543,32 @@ export default function MemberDashboardScreen() {
                     })}
                   </AppText>
                   <AppText variant="caption" color="textMuted" style={{ marginTop: 2 }}>
-                    Checked in at {formatTime(record.checkInAt || record.date)}
+                    In {formatTime(record.checkInAt || record.date)}
+                    {record.checkOutAt ? ` · Out ${formatTime(record.checkOutAt)}` : ""}
                   </AppText>
                 </View>
-                {isToday(record.date) ? (
-                  <View
+                <View
+                  style={{
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    borderRadius: theme.radius.sm,
+                    backgroundColor:
+                      record.status === "CHECKED_IN" ? c.successSoft : c.muted,
+                    borderWidth: 1,
+                    borderColor:
+                      record.status === "CHECKED_IN" ? c.success : c.border,
+                  }}
+                >
+                  <AppText
+                    variant="caption"
                     style={{
-                      paddingHorizontal: 10,
-                      paddingVertical: 4,
-                      borderRadius: theme.radius.sm,
-                      backgroundColor: c.successSoft,
-                      borderWidth: 1,
-                      borderColor: c.success,
+                      color:
+                        record.status === "CHECKED_IN" ? c.success : c.textSecondary,
                     }}
                   >
-                    <AppText variant="caption" style={{ color: c.success }}>
-                      Today
-                    </AppText>
-                  </View>
-                ) : null}
+                    {record.status === "CHECKED_IN" ? "Inside" : "Left"}
+                  </AppText>
+                </View>
               </View>
             </AppCard>
           ))}

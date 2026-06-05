@@ -1,13 +1,31 @@
 import { api } from "../api/client";
 
-export interface Membership {
+export interface MembershipPlanRef {
   id: string;
   name: string;
   price: number;
-  durationInDays: number;
+  durationDays: number;
+}
+
+export interface Membership {
+  id: string;
+  planId?: string | null;
+  plan?: string | null;
+  planRef?: MembershipPlanRef | null;
   startDate?: string;
   endDate?: string;
+  amount?: number;
+  paymentStatus?: string;
   status?: string;
+  effectiveStatus?: string;
+  daysRemaining?: number;
+  freezeStartDate?: string | null;
+  freezeEndDate?: string | null;
+}
+
+export interface MyMembership {
+  current: Membership | null;
+  history: Membership[];
 }
 
 function unwrap<T>(res: { data: { data?: T } | T }): T {
@@ -15,8 +33,19 @@ function unwrap<T>(res: { data: { data?: T } | T }): T {
 }
 
 export const membershipService = {
-  getMyMembership: async (): Promise<Membership | null> => {
+  /** Current membership + full history for the logged-in member. */
+  getMy: async (): Promise<MyMembership> => {
     const res = await api.get("/memberships/my");
-    return unwrap<Membership | null>(res);
+    const data = unwrap<MyMembership>(res);
+    return {
+      current: data?.current ?? null,
+      history: Array.isArray(data?.history) ? data.history : [],
+    };
+  },
+
+  /** Backwards-compatible: just the current membership. */
+  getMyMembership: async (): Promise<Membership | null> => {
+    const { current } = await membershipService.getMy();
+    return current;
   },
 };

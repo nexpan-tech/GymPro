@@ -5,6 +5,9 @@ import { createAuditLog } from "../../utils/audit";
 import {
   createMembershipSchema,
   updateMembershipSchema,
+  renewMembershipSchema,
+  freezeMembershipSchema,
+  extendMembershipSchema,
 } from "./membership.validation";
 
 function getRequestMeta(req: Request) {
@@ -55,7 +58,10 @@ export class MembershipController {
       return res.status(400).json({ success: false, message: "Gym ID required" });
     }
 
-    const memberships = await MembershipService.getAll(req.user.gymId);
+    const currentOnly = req.query.currentOnly === "true";
+    const memberships = await MembershipService.getAll(req.user.gymId, {
+      currentOnly,
+    });
 
     return res.json({
       success: true,
@@ -122,6 +128,130 @@ export class MembershipController {
       success: true,
       message: "Membership updated successfully",
       data: updated,
+    });
+  }
+
+  static async getMy(req: Request, res: Response) {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const data = await MembershipService.getMyMemberships({
+      id: req.user.id,
+      gymId: req.user.gymId,
+    });
+
+    return res.json({ success: true, data });
+  }
+
+  static async analytics(req: Request, res: Response) {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+    if (!req.user.gymId) {
+      return res.status(400).json({ success: false, message: "Gym ID required" });
+    }
+
+    const data = await MembershipService.analytics(req.user.gymId);
+    return res.json({ success: true, data });
+  }
+
+  static async renew(req: Request, res: Response) {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+    if (!req.user.gymId) {
+      return res.status(400).json({ success: false, message: "Gym ID required" });
+    }
+
+    const gymId = req.user.gymId;
+    const data = renewMembershipSchema.parse(req.body);
+    const membership = await MembershipService.renew(
+      gymId,
+      req.params.id as string,
+      data
+    );
+
+    await createAuditLog({
+      gymId,
+      userId: req.user.id,
+      action: AuditAction.CREATE,
+      entity: "MembershipRenewal",
+      entityId: membership.id,
+      newData: membership,
+      ...getRequestMeta(req),
+    });
+
+    return res.json({
+      success: true,
+      message: "Membership renewed successfully",
+      data: membership,
+    });
+  }
+
+  static async freeze(req: Request, res: Response) {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+    if (!req.user.gymId) {
+      return res.status(400).json({ success: false, message: "Gym ID required" });
+    }
+
+    const gymId = req.user.gymId;
+    const data = freezeMembershipSchema.parse(req.body);
+    const membership = await MembershipService.freeze(
+      gymId,
+      req.params.id as string,
+      data
+    );
+
+    await createAuditLog({
+      gymId,
+      userId: req.user.id,
+      action: AuditAction.UPDATE,
+      entity: "MembershipFreeze",
+      entityId: membership.id,
+      newData: membership,
+      ...getRequestMeta(req),
+    });
+
+    return res.json({
+      success: true,
+      message: "Membership frozen successfully",
+      data: membership,
+    });
+  }
+
+  static async extend(req: Request, res: Response) {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+    if (!req.user.gymId) {
+      return res.status(400).json({ success: false, message: "Gym ID required" });
+    }
+
+    const gymId = req.user.gymId;
+    const data = extendMembershipSchema.parse(req.body);
+    const membership = await MembershipService.extend(
+      gymId,
+      req.params.id as string,
+      data
+    );
+
+    await createAuditLog({
+      gymId,
+      userId: req.user.id,
+      action: AuditAction.UPDATE,
+      entity: "MembershipExtension",
+      entityId: membership.id,
+      newData: membership,
+      ...getRequestMeta(req),
+    });
+
+    return res.json({
+      success: true,
+      message: "Membership extended successfully",
+      data: membership,
     });
   }
 

@@ -1054,8 +1054,8 @@ export default function MemberDashboardPage() {
   const { data: attendanceData, isLoading: attendanceLoading } = useQuery({
     queryKey: ["member-attendance", memberId],
     queryFn: async () => {
-      const res = await attendanceService.getMyAttendance();
-      return (res.data?.attendance ?? []) as Attendance[];
+      const records = await attendanceService.getMyAttendance();
+      return (records ?? []) as Attendance[];
     },
     enabled: !!memberId,
   });

@@ -1,114 +1,97 @@
 import { api } from '@/lib/api'
 import type { ApiResponse } from '@/lib/api'
-import type { Attendance } from '@/types/attendance.types'
-
-export interface AttendanceListParams {
-  gymId?: string
-  memberId?: string
-  date?: string
-  startDate?: string
-  endDate?: string
-  page?: number
-  limit?: number
-}
+import type {
+  Attendance,
+  AttendanceAnalytics,
+  LiveOccupancy,
+  GymQr,
+} from '@/types/attendance.types'
 
 export interface MarkAttendancePayload {
-  gymId: string
+  gymId?: string
   memberId: string
-  checkInAt?: string
-  date?: string
-}
-
-export interface QrScanPayload {
-  gymId: string
-  qrCode: string
 }
 
 export interface AttendanceListResponse {
   attendance: Attendance[]
 }
 
-export interface AttendanceSummary {
-  totalDays: number
-  presentDays: number
-  absentDays: number
-  attendanceRate: number
-}
-
 export const attendanceService = {
-  /**
-   * List attendance records with optional filters.
-   * GET /attendance?gymId=&memberId=&date=
-   */
-  list: async (params?: AttendanceListParams): Promise<ApiResponse<AttendanceListResponse>> => {
-    const res = await api.get<ApiResponse<AttendanceListResponse>>('/attendance', { params })
-    return res.data
+  // ── Admin / Receptionist dashboard ─────────────────────────────────────────
+  /** Today's attendance for the caller's gym. */
+  getToday: async (): Promise<Attendance[]> => {
+    const res = await api.get<ApiResponse<Attendance[]>>('/attendance/today')
+    return res.data.data ?? []
   },
 
-  /**
-   * Fetch attendance records for a specific member.
-   * GET /attendance?gymId=&memberId=
-   */
-  getByMember: async (memberId: string, gymId?: string, params?: Pick<AttendanceListParams, 'startDate' | 'endDate' | 'page' | 'limit'>): Promise<ApiResponse<AttendanceListResponse>> => {
-    const res = await api.get<ApiResponse<AttendanceListResponse>>('/attendance', {
-      params: { memberId, gymId, ...params },
+  /** Members currently inside the gym + occupancy count. */
+  getLive: async (): Promise<LiveOccupancy> => {
+    const res = await api.get<ApiResponse<LiveOccupancy>>('/attendance/live')
+    return res.data.data ?? { occupancy: 0, members: [] }
+  },
+
+  getAnalytics: async (days = 7): Promise<AttendanceAnalytics> => {
+    const res = await api.get<ApiResponse<AttendanceAnalytics>>('/attendance/analytics', {
+      params: { days },
     })
-    return res.data
+    return res.data.data
+  },
+
+  /** The printable gym QR (PNG data-url that encodes `gym:<gymId>`). */
+  getQr: async (): Promise<GymQr> => {
+    const res = await api.get<ApiResponse<GymQr>>('/attendance/qr')
+    return res.data.data
+  },
+
+  /** Admin/receptionist manual check-in. */
+  manualCheckIn: async (memberId: string): Promise<Attendance> => {
+    const res = await api.post<ApiResponse<Attendance>>('/attendance/manual', { memberId })
+    return res.data.data
+  },
+
+  /** Admin/receptionist check a member out. */
+  checkOutMember: async (memberId: string): Promise<Attendance> => {
+    const res = await api.post<ApiResponse<Attendance>>(`/attendance/member/${memberId}/checkout`)
+    return res.data.data
+  },
+
+  // ── Member self-service ────────────────────────────────────────────────────
+  getMyAttendance: async (): Promise<Attendance[]> => {
+    const res = await api.get<ApiResponse<Attendance[]>>('/attendance/my')
+    return res.data.data ?? []
+  },
+
+  checkout: async (): Promise<Attendance> => {
+    const res = await api.post<ApiResponse<Attendance>>('/attendance/checkout')
+    return res.data.data
+  },
+
+  // ── Shared ─────────────────────────────────────────────────────────────────
+  getByMember: async (memberId: string): Promise<Attendance[]> => {
+    const res = await api.get<ApiResponse<Attendance[]>>(`/attendance/member/${memberId}`)
+    return res.data.data ?? []
   },
 
   /**
-   * Fetch attendance for a specific date across a gym.
-   * GET /attendance?gymId=&date=
+   * Legacy helper used by the trainer dashboard: returns the gym's attendance
+   * for a date wrapped in `{ attendance }`. (gymId is derived from the JWT.)
    */
-  getByDate: async (gymId: string, date: string): Promise<ApiResponse<AttendanceListResponse>> => {
-    const res = await api.get<ApiResponse<AttendanceListResponse>>('/attendance', {
-      params: { gymId, date },
+  getByDate: async (
+    _gymId: string,
+    date?: string
+  ): Promise<ApiResponse<AttendanceListResponse>> => {
+    const res = await api.get<ApiResponse<Attendance[]>>('/attendance/today', {
+      params: date ? { date } : undefined,
     })
-    return res.data
+    return { ...res.data, data: { attendance: res.data.data ?? [] } }
   },
 
-  /**
-   * Manually mark attendance for a member.
-   * POST /attendance
-   */
-  mark: async (payload: MarkAttendancePayload): Promise<ApiResponse<Attendance>> => {
-    const res = await api.post<ApiResponse<Attendance>>('/attendance', payload)
-    return res.data
+  /** Legacy: manual mark used by the old AttendanceForm. */
+  mark: async (payload: MarkAttendancePayload): Promise<Attendance> => {
+    return attendanceService.manualCheckIn(payload.memberId)
   },
 
-  /**
-   * Record attendance via QR code scan.
-   * POST /attendance/scan
-   */
-  scanQr: async (payload: QrScanPayload): Promise<ApiResponse<Attendance>> => {
-    const res = await api.post<ApiResponse<Attendance>>('/attendance/scan', payload)
-    return res.data
-  },
-
-  /**
-   * Fetch today's attendance for the authenticated member.
-   * GET /attendance/my
-   */
-  getMyAttendance: async (): Promise<ApiResponse<AttendanceListResponse>> => {
-    const res = await api.get<ApiResponse<AttendanceListResponse>>('/attendance/my')
-    return res.data
-  },
-
-  /**
-   * Fetch attendance summary/stats for a member over a date range.
-   * GET /attendance/summary?memberId=&gymId=&startDate=&endDate=
-   */
-  getSummary: async (memberId: string, gymId: string, startDate: string, endDate: string): Promise<ApiResponse<AttendanceSummary>> => {
-    const res = await api.get<ApiResponse<AttendanceSummary>>('/attendance/summary', {
-      params: { memberId, gymId, startDate, endDate },
-    })
-    return res.data
-  },
-
-  /**
-   * Delete an attendance record by ID.
-   * DELETE /attendance/:id
-   */
+  /** Legacy: kept for the old AttendanceTable component. */
   remove: async (id: string): Promise<ApiResponse<null>> => {
     const res = await api.delete<ApiResponse<null>>(`/attendance/${id}`)
     return res.data

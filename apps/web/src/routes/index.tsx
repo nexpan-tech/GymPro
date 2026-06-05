@@ -32,6 +32,7 @@ import GymAdminAnalyticsPage from "@/pages/gym-admin/AnalyticsPage";
 import GymAdminUsersPage from "@/pages/gym-admin/UsersPage";
 import GymAdminBranchesPage from "@/pages/gym-admin/BranchesPage";
 import GymAdminMembersPage from "@/pages/gym-admin/MembersPage";
+import GymAdminMemberProfilePage from "@/pages/gym-admin/MemberProfilePage";
 import GymAdminMembershipsPage from "@/pages/gym-admin/MembershipsPage";
 import GymAdminAttendancePage from "@/pages/gym-admin/AttendancePage";
 import GymAdminPaymentsPage from "@/pages/gym-admin/PaymentsPage";
@@ -112,6 +113,7 @@ const router = createBrowserRouter([
           { path: "users", element: <GymAdminUsersPage /> },
           { path: "branches", element: <GymAdminBranchesPage /> },
           { path: "members", element: <GymAdminMembersPage /> },
+          { path: "members/:id", element: <GymAdminMemberProfilePage /> },
           { path: "memberships", element: <GymAdminMembershipsPage /> },
           { path: "attendance", element: <GymAdminAttendancePage /> },
           { path: "payments", element: <GymAdminPaymentsPage /> },

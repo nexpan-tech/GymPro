@@ -125,9 +125,17 @@ export interface Member {
   weight?: number | null;
   bmi?: number | null;
   fitnessGoal?: string | null;
+  // Stage 2 health profile (matches backend column names)
+  emergencyContactName?: string | null;
+  emergencyContactPhone?: string | null;
+  healthNotes?: string | null;
+  injuryNotes?: string | null;
+  medicalConditions?: string | null;
   trainerId?: string | null;
   status: MemberStatus;
   joinDate?: string | null;
+  joinedAt?: string | null;
+  branch?: { id: string; name: string; code?: string } | null;
   rfidTag?: string | null;
   profilePhotoUrl?: string | null;
   xp?: MemberXP | null;

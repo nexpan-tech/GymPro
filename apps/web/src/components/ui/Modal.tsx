@@ -104,7 +104,7 @@ export default function Modal({
       <div
         ref={dialogRef}
         className={cn(
-          "relative w-full overflow-hidden rounded-2xl",
+          "relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-2xl",
           "border border-(--glass-border) bg-(--glass-strong)",
           "shadow-(--shadow-xl) backdrop-blur-xl",
           "animate-in fade-in-0 zoom-in-95 duration-200",
@@ -121,7 +121,7 @@ export default function Modal({
         />
 
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 border-b border-(--border) px-6 py-4">
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-(--border) px-6 py-4">
           <div className="min-w-0">
             {title && (
               <h2
@@ -156,12 +156,12 @@ export default function Modal({
           </button>
         </div>
 
-        {/* Body */}
-        <div className="px-6 py-5">{children}</div>
+        {/* Body (scrolls when content exceeds the 90vh panel) */}
+        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
 
-        {/* Footer */}
+        {/* Footer stays pinned and reachable below the scroll area */}
         {footer && (
-          <div className="border-t border-(--border) px-6 py-4">{footer}</div>
+          <div className="shrink-0 border-t border-(--border) px-6 py-4">{footer}</div>
         )}
       </div>
     </div>

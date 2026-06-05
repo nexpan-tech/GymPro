@@ -68,7 +68,9 @@ export class MemberController {
     const user = requireAuth(req, res);
     if (!user) return;
 
-    const members = await MemberService.getAll(user);
+    const branchId =
+      typeof req.query.branchId === "string" ? req.query.branchId : undefined;
+    const members = await MemberService.getAll(user, branchId);
 
     return res.json({
       success: true,

@@ -20,4 +20,9 @@ export const attendanceService = {
     const res = await api.post("/attendance/scan", { gymId });
     return unwrap<Attendance>(res);
   },
+
+  checkout: async (payload: { gymId?: string } = {}): Promise<Attendance> => {
+    const res = await api.post("/attendance/checkout", payload);
+    return unwrap<Attendance>(res);
+  },
 };

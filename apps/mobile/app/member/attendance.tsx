@@ -41,6 +41,32 @@ function formatTime(date: string) {
   });
 }
 
+/** Consecutive-day check-in streak ending today or yesterday. */
+function computeStreak(records: Attendance[]): number {
+  const days = [...new Set(records.map((r) => r.date.slice(0, 10)))].sort((a, b) =>
+    b.localeCompare(a),
+  );
+  if (days.length === 0) return 0;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dayMs = 86_400_000;
+  const diffFromToday = Math.round(
+    (today.getTime() - new Date(days[0]).getTime()) / dayMs,
+  );
+  if (diffFromToday > 1) return 0; // last visit before yesterday → streak broken
+
+  let streak = 1;
+  for (let i = 1; i < days.length; i++) {
+    const gap = Math.round(
+      (new Date(days[i - 1]).getTime() - new Date(days[i]).getTime()) / dayMs,
+    );
+    if (gap === 1) streak += 1;
+    else break;
+  }
+  return streak;
+}
+
 export default function AttendanceScreen() {
   const { theme } = useTheme();
   const c = theme.colors;
@@ -53,6 +79,7 @@ export default function AttendanceScreen() {
   const [scanStatus, setScanStatus] = useState<ScanStatus>("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [alreadyMessage, setAlreadyMessage] = useState("");
+  const [checkingOut, setCheckingOut] = useState(false);
   const scanningRef = useRef(false);
 
   const loadAttendance = useCallback(async () => {
@@ -122,6 +149,23 @@ export default function AttendanceScreen() {
     );
   }).length;
 
+  const streak = computeStreak(records);
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayRecord = records.find((r) => r.date.slice(0, 10) === todayStr);
+  const isCheckedIn = todayRecord?.status === "CHECKED_IN";
+
+  const handleCheckout = useCallback(async () => {
+    try {
+      setCheckingOut(true);
+      await attendanceService.checkout();
+      await loadAttendance();
+    } catch {
+      // surfaced via reload; keep UI simple
+    } finally {
+      setCheckingOut(false);
+    }
+  }, [loadAttendance]);
+
   if (loading || !permission) {
     return (
       <View style={styles.center}>
@@ -166,9 +210,31 @@ export default function AttendanceScreen() {
 
       {/* Stats */}
       <View style={{ flexDirection: "row", gap: 12 }}>
-        <AppStatCard label="This Month" value={thisMonthCount} tone="primary" />
-        <AppStatCard label="Total Visits" value={records.length} tone="success" />
+        <AppStatCard label="Day Streak" value={streak} tone="primary" />
+        <AppStatCard label="This Month" value={thisMonthCount} tone="success" />
+        <AppStatCard label="Total Visits" value={records.length} tone="primary" />
       </View>
+
+      {/* Active session → allow checkout */}
+      {isCheckedIn && (
+        <AppCard>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <AppText variant="bodyStrong">You're checked in</AppText>
+              <AppText variant="caption" color="textSecondary" style={{ marginTop: 2 }}>
+                Since {todayRecord ? formatTime(todayRecord.checkInAt) : "—"}
+              </AppText>
+            </View>
+            <AppButton
+              variant="secondary"
+              loading={checkingOut}
+              onPress={() => void handleCheckout()}
+            >
+              Check Out
+            </AppButton>
+          </View>
+        </AppCard>
+      )}
 
       {/* QR Scanner */}
       <AppText variant="heading">Scan QR Code</AppText>
@@ -234,11 +300,15 @@ export default function AttendanceScreen() {
                 <View style={{ flex: 1 }}>
                   <AppText variant="bodyStrong">{formatDate(item.date)}</AppText>
                   <AppText variant="caption" color="textSecondary" style={{ marginTop: 4 }}>
-                    Checked in at {formatTime(item.checkInAt)}
+                    In {formatTime(item.checkInAt)}
+                    {item.checkOutAt ? ` · Out ${formatTime(item.checkOutAt)}` : ""}
                   </AppText>
                 </View>
-                <AppText variant="caption" style={{ color: c.success }}>
-                  Present
+                <AppText
+                  variant="caption"
+                  style={{ color: item.status === "CHECKED_IN" ? c.success : c.textSecondary }}
+                >
+                  {item.status === "CHECKED_IN" ? "Inside" : "Present"}
                 </AppText>
               </View>
             </AppCard>
