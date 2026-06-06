@@ -2,8 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Calendar, CreditCard, ShieldCheck } from "lucide-react";
 import PageHeader from "@/components/common/PageHeader";
 import { Card, CardContent } from "@/components/ui/Card";
-import { membershipService } from "@/services/membership.service";
-import type { Membership } from "@/types/membership.types";
+import { membershipService, type MembershipRecord } from "@/services/membership.service";
 
 function daysLeft(endDate?: string) {
   if (!endDate) return null;
@@ -12,7 +11,7 @@ function daysLeft(endDate?: string) {
 }
 
 export default function MembershipDetailsPage() {
-  const [membership, setMembership] = useState<Membership | null>(null);
+  const [membership, setMembership] = useState<MembershipRecord | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadMembership = useCallback(async () => {

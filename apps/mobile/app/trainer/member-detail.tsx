@@ -51,7 +51,7 @@ export default function MemberDetailScreen() {
         trainerApi.getTodayAttendance().catch(() => [] as Attendance[]),
       ]);
       setMember(memberData);
-      setWorkout(workoutData);
+      setWorkout(workoutData?.[0] ?? null);
       setDiet(dietData);
       const memberAttendance = (Array.isArray(todayData) ? todayData : []).filter(
         (a) => a.memberId === memberId,
@@ -92,7 +92,7 @@ export default function MemberDetailScreen() {
 
   const name = member.user?.name ?? "Member";
 
-  const DAYS: (keyof WorkoutPlan | keyof DietPlan)[] = [
+  const DAYS: (keyof DietPlan)[] = [
     "monday",
     "tuesday",
     "wednesday",
@@ -103,7 +103,7 @@ export default function MemberDetailScreen() {
   ];
 
   const workoutDaysCount = workout
-    ? DAYS.filter((d) => (workout as unknown as Record<string, unknown>)[d]).length
+    ? new Set(workout.exercises.map((e) => e.dayNumber)).size
     : 0;
   const dietDaysCount = diet
     ? DAYS.filter((d) => (diet as unknown as Record<string, unknown>)[d]).length
@@ -203,27 +203,36 @@ function WorkoutsTab({ workout, daysCount }: { workout: WorkoutPlan | null; days
       </AppCard>
     );
   }
-  const DAYS: (keyof WorkoutPlan)[] = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+  const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const dayNumbers = Array.from(
+    new Set(workout.exercises.map((e) => e.dayNumber)),
+  ).sort((a, b) => a - b);
   return (
     <View style={{ gap: 12 }}>
       <AppCard>
-        <AppText variant="subtitle">Workout Plan</AppText>
-        {workout.goal ? (
+        <AppText variant="subtitle">{workout.title}</AppText>
+        {workout.difficulty ? (
           <AppText variant="caption" color="primary" style={{ marginTop: 4 }}>
-            Goal: {workout.goal}
+            {workout.difficulty}
           </AppText>
         ) : null}
         <AppText variant="caption" color="textSecondary" style={{ marginTop: 4 }}>
           {daysCount} day{daysCount !== 1 ? "s" : ""} scheduled
         </AppText>
       </AppCard>
-      {DAYS.map((day) => {
-        const val = (workout as unknown as Record<string, unknown>)[day] as string | null;
-        if (!val) return null;
+      {dayNumbers.map((dayNumber) => {
+        const items = workout.exercises.filter((e) => e.dayNumber === dayNumber);
         return (
-          <AppCard key={day}>
-            <Text style={styles.dayLabel}>{day.charAt(0).toUpperCase() + day.slice(1)}</Text>
-            <Text style={styles.dayValue}>{val}</Text>
+          <AppCard key={dayNumber}>
+            <Text style={styles.dayLabel}>
+              {DAY_LABELS[dayNumber - 1] ?? `Day ${dayNumber}`}
+            </Text>
+            {items.map((ex) => (
+              <Text key={ex.id} style={styles.dayValue}>
+                {ex.exercise.name} — {ex.sets} × {ex.reps}
+                {ex.restSeconds ? ` (${ex.restSeconds}s rest)` : ""}
+              </Text>
+            ))}
           </AppCard>
         );
       })}

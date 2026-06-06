@@ -7,6 +7,43 @@ type AuthUser = {
   gymId: string | null;
 };
 
+function startOfDay(date = new Date()) {
+  const value = new Date(date);
+  value.setHours(0, 0, 0, 0);
+  return value;
+}
+
+function dayKey(date: Date) {
+  return startOfDay(date).toISOString().slice(0, 10);
+}
+
+function buildTrend(completedAts: Date[], days = 7) {
+  const counts = new Map<string, number>();
+  for (const d of completedAts) {
+    const key = dayKey(new Date(d));
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  const trend: { date: string; count: number }[] = [];
+  const today = startOfDay();
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = dayKey(d);
+    trend.push({ date: key, count: counts.get(key) ?? 0 });
+  }
+
+  let streak = 0;
+  for (let i = 0; ; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    if ((counts.get(dayKey(d)) ?? 0) > 0) streak++;
+    else break;
+  }
+
+  return { trend, streak };
+}
+
 export class WorkoutService {
   static async createPlan(user: AuthUser, data: any) {
     if (!user.gymId) throw new AppError("Gym context missing", 403);
@@ -277,4 +314,137 @@ static async getCompletions(user: AuthUser, workoutPlanId: string) {
     },
   });
 }
+
+  static async updatePlan(user: AuthUser, id: string, data: any) {
+    if (!user.gymId) throw new AppError("Gym context missing", 403);
+
+    const plan = await prisma.workoutPlan.findFirst({
+      where: {
+        id,
+        gymId: user.gymId,
+        ...(user.role === "TRAINER" ? { trainerId: user.id } : {}),
+      },
+    });
+
+    if (!plan) throw new AppError("Workout plan not found or not editable", 404);
+
+    return prisma.workoutPlan.update({
+      where: { id },
+      data: {
+        title: data.title,
+        description: data.description,
+        difficulty: data.difficulty,
+        durationWeeks:
+          data.durationWeeks !== undefined
+            ? Number(data.durationWeeks)
+            : undefined,
+        isTemplate:
+          typeof data.isTemplate === "boolean" ? data.isTemplate : undefined,
+      },
+      include: {
+        trainer: true,
+        member: { include: { user: true } },
+        exercises: { include: { exercise: true } },
+      },
+    });
+  }
+
+  static async getByMember(user: AuthUser, memberId: string) {
+    if (!user.gymId) throw new AppError("Gym context missing", 403);
+
+    const member = await prisma.member.findFirst({
+      where: { id: memberId, gymId: user.gymId },
+    });
+
+    if (!member) throw new AppError("Member not found", 404);
+
+    if (user.role === "TRAINER" && member.trainerId !== user.id) {
+      throw new AppError("You can only access assigned members", 403);
+    }
+
+    if (user.role === "MEMBER" && member.userId !== user.id) {
+      throw new AppError("You can only access your own workout plans", 403);
+    }
+
+    return prisma.workoutPlan.findMany({
+      where: { gymId: user.gymId, memberId },
+      include: {
+        trainer: true,
+        exercises: { include: { exercise: true } },
+        completions: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  static async getMyPlans(user: AuthUser) {
+    if (!user.gymId) throw new AppError("Gym context missing", 403);
+
+    const member = await prisma.member.findFirst({
+      where: { userId: user.id, gymId: user.gymId },
+    });
+
+    if (!member) throw new AppError("Member profile not found", 404);
+
+    return prisma.workoutPlan.findMany({
+      where: { gymId: user.gymId, memberId: member.id },
+      include: {
+        trainer: true,
+        exercises: { include: { exercise: true } },
+        completions: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  /**
+   * Workout completion analytics. Scoped to a single member when `memberId`
+   * is provided (or for MEMBER role, always self); otherwise aggregated across
+   * the caller's visible plans (TRAINER → own plans, ADMIN → whole gym).
+   */
+  static async getAnalytics(user: AuthUser, memberId?: string) {
+    if (!user.gymId) throw new AppError("Gym context missing", 403);
+
+    let scope: Record<string, unknown> = {};
+    if (user.role === "MEMBER") {
+      scope = { member: { userId: user.id } };
+    } else if (memberId) {
+      const member = await prisma.member.findFirst({
+        where: { id: memberId, gymId: user.gymId },
+      });
+      if (!member) throw new AppError("Member not found", 404);
+      if (user.role === "TRAINER" && member.trainerId !== user.id) {
+        throw new AppError("You can only access assigned members", 403);
+      }
+      scope = { memberId };
+    } else if (user.role === "TRAINER") {
+      scope = { trainerId: user.id };
+    }
+
+    const plans = await prisma.workoutPlan.findMany({
+      where: { gymId: user.gymId, ...scope },
+      include: { exercises: true, completions: true },
+    });
+
+    const totalPlans = plans.length;
+    const totalExercises = plans.reduce((sum, p) => sum + p.exercises.length, 0);
+    const completions = plans.flatMap((p) => p.completions);
+    const totalCompletions = completions.length;
+
+    const completionPercentage =
+      totalExercises > 0
+        ? Math.min(100, Math.round((totalCompletions / totalExercises) * 100))
+        : 0;
+
+    const { trend, streak } = buildTrend(completions.map((c) => c.completedAt));
+
+    return {
+      totalPlans,
+      totalExercises,
+      totalCompletions,
+      completionPercentage,
+      currentStreak: streak,
+      weeklyTrend: trend,
+    };
+  }
 }

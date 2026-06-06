@@ -1063,11 +1063,7 @@ export default function MemberDashboardPage() {
   const { data: membershipData, isLoading: membershipLoading } = useQuery({
     queryKey: ["member-active-membership", memberId],
     queryFn: async () => {
-      const res = await membershipService.getActiveMembership(
-        memberData?.id ?? memberId,
-        user?.gymId ?? undefined
-      );
-      return res.data ?? null;
+      return await membershipService.getMyActive();
     },
     enabled: !!memberId,
   });

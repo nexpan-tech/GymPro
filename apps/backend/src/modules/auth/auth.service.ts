@@ -6,7 +6,7 @@ import {
   hashRefreshToken,
 } from "../../utils/jwt";
 import { AppError } from "../../utils/response";
-import { RegisterInput, LoginInput } from "./auth.validation";
+import { RegisterInput, LoginInput, RegisterGymInput } from "./auth.validation";
 
 function sanitizeUser(user: any) {
   const { passwordHash, ...safeUser } = user;
@@ -39,6 +39,73 @@ export class AuthService {
         role: data.role || "MEMBER",
         gymId: data.gymId ?? null,
       },
+    });
+
+    const accessToken = generateAccessToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      gymId: user.gymId,
+      branchId: user.branchId,
+    });
+
+    const refreshToken = generateRefreshToken();
+
+    await prisma.session.create({
+      data: {
+        userId: user.id,
+        refreshTokenHash: hashRefreshToken(refreshToken),
+        expiresAt: getRefreshExpiry(),
+      },
+    });
+
+    return {
+      user: sanitizeUser(user),
+      token: accessToken,
+      accessToken,
+      refreshToken,
+    };
+  }
+
+  /**
+   * Self-service gym onboarding: create the Gym + its first ADMIN (owner) in a
+   * single transaction and return session tokens so the owner is logged in.
+   */
+  static async registerGym(data: RegisterGymInput) {
+    const existingUser = await prisma.user.findUnique({
+      where: { email: data.email },
+    });
+    if (existingUser) {
+      throw new AppError("A user already exists with this email", 400);
+    }
+
+    const existingGym = await prisma.gym.findUnique({
+      where: { email: data.email },
+    });
+    if (existingGym) {
+      throw new AppError("A gym already exists with this email", 400);
+    }
+
+    const passwordHash = await hashPassword(data.password);
+
+    const user = await prisma.$transaction(async (tx) => {
+      const gym = await tx.gym.create({
+        data: {
+          name: data.gymName,
+          email: data.email,
+          phone: data.phone ?? null,
+        },
+      });
+
+      return tx.user.create({
+        data: {
+          name: data.ownerName,
+          email: data.email,
+          passwordHash,
+          role: "ADMIN",
+          gymId: gym.id,
+        },
+      });
     });
 
     const accessToken = generateAccessToken({

@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { AuditAction } from "@prisma/client";
 import { AuthService } from "./auth.service";
 import { createAuditLog } from "../../utils/audit";
-import { registerSchema, loginSchema } from "./auth.validation";
+import { registerSchema, loginSchema, registerGymSchema } from "./auth.validation";
 
 function getRequestMeta(req: Request) {
   return {
@@ -29,6 +29,27 @@ export class AuthController {
     return res.status(201).json({
       success: true,
       message: "User registered successfully",
+      data: result,
+    });
+  }
+
+  static async registerGym(req: Request, res: Response) {
+    const data = registerGymSchema.parse(req.body);
+    const result = await AuthService.registerGym(data);
+
+    await createAuditLog({
+      gymId: result.user.gymId,
+      userId: result.user.id,
+      action: AuditAction.CREATE,
+      entity: "AuthRegisterGym",
+      entityId: result.user.gymId ?? result.user.id,
+      newData: result.user,
+      ...getRequestMeta(req),
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Gym registered successfully",
       data: result,
     });
   }

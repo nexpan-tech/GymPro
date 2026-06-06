@@ -21,6 +21,26 @@ router.get(
   asyncHandler(DietController.getAll)
 );
 
+// Completion tracking + analytics. Registered before "/:memberId" so the
+// static path segments are not swallowed by the dynamic param route.
+router.post(
+  "/completions",
+  roleMiddleware([ROLES.ADMIN, ROLES.TRAINER, ROLES.MEMBER]),
+  asyncHandler(DietController.complete)
+);
+
+router.get(
+  "/completions",
+  roleMiddleware([ROLES.ADMIN, ROLES.TRAINER, ROLES.MEMBER]),
+  asyncHandler(DietController.getCompletions)
+);
+
+router.get(
+  "/analytics",
+  roleMiddleware([ROLES.ADMIN, ROLES.TRAINER, ROLES.MEMBER]),
+  asyncHandler(DietController.getAnalytics)
+);
+
 router.get(
   "/:memberId",
   roleMiddleware([ROLES.ADMIN, ROLES.TRAINER, ROLES.MEMBER]),

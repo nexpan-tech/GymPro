@@ -39,49 +39,65 @@ export interface TrainerStats {
   sessionsThisMonth: number
 }
 
+// Trainers are Users with role TRAINER. There is no dedicated `/trainers` CRUD
+// API on the backend (the `/trainers` path serves trainer-analytics), so these
+// methods are backed by the gym-scoped `/users` endpoints and filtered by role.
+const TRAINER_ROLE = 'TRAINER'
+
 export const trainerService = {
   /**
-   * List all trainers for a gym.
-   * GET /trainers?gymId=
+   * List all trainers in the caller's gym.
+   * GET /users (filtered to role TRAINER)
    */
-  list: async (params?: TrainerListParams): Promise<ApiResponse<TrainerListResponse>> => {
-    const res = await api.get<ApiResponse<TrainerListResponse>>('/trainers', { params })
-    return res.data
+  list: async (_params?: TrainerListParams): Promise<ApiResponse<TrainerListResponse>> => {
+    const res = await api.get<ApiResponse<Array<{ role: string }>>>('/users')
+    const all = res.data.data ?? []
+    const trainers = all.filter((u) => u.role === TRAINER_ROLE) as unknown as Trainer[]
+    return { success: true, message: res.data.message, data: { trainers } }
   },
 
   /**
    * Fetch a single trainer by ID.
-   * GET /trainers/:id
+   * GET /users/:id is not exposed; fall back to filtering the list.
    */
   getById: async (id: string): Promise<ApiResponse<Trainer>> => {
-    const res = await api.get<ApiResponse<Trainer>>(`/trainers/${id}`)
-    return res.data
+    const { data } = await trainerService.list()
+    const trainer = data.trainers.find((t) => t.id === id)
+    return { success: !!trainer, data: trainer as Trainer }
   },
 
   /**
    * Create a new trainer account.
-   * POST /trainers
+   * POST /users with role TRAINER
    */
   create: async (payload: CreateTrainerPayload): Promise<ApiResponse<Trainer>> => {
-    const res = await api.post<ApiResponse<Trainer>>('/trainers', payload)
+    const res = await api.post<ApiResponse<Trainer>>('/users', {
+      name: payload.name,
+      email: payload.email,
+      password: payload.password,
+      role: TRAINER_ROLE,
+    })
     return res.data
   },
 
   /**
    * Update a trainer's profile.
-   * PUT /trainers/:id
+   * PUT /users/:id
    */
   update: async (id: string, payload: UpdateTrainerPayload): Promise<ApiResponse<Trainer>> => {
-    const res = await api.put<ApiResponse<Trainer>>(`/trainers/${id}`, payload)
+    const res = await api.put<ApiResponse<Trainer>>(`/users/${id}`, {
+      name: payload.name,
+      ...(payload.isActive !== undefined ? { isActive: payload.isActive } : {}),
+    })
     return res.data
   },
 
   /**
    * Remove a trainer by ID.
-   * DELETE /trainers/:id
+   * DELETE /users/:id
    */
   remove: async (id: string): Promise<ApiResponse<null>> => {
-    const res = await api.delete<ApiResponse<null>>(`/trainers/${id}`)
+    const res = await api.delete<ApiResponse<null>>(`/users/${id}`)
     return res.data
   },
 

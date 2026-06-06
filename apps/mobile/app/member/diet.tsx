@@ -125,6 +125,8 @@ export default function DietScreen() {
   const [plan, setPlan] = useState<DietPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("today");
+  const [completedDays, setCompletedDays] = useState<Record<string, boolean>>({});
+  const [saving, setSaving] = useState(false);
 
   const loadPlan = useCallback(async () => {
     try {
@@ -153,6 +155,20 @@ export default function DietScreen() {
 
   const activeDay = dayKeyForTab[activeTab];
   const meals = parseMeals(plan?.[activeDay] ?? null);
+  const dayDone = !!completedDays[activeDay];
+
+  async function markDayComplete() {
+    if (!plan || dayDone || saving) return;
+    setSaving(true);
+    try {
+      await dietService.complete({ dietPlanId: plan.id, dayOfWeek: activeDay });
+      setCompletedDays((prev) => ({ ...prev, [activeDay]: true }));
+    } catch (err) {
+      console.log("Diet completion failed", err);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   // Meal-category accent hues (readable on both themes).
   const mealTypeColors: Record<string, string> = {
@@ -298,6 +314,35 @@ export default function DietScreen() {
           })}
         </View>
       )}
+
+      {/* Mark day complete */}
+      {meals.length > 0 ? (
+        <TouchableOpacity
+          onPress={markDayComplete}
+          activeOpacity={0.85}
+          disabled={dayDone || saving}
+          style={{
+            marginTop: 16,
+            paddingVertical: 14,
+            borderRadius: theme.radius.md,
+            alignItems: "center",
+            backgroundColor: dayDone ? c.successSoft : c.primary,
+            borderWidth: 1,
+            borderColor: dayDone ? c.success : c.primary,
+          }}
+        >
+          <AppText
+            variant="label"
+            style={{ color: dayDone ? c.success : c.onPrimary }}
+          >
+            {dayDone
+              ? "Day marked complete ✓"
+              : saving
+                ? "Saving…"
+                : "Mark this day complete"}
+          </AppText>
+        </TouchableOpacity>
+      ) : null}
     </AppScreen>
   );
 }

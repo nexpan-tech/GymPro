@@ -1,9 +1,8 @@
 import { router } from "expo-router";
 import { CheckCircle2, Circle, Dumbbell } from "lucide-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { TouchableOpacity, ScrollView, View } from "react-native";
 
-import { memberService } from "../../src/services/member.service";
 import {
   workoutService,
   type WorkoutPlan,
@@ -18,66 +17,26 @@ import {
   AppText,
 } from "../../src/components/ui";
 
-// ─── day config (unchanged) ──────────────────────────────────────────────────
+// ─── day config ──────────────────────────────────────────────────────────────
+// Workout plans store exercises against a numeric dayNumber (1 = Mon … 7 = Sun).
 
-const DAY_KEYS = [
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-  "sunday",
-] as const;
+const DAYS: { dayNumber: number; label: string }[] = [
+  { dayNumber: 1, label: "Mon" },
+  { dayNumber: 2, label: "Tue" },
+  { dayNumber: 3, label: "Wed" },
+  { dayNumber: 4, label: "Thu" },
+  { dayNumber: 5, label: "Fri" },
+  { dayNumber: 6, label: "Sat" },
+  { dayNumber: 7, label: "Sun" },
+];
 
-type DayKey = (typeof DAY_KEYS)[number];
-
-const DAY_LABELS: Record<DayKey, string> = {
-  monday: "Mon",
-  tuesday: "Tue",
-  wednesday: "Wed",
-  thursday: "Thu",
-  friday: "Fri",
-  saturday: "Sat",
-  sunday: "Sun",
-};
-
-function todayKey(): DayKey {
-  const map: DayKey[] = [
-    "sunday",
-    "monday",
-    "tuesday",
-    "wednesday",
-    "thursday",
-    "friday",
-    "saturday",
-  ];
-  return map[new Date().getDay()];
+function todayNumber(): number {
+  const js = new Date().getDay(); // 0 = Sun … 6 = Sat
+  return js === 0 ? 7 : js;
 }
 
-interface Exercise {
-  id: string;
-  name: string;
-  detail: string;
-}
-
-function parseExercises(raw: string | null | undefined): Exercise[] {
-  if (!raw) return [];
-  return raw
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line, i) => {
-      const dashIdx = line.indexOf(" - ");
-      if (dashIdx > -1) {
-        return {
-          id: String(i),
-          name: line.slice(0, dashIdx),
-          detail: line.slice(dashIdx + 3),
-        };
-      }
-      return { id: String(i), name: line, detail: "" };
-    });
+function dayLabel(dayNumber: number): string {
+  return DAYS.find((d) => d.dayNumber === dayNumber)?.label ?? "Day";
 }
 
 // ─── screen ──────────────────────────────────────────────────────────────────
@@ -88,16 +47,22 @@ export default function WorkoutScreen() {
 
   const [plan, setPlan] = useState<WorkoutPlan | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeDay, setActiveDay] = useState<DayKey>(todayKey());
+  const [activeDay, setActiveDay] = useState<number>(todayNumber());
   const [completed, setCompleted] = useState<Record<string, boolean>>({});
+  const [saving, setSaving] = useState<string | null>(null);
 
   const loadPlan = useCallback(async () => {
     try {
-      const profile = await memberService.getMyProfile();
-      if (profile?.id) {
-        const data = await workoutService.getByMember(profile.id);
-        setPlan(data);
+      const plans = await workoutService.getMyPlans();
+      const active = plans[0] ?? null;
+      setPlan(active);
+
+      // Seed completion state from already-recorded completions.
+      const seeded: Record<string, boolean> = {};
+      for (const comp of active?.completions ?? []) {
+        if (comp.workoutExerciseId) seeded[comp.workoutExerciseId] = true;
       }
+      setCompleted(seeded);
     } catch (err) {
       console.log("Workout load failed", err);
     } finally {
@@ -109,12 +74,29 @@ export default function WorkoutScreen() {
     void loadPlan();
   }, [loadPlan]);
 
-  function toggleExercise(key: string) {
-    setCompleted((prev) => ({ ...prev, [key]: !prev[key] }));
-  }
+  const exercises = useMemo(
+    () => (plan?.exercises ?? []).filter((e) => e.dayNumber === activeDay),
+    [plan, activeDay],
+  );
 
-  const exercises = parseExercises(plan?.[activeDay] ?? null);
-  const doneCount = exercises.filter((e) => completed[`${activeDay}:${e.id}`]).length;
+  const doneCount = exercises.filter((e) => completed[e.id]).length;
+
+  async function markDone(exerciseId: string) {
+    if (!plan || completed[exerciseId] || saving) return;
+    setSaving(exerciseId);
+    try {
+      await workoutService.complete({
+        workoutPlanId: plan.id,
+        workoutExerciseId: exerciseId,
+        dayNumber: activeDay,
+      });
+      setCompleted((prev) => ({ ...prev, [exerciseId]: true }));
+    } catch (err) {
+      console.log("Mark complete failed", err);
+    } finally {
+      setSaving(null);
+    }
+  }
 
   if (loading) {
     return (
@@ -129,7 +111,7 @@ export default function WorkoutScreen() {
     <AppScreen>
       <AppHeader
         title="Workout Plan"
-        subtitle={plan?.goal || "Your weekly training schedule"}
+        subtitle={plan?.title || "Your weekly training schedule"}
         onBack={() => router.back()}
       />
 
@@ -139,13 +121,13 @@ export default function WorkoutScreen() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
       >
-        {DAY_KEYS.map((day) => {
-          const isActive = day === activeDay;
-          const isToday = day === todayKey();
+        {DAYS.map((day) => {
+          const isActive = day.dayNumber === activeDay;
+          const isToday = day.dayNumber === todayNumber();
           return (
             <TouchableOpacity
-              key={day}
-              onPress={() => setActiveDay(day)}
+              key={day.dayNumber}
+              onPress={() => setActiveDay(day.dayNumber)}
               activeOpacity={0.8}
               style={{
                 paddingHorizontal: 16,
@@ -162,7 +144,7 @@ export default function WorkoutScreen() {
                   color: isActive ? c.onPrimary : isToday ? c.primary : c.textMuted,
                 }}
               >
-                {DAY_LABELS[day]}
+                {day.label}
               </AppText>
             </TouchableOpacity>
           );
@@ -187,7 +169,7 @@ export default function WorkoutScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <AppText variant="caption" color="textSecondary">
-                {DAY_LABELS[activeDay]} Progress
+                {dayLabel(activeDay)} Progress
               </AppText>
               <AppText variant="subtitle" style={{ marginTop: 2 }}>
                 {doneCount} / {exercises.length} exercises done
@@ -240,18 +222,23 @@ export default function WorkoutScreen() {
         <AppEmptyState
           emoji="🛌"
           title="Rest day"
-          description={`No exercises assigned for ${DAY_LABELS[activeDay]}.`}
+          description={`No exercises assigned for ${dayLabel(activeDay)}.`}
         />
       ) : (
         <View style={{ gap: 10 }}>
-          {exercises.map((exercise) => {
-            const key = `${activeDay}:${exercise.id}`;
-            const done = !!completed[key];
+          {exercises.map((ex) => {
+            const done = !!completed[ex.id];
+            const detailParts = [
+              `${ex.sets} × ${ex.reps}`,
+              ex.restSeconds ? `${ex.restSeconds}s rest` : null,
+              ex.exercise.muscleGroup,
+            ].filter(Boolean);
             return (
               <TouchableOpacity
-                key={key}
-                onPress={() => toggleExercise(key)}
+                key={ex.id}
+                onPress={() => markDone(ex.id)}
                 activeOpacity={0.85}
+                disabled={done || saving === ex.id}
               >
                 <AppCard style={{ borderColor: done ? c.success : c.border }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
@@ -268,11 +255,16 @@ export default function WorkoutScreen() {
                           textDecorationLine: done ? "line-through" : "none",
                         }}
                       >
-                        {exercise.name}
+                        {ex.exercise.name}
                       </AppText>
-                      {exercise.detail ? (
+                      {detailParts.length > 0 ? (
                         <AppText variant="caption" color="textMuted" style={{ marginTop: 3 }}>
-                          {exercise.detail}
+                          {detailParts.join(" · ")}
+                        </AppText>
+                      ) : null}
+                      {ex.notes ? (
+                        <AppText variant="caption" color="textSecondary" style={{ marginTop: 3 }}>
+                          {ex.notes}
                         </AppText>
                       ) : null}
                     </View>
@@ -288,7 +280,7 @@ export default function WorkoutScreen() {
                         variant="caption"
                         style={{ color: done ? c.success : c.textSecondary }}
                       >
-                        {done ? "Done" : "Mark Done"}
+                        {saving === ex.id ? "Saving…" : done ? "Done" : "Mark Done"}
                       </AppText>
                     </View>
                   </View>

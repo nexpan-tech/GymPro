@@ -10,64 +10,68 @@ interface Props {
 type TrainerFormState = {
   name: string;
   email: string;
+  password: string;
   specialization: string;
   experience: string;
 };
 
 export default function TrainerForm({ initialData, onSuccess }: Props) {
+  const isEdit = !!initialData?.id;
   const [form, setForm] = useState<TrainerFormState>({
     name: initialData?.name || "",
     email: initialData?.email || "",
+    password: "",
     specialization: initialData?.specialization || "",
     experience: initialData?.experience?.toString() || "0",
   });
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError(null);
 
-    const experienceValue = Number(form.experience);
-
-    const payload: Partial<Trainer> = {
-      name: form.name,
-      email: form.email,
-      specialization: form.specialization,
-      experience: Number.isNaN(experienceValue) ? 0 : experienceValue,
-    };
-
-    if (initialData?.id) {
-      await trainerService.update(initialData.id, {
-        name: payload.name,
-        specialization: payload.specialization,
-        experience: payload.experience,
-      });
-    } else {
-      await trainerService.create({
-        gymId: "",
-        name: payload.name ?? "",
-        email: payload.email ?? "",
-        password: "",
-        specialization: payload.specialization,
-        experience: payload.experience,
-      });
+    if (!isEdit && form.password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
     }
 
-    onSuccess?.();
+    setSaving(true);
+    try {
+      if (initialData?.id) {
+        await trainerService.update(initialData.id, { name: form.name });
+      } else {
+        await trainerService.create({
+          gymId: "",
+          name: form.name,
+          email: form.email,
+          password: form.password,
+        });
+      }
+      onSuccess?.();
+    } catch {
+      setError("Failed to save trainer. Check the details and try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <form className="space-y-3" onSubmit={handleSubmit}>
-      <input name="name" placeholder="Name" onChange={handleChange} className="input" />
-      <input name="email" placeholder="Email" onChange={handleChange} className="input" />
-      <input name="specialization" placeholder="Specialization" onChange={handleChange} className="input" />
-      <input name="experience" type="number" placeholder="Experience" onChange={handleChange} className="input" />
+      <input name="name" placeholder="Name" value={form.name} onChange={handleChange} className="input" />
+      <input name="email" placeholder="Email" value={form.email} onChange={handleChange} className="input" disabled={isEdit} />
+      {!isEdit ? (
+        <input name="password" type="password" placeholder="Temporary password" value={form.password} onChange={handleChange} className="input" />
+      ) : null}
+      <input name="specialization" placeholder="Specialization (not stored yet)" value={form.specialization} onChange={handleChange} className="input" />
+      <input name="experience" type="number" placeholder="Experience (not stored yet)" value={form.experience} onChange={handleChange} className="input" />
 
-      <button className="btn">Save Trainer</button>
+      {error ? <p className="text-sm text-red-500">{error}</p> : null}
+      <button className="btn" disabled={saving}>{saving ? "Saving…" : "Save Trainer"}</button>
     </form>
   );
 }

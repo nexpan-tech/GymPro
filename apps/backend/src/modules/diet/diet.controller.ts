@@ -3,6 +3,7 @@ import { DietService } from "./diet.service";
 import {
   createDietPlanSchema,
   updateDietPlanSchema,
+  createDietCompletionSchema,
 } from "./diet.validation";
 
 function requireAuth(req: Request, res: Response) {
@@ -85,5 +86,39 @@ export class DietController {
       success: true,
       message: "Diet plan deleted successfully",
     });
+  }
+
+  static async complete(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    const data = createDietCompletionSchema.parse(req.body);
+    const completion = await DietService.completeMeal(user, data);
+
+    return res.status(201).json({
+      success: true,
+      message: "Diet completion recorded",
+      data: completion,
+    });
+  }
+
+  static async getCompletions(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    const memberId = req.query.memberId as string | undefined;
+    const data = await DietService.getCompletions(user, memberId);
+
+    return res.json({ success: true, data });
+  }
+
+  static async getAnalytics(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    const memberId = req.query.memberId as string | undefined;
+    const data = await DietService.getAnalytics(user, memberId);
+
+    return res.json({ success: true, data });
   }
 }

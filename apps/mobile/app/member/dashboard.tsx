@@ -186,10 +186,14 @@ export default function MemberDashboardScreen() {
 
   const todayDayName = new Date()
     .toLocaleDateString("en-US", { weekday: "long" })
-    .toLowerCase() as keyof typeof workoutPlan;
-  const todayWorkout = workoutPlan?.[todayDayName];
-  const exerciseCount = todayWorkout
-    ? String(todayWorkout).split("\n").filter(Boolean).length
+    .toLowerCase();
+
+  // Workout plans store exercises against a numeric dayNumber (1=Mon … 7=Sun).
+  const todayWorkoutNumber = new Date().getDay() === 0 ? 7 : new Date().getDay();
+  const firstWorkoutPlan = workoutPlan?.[0] ?? null;
+  const exerciseCount = firstWorkoutPlan
+    ? firstWorkoutPlan.exercises.filter((e) => e.dayNumber === todayWorkoutNumber)
+        .length
     : 0;
 
   const dietNotes = dietPlan?.[todayDayName as keyof typeof dietPlan];
@@ -262,7 +266,7 @@ export default function MemberDashboardScreen() {
             Today's Workout
           </AppText>
           <AppText variant="subtitle" numberOfLines={1} style={{ marginTop: 4 }}>
-            {workoutPlan?.goal || "Not assigned"}
+            {firstWorkoutPlan?.title || "Not assigned"}
           </AppText>
           {exerciseCount > 0 ? (
             <AppText variant="caption" color="textMuted" style={{ marginTop: 3 }}>

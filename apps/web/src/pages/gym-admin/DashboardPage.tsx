@@ -40,7 +40,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { useAuthStore } from "@/store/auth.store";
 import { dashboardService } from "@/services/dashboard.service";
 import { memberService } from "@/services/member.service";
-import { membershipService } from "@/services/membership.service";
+import { membershipService, type MembershipRecord } from "@/services/membership.service";
 import { paymentService } from "@/services/payment.service";
 import { trainerService } from "@/services/trainer.service";
 import type { DashboardAnalytics } from "@/types/analytics.types";
@@ -240,13 +240,16 @@ export default function DashboardPage() {
 
   const { data: upcomingRenewals, isLoading: renewalsLoading } = useQuery({
     queryKey: ["upcoming-renewals", gymId],
-    queryFn: () => membershipService.list({ gymId, status: "active", limit: 20 }),
+    queryFn: () => membershipService.list({ currentOnly: true }),
     enabled: Boolean(gymId),
     staleTime: 5 * 60_000,
-    select: (res) => {
-      const memberships = res.data?.memberships ?? [];
+    select: (memberships: MembershipRecord[]) => {
       return memberships
-        .map((m) => ({ ...m, daysLeft: daysUntil(m.endDate) }))
+        .map((m) => ({
+          ...m,
+          daysLeft: daysUntil(m.endDate),
+          planName: m.planRef?.name ?? m.plan ?? "—",
+        }))
         .filter((m) => m.daysLeft >= 0 && m.daysLeft <= 7)
         .sort((a, b) => a.daysLeft - b.daysLeft)
         .slice(0, 5);

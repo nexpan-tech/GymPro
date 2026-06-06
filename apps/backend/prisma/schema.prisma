@@ -314,6 +314,7 @@ model Gym {
   communityGroups CommunityGroup[]
 
   workoutCompletions WorkoutCompletion[]
+  dietCompletions    DietCompletion[]
 
   trainerMessages  TrainerMessage[]
   trainerFeedbacks TrainerFeedback[]
@@ -440,6 +441,7 @@ model Member {
   payments      Payment[]
 
   workoutCompletions WorkoutCompletion[]
+  dietCompletions    DietCompletion[]
 
   trainerMessages  TrainerMessage[]
   trainerFeedbacks TrainerFeedback[]
@@ -565,7 +567,8 @@ model DietPlan {
   goal  String?
   notes String?
 
-  meals DietMeal[]
+  meals       DietMeal[]
+  completions DietCompletion[]
 
   monday    String?
   tuesday   String?
@@ -944,9 +947,38 @@ model DietMeal {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  completions DietCompletion[]
+
   @@index([dietPlanId])
   @@index([dayOfWeek])
   @@index([mealType])
+}
+
+model DietCompletion {
+  id String @id @default(uuid())
+
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  dietPlanId String
+  dietPlan   DietPlan @relation(fields: [dietPlanId], references: [id], onDelete: Cascade)
+
+  dietMealId String?
+  dietMeal   DietMeal? @relation(fields: [dietMealId], references: [id], onDelete: SetNull)
+
+  dayOfWeek String?
+
+  completedAt DateTime @default(now())
+  notes       String?
+
+  createdAt DateTime @default(now())
+
+  @@index([gymId])
+  @@index([memberId])
+  @@index([dietPlanId])
 }
 
 model TrainerMessage {
