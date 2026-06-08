@@ -74,6 +74,29 @@ export const getPayments = asyncHandler(
   }
 );
 
+export const getMyPayments = asyncHandler(
+  async (req: Request, res: Response) => {
+    if (!req.user) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Unauthorized" });
+    }
+
+    if (!req.user.gymId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Gym ID required" });
+    }
+
+    const data = await paymentService.getMyPayments(
+      req.user.gymId,
+      req.user.id
+    );
+
+    return successResponse(res, "Payments fetched successfully", data, 200);
+  }
+);
+
 export const getPaymentById = asyncHandler(
   async (req: Request, res: Response) => {
     if (!req.user) {

@@ -100,7 +100,8 @@ export const memberApi = {
   },
 
   getMyPayments: async (): Promise<Payment[]> => {
-    const res = await api.get("/payments");
+    // Member self-service history; the gym-wide /payments list is staff-only.
+    const res = await api.get("/payments/my");
     return unwrap<Payment[]>(res);
   },
 };

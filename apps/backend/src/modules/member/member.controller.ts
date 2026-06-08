@@ -78,6 +78,18 @@ export class MemberController {
     });
   }
 
+  static async me(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    const member = await MemberService.getMyProfile(user);
+
+    return res.json({
+      success: true,
+      data: member,
+    });
+  }
+
   static async getById(req: Request, res: Response) {
     const user = requireAuth(req, res);
     if (!user) return;

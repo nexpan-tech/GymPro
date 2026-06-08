@@ -29,6 +29,20 @@ router.get(
   MemberController.getAll
 );
 
+// Self-service profile. Registered before "/:id" so "me" isn't treated as an
+// id. Available to MEMBER (the service scopes it to the caller's own record).
+router.get(
+  "/me",
+  authMiddleware,
+  roleMiddleware([
+    ROLES.MEMBER,
+    ROLES.ADMIN,
+    ROLES.RECEPTIONIST,
+    ROLES.TRAINER,
+  ]),
+  MemberController.me
+);
+
 router.get(
   "/:id",
   authMiddleware,

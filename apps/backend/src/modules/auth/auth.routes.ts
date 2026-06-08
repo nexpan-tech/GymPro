@@ -2,12 +2,15 @@ import { Router } from "express";
 import { AuthController } from "./auth.controller";
 import { authMiddleware } from "../../middleware/auth.middleware";
 import { bruteForceProtection } from "../../middleware/bruteForce.middleware";
+import { authLimiter } from "../../middleware/rateLimits";
 
 const router = Router();
 
-router.post("/register", AuthController.register);
-router.post("/register-gym", AuthController.registerGym);
-router.post("/login", bruteForceProtection, AuthController.login);
+// Rate limiting applies ONLY to the credential-accepting endpoints (brute-force
+// surface). /me, /refresh, /logout are deliberately excluded.
+router.post("/register", authLimiter, AuthController.register);
+router.post("/register-gym", authLimiter, AuthController.registerGym);
+router.post("/login", authLimiter, bruteForceProtection, AuthController.login);
 router.post("/refresh", AuthController.refresh);
 router.post("/logout", AuthController.logout);
 router.post("/logout-all", authMiddleware, AuthController.logoutAll);

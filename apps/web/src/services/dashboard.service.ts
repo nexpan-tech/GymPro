@@ -49,30 +49,58 @@ export const dashboardService = {
   },
 
   /**
-   * Fetch quick numeric stats for the top stat cards.
-   * GET /analytics/stats?gymId=
+   * Quick numeric stats for the top stat cards.
+   *
+   * The backend only exposes a flat `/analytics/dashboard` aggregate (there is
+   * no `/analytics/stats`), so we map that here. Fields the backend doesn't
+   * compute default to 0 — the dashboard renders them gracefully.
    */
   getStats: async (params?: DashboardParams): Promise<ApiResponse<DashboardStats>> => {
-    const res = await api.get<ApiResponse<DashboardStats>>('/analytics/stats', { params })
-    return res.data
+    const res = await api.get<ApiResponse<{ totalMembers?: number; activeMemberships?: number; totalRevenue?: number }>>(
+      '/analytics/dashboard',
+      { params },
+    )
+    const a = res.data.data ?? {}
+    return {
+      success: true,
+      data: {
+        totalMembers: a.totalMembers ?? 0,
+        activeMembers: a.activeMemberships ?? 0,
+        newMembersThisMonth: 0,
+        totalRevenue: a.totalRevenue ?? 0,
+        revenueThisMonth: 0,
+        attendanceToday: 0,
+        activeSessions: 0,
+        pendingDues: 0,
+        openLeads: 0,
+        expiringMemberships: 0,
+      },
+    }
   },
 
   /**
-   * Fetch recent activity feed for the dashboard timeline.
-   * GET /analytics/activity?gymId=&limit=
+   * Recent activity feed. No backend endpoint exists yet, so return an empty
+   * feed (the dashboard shows an empty state) rather than 404-ing.
    */
-  getRecentActivity: async (params?: DashboardParams & { limit?: number }): Promise<ApiResponse<RecentActivity[]>> => {
-    const res = await api.get<ApiResponse<RecentActivity[]>>('/analytics/activity', { params })
-    return res.data
+  getRecentActivity: async (
+    _params?: DashboardParams & { limit?: number },
+  ): Promise<ApiResponse<RecentActivity[]>> => {
+    return { success: true, data: [] }
   },
 
   /**
-   * Fetch gym-level dashboard summary (for gym admin role).
-   * GET /analytics/gym/:gymId
+   * Gym-level dashboard summary. Charts fall back to placeholders when these
+   * arrays are empty; only `/analytics/dashboard` exists on the backend so we
+   * return the chart-shaped arrays empty rather than hitting a 404.
    */
-  getGymDashboard: async (gymId: string, params?: Omit<DashboardParams, 'gymId'>): Promise<ApiResponse<DashboardAnalytics>> => {
-    const res = await api.get<ApiResponse<DashboardAnalytics>>(`/analytics/gym/${gymId}`, { params })
-    return res.data
+  getGymDashboard: async (
+    _gymId: string,
+    _params?: Omit<DashboardParams, 'gymId'>,
+  ): Promise<ApiResponse<DashboardAnalytics>> => {
+    return {
+      success: true,
+      data: { stats: [], revenue: [], attendance: [], memberships: [], recentActivity: [] },
+    }
   },
 
   /**

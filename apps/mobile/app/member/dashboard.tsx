@@ -118,7 +118,7 @@ export default function MemberDashboardScreen() {
     ReturnType<typeof workoutService.getByMember>
   > | null>(null);
   const [dietPlan, setDietPlan] = useState<Awaited<
-    ReturnType<typeof dietService.getByMember>
+    ReturnType<typeof dietService.getMyPlan>
   > | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -137,7 +137,7 @@ export default function MemberDashboardScreen() {
         const [mem, wp, dp] = await Promise.allSettled([
           membershipService.getMyMembership(),
           workoutService.getByMember(profile.id),
-          dietService.getByMember(profile.id),
+          dietService.getMyPlan(),
         ]);
         if (mem.status === "fulfilled") setMembership(mem.value);
         if (wp.status === "fulfilled") setWorkoutPlan(wp.value);
@@ -196,10 +196,10 @@ export default function MemberDashboardScreen() {
         .length
     : 0;
 
-  const dietNotes = dietPlan?.[todayDayName as keyof typeof dietPlan];
-  const mealCount = dietNotes
-    ? String(dietNotes).split("\n").filter(Boolean).length
-    : 0;
+  // Diet plans store structured meals against a lowercase dayOfWeek.
+  const mealCount = (dietPlan?.meals ?? []).filter(
+    (m) => (m.dayOfWeek ?? "").toLowerCase() === todayDayName,
+  ).length;
 
   if (loading) {
     return (

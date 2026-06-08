@@ -55,7 +55,7 @@ import mobileRoutes from "./modules/mobile/mobile.routes";
 import auditRoutes from "./modules/audit/audit.routes";
 import { auditMiddleware } from "./modules/audit/audit.middleware"
 import { Sentry } from "./config/sentry";
-import { authLimiter, uploadLimiter } from './middleware/rateLimits'
+import { uploadLimiter } from './middleware/rateLimits'
 import { requestIdMiddleware } from './middleware/requestId.middleware'
 
 const app = express();
@@ -119,9 +119,16 @@ app.use(
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 300,
+    // A single-page app fires many calls per screen (made worse by React
+    // StrictMode double-invokes in dev), so 300/15min throttled normal usage
+    // and bounced users to /login. Keep a sane production cap but a generous
+    // dev cap.
+    max: process.env.NODE_ENV === "production" ? 1000 : 10_000,
     standardHeaders: true,
     legacyHeaders: false,
+    // Never rate-limit health checks or CORS preflights.
+    skip: (req) =>
+      req.method === "OPTIONS" || req.path.startsWith("/api/v1/health"),
     message: {
       success: false,
       message: "Too many requests, please try again later",
@@ -154,7 +161,11 @@ app.use("/api/health", healthRoutes);
 /**
  * API v1 routes
  */
-app.use("/api/v1/auth", authLimiter, authRoutes);
+// NOTE: the brute-force/auth rate limiter is applied per-route inside
+// auth.routes (login/register only). It must NOT cover /auth/me, /auth/refresh
+// or /auth/logout — those are normal authenticated calls and throttling them
+// caused 429 loops on boot (StrictMode double-mount + reloads).
+app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/gyms", gymRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/members", memberRoutes);

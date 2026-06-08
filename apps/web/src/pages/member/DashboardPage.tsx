@@ -1042,11 +1042,9 @@ export default function MemberDashboardPage() {
   const { data: memberData, isLoading: memberLoading } = useQuery({
     queryKey: ["member-profile", memberId],
     queryFn: async () => {
-      // memberService.getMyProfile exists on the mobile side; for web we derive
-      // the member profile by fetching by userId (the member record links to user)
-      const res = await memberService.list({ gymId: user?.gymId ?? undefined });
-      const members = res.data?.members ?? [];
-      return members.find((m) => m.userId === memberId) ?? null;
+      // Members can only read their own record via /members/me — calling the
+      // gym-wide /members list would 403.
+      return await memberService.getMyProfile();
     },
     enabled: !!memberId,
   });

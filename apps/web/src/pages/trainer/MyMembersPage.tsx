@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { api } from "@/constants/api";
+import { api } from "@/lib/api";
 import type { Member } from "@/types/member.types";
 
 export default function MyMembersPage() {

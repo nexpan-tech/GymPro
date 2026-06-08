@@ -45,17 +45,14 @@ export function useSocket(): UseSocketReturn {
   const [isConnected, setIsConnected] = useState(false);
   const [lastEvent, setLastEvent] = useState<LastEvent | null>(null);
 
-  // Track registered listeners so we can re-bind after reconnects.
-  // Map<event, Set<handler>>
-  const listenersRef = useRef<Map<string, Set<(data: unknown) => void>>>(new Map());
-
-  // ── Internal: bind a single event → handler pair onto the live socket ──────
-  const bindListener = useCallback(
-    (sock: Socket, event: string, handler: (data: unknown) => void) => {
-      sock.on(event, handler);
-    },
-    []
-  );
+  // Map<event, Map<rawHandler, trackedHandler>>. We keep the exact tracked
+  // wrapper that was bound so unsubscribe can `off` the SAME reference (offing
+  // the raw handler would be a no-op and leak listeners). socket.io preserves
+  // listeners across reconnects on the same Socket instance, so we never re-bind
+  // on reconnect — that was duplicating handlers.
+  const listenersRef = useRef<
+    Map<string, Map<(data: unknown) => void, (data: unknown) => void>>
+  >(new Map());
 
   // ── Internal: update lastEvent state whenever any registered event fires ───
   const makeTrackingHandler = useCallback(
@@ -74,46 +71,70 @@ export function useSocket(): UseSocketReturn {
     const token = accessToken ?? localStorage.getItem("accessToken");
     if (!token) return;
 
-    const sock = io(SOCKET_URL, {
-      auth: { token },
-      transports: ["websocket", "polling"],
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 10_000,
-      timeout: 20_000,
-      autoConnect: true,
-    });
+    // Creating the client must never throw into render. Realtime is an
+    // enhancement — if the socket can't be created the app keeps working.
+    let sock: Socket;
+    try {
+      sock = io(SOCKET_URL, {
+        auth: { token },
+        transports: ["websocket", "polling"],
+        reconnection: true,
+        // Bounded so a missing/broken socket backend can't spam the console
+        // with endless reconnect attempts.
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 10_000,
+        timeout: 20_000,
+        autoConnect: true,
+      });
+    } catch (err) {
+      console.warn("[GymPro Socket] Failed to initialise:", err);
+      return;
+    }
 
     socketRef.current = sock;
+    let warnedOnce = false;
+
+    // Bind any handlers registered before this socket instance existed (or that
+    // survived a socket *recreation*, e.g. token change). The previous instance
+    // was removeAllListeners()+disconnect()ed in cleanup, so this binds each
+    // tracked wrapper exactly once onto the new instance.
+    listenersRef.current.forEach((handlerMap, event) => {
+      handlerMap.forEach((tracked) => sock.on(event, tracked));
+    });
 
     // ── Connection lifecycle events ─────────────────────────────────────────
     sock.on("connect", () => {
       setIsConnected(true);
 
-      // Join user and gym rooms
+      // Re-join rooms after every (re)connect — server-side room membership is
+      // dropped on disconnect. Event listeners themselves persist on the Socket
+      // instance, so we do NOT re-bind them here (that caused duplicates).
       if (user?.id) sock.emit("join", `user:${user.id}`);
       if (user?.gymId) sock.emit("join", `gym:${user.gymId}`);
-
-      // Re-bind all previously registered listeners after reconnection
-      listenersRef.current.forEach((handlers, event) => {
-        handlers.forEach((handler) => {
-          const tracked = makeTrackingHandler(event, handler);
-          bindListener(sock, event, tracked);
-        });
-      });
     });
 
     sock.on("disconnect", () => {
       setIsConnected(false);
     });
 
+    // Warn once, not on every retry — keeps the console clean if the realtime
+    // backend is unavailable in dev.
     sock.on("connect_error", (err) => {
-      console.warn("[GymPro Socket] Connection error:", err.message);
+      if (!warnedOnce) {
+        console.warn("[GymPro Socket] Realtime unavailable:", err.message);
+        warnedOnce = true;
+      }
+      setIsConnected(false);
+    });
+
+    sock.io.on("reconnect_failed", () => {
+      console.warn("[GymPro Socket] Giving up on realtime after retries.");
       setIsConnected(false);
     });
 
     return () => {
+      sock.removeAllListeners();
       sock.disconnect();
       socketRef.current = null;
       setIsConnected(false);
@@ -126,27 +147,30 @@ export function useSocket(): UseSocketReturn {
     <T = unknown>(event: SocketEvent, handler: (data: T) => void): (() => void) => {
       const rawHandler = handler as (data: unknown) => void;
 
-      // Register in our ref map for re-binding after reconnects
       if (!listenersRef.current.has(event)) {
-        listenersRef.current.set(event, new Set());
+        listenersRef.current.set(event, new Map());
       }
-      listenersRef.current.get(event)!.add(rawHandler);
+      const handlerMap = listenersRef.current.get(event)!;
 
-      // If socket is already live, bind immediately
-      if (socketRef.current) {
-        const tracked = makeTrackingHandler(event, rawHandler);
-        bindListener(socketRef.current, event, tracked);
+      // Idempotent: if this exact handler is already bound, reuse it so repeated
+      // subscriptions (e.g. effect re-runs) never double-bind.
+      let tracked = handlerMap.get(rawHandler);
+      if (!tracked) {
+        tracked = makeTrackingHandler(event, rawHandler);
+        handlerMap.set(rawHandler, tracked);
+        socketRef.current?.on(event, tracked);
       }
 
-      // Return unsubscribe function
+      // Unsubscribe removes the EXACT tracked wrapper that was bound.
       return () => {
-        listenersRef.current.get(event)?.delete(rawHandler);
-        if (socketRef.current) {
-          socketRef.current.off(event, rawHandler);
+        const t = handlerMap.get(rawHandler);
+        if (t) {
+          socketRef.current?.off(event, t);
+          handlerMap.delete(rawHandler);
         }
       };
     },
-    [makeTrackingHandler, bindListener]
+    [makeTrackingHandler]
   );
 
   // ── emit: send an event to the server ──────────────────────────────────────

@@ -41,6 +41,13 @@ router.get(
   asyncHandler(DietController.getAnalytics)
 );
 
+// Member self-service — own structured plan with meals. Before "/:memberId".
+router.get(
+  "/my",
+  roleMiddleware([ROLES.ADMIN, ROLES.TRAINER, ROLES.MEMBER]),
+  asyncHandler(DietController.getMy)
+);
+
 router.get(
   "/:memberId",
   roleMiddleware([ROLES.ADMIN, ROLES.TRAINER, ROLES.MEMBER]),

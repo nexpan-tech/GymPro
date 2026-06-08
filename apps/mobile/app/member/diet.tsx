@@ -1,10 +1,9 @@
 import { router } from "expo-router";
 import { Salad } from "lucide-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { TouchableOpacity, View } from "react-native";
 
 import { dietService, type DietPlan } from "../../src/services/diet.service";
-import { memberService } from "../../src/services/member.service";
 import { useTheme } from "../../src/theme";
 import {
   AppCard,
@@ -15,36 +14,21 @@ import {
   AppText,
 } from "../../src/components/ui";
 
-// ─── types & helpers (unchanged) ─────────────────────────────────────────────
+// ─── day config ──────────────────────────────────────────────────────────────
+// Diet plans store meals against a lowercase `dayOfWeek` (matches the trainer's
+// diet builder).
 
 type DayKey =
-  | "monday"
-  | "tuesday"
-  | "wednesday"
-  | "thursday"
-  | "friday"
-  | "saturday"
-  | "sunday";
+  | "monday" | "tuesday" | "wednesday" | "thursday"
+  | "friday" | "saturday" | "sunday";
 
 const DAY_KEYS: DayKey[] = [
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-  "sunday",
+  "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
 ];
 
 function todayKey(): DayKey {
   const map: DayKey[] = [
-    "sunday",
-    "monday",
-    "tuesday",
-    "wednesday",
-    "thursday",
-    "friday",
-    "saturday",
+    "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday",
   ];
   return map[new Date().getDay()];
 }
@@ -54,60 +38,12 @@ function shiftDay(base: DayKey, delta: -1 | 0 | 1): DayKey {
   return DAY_KEYS[(idx + 7) % 7];
 }
 
-const MEAL_TYPE_PATTERNS: { label: string; keywords: string[] }[] = [
-  { label: "Breakfast", keywords: ["breakfast"] },
-  { label: "Pre Workout", keywords: ["pre workout", "pre-workout", "preworkout"] },
-  { label: "Lunch", keywords: ["lunch"] },
-  { label: "Post Workout", keywords: ["post workout", "post-workout", "postworkout"] },
-  { label: "Dinner", keywords: ["dinner"] },
-  { label: "Snack", keywords: ["snack"] },
-];
-
-interface ParsedMeal {
-  type: string;
-  items: string[];
-  calories?: string;
-  macros?: string;
-}
-
-function parseMeals(raw: string | null | undefined): ParsedMeal[] {
-  if (!raw) return [];
-
-  const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
-  const meals: ParsedMeal[] = [];
-  let currentMeal: ParsedMeal | null = null;
-
-  for (const line of lines) {
-    const lower = line.toLowerCase();
-    const matchedType = MEAL_TYPE_PATTERNS.find((m) =>
-      m.keywords.some(
-        (kw) => lower.startsWith(kw) || lower.includes(`: ${kw}`) || lower === kw,
-      ),
-    );
-
-    if (matchedType) {
-      if (currentMeal) meals.push(currentMeal);
-      const colonIdx = line.indexOf(":");
-      const rest = colonIdx > -1 ? line.slice(colonIdx + 1).trim() : "";
-      currentMeal = { type: matchedType.label, items: rest ? [rest] : [] };
-    } else if (currentMeal) {
-      if (/cal(orie)?s?:/i.test(line) || /kcal/i.test(line)) {
-        currentMeal.calories = line;
-      } else if (/protein|carb|fat/i.test(line)) {
-        currentMeal.macros = line;
-      } else {
-        currentMeal.items.push(line);
-      }
-    } else {
-      meals.push({ type: "Meal", items: [line] });
-    }
-  }
-
-  if (currentMeal) meals.push(currentMeal);
-  if (meals.length === 0) {
-    return [{ type: "Today's Plan", items: lines }];
-  }
-  return meals;
+function mealTypeLabel(t: string): string {
+  return t
+    .toLowerCase()
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 }
 
 type TabId = "yesterday" | "today" | "tomorrow";
@@ -130,11 +66,8 @@ export default function DietScreen() {
 
   const loadPlan = useCallback(async () => {
     try {
-      const profile = await memberService.getMyProfile();
-      if (profile?.id) {
-        const data = await dietService.getByMember(profile.id);
-        setPlan(data);
-      }
+      const data = await dietService.getMyPlan();
+      setPlan(data);
     } catch (err) {
       console.log("Diet load failed", err);
     } finally {
@@ -154,7 +87,13 @@ export default function DietScreen() {
   };
 
   const activeDay = dayKeyForTab[activeTab];
-  const meals = parseMeals(plan?.[activeDay] ?? null);
+  const meals = useMemo(
+    () =>
+      (plan?.meals ?? []).filter(
+        (m) => (m.dayOfWeek ?? "").toLowerCase() === activeDay,
+      ),
+    [plan, activeDay],
+  );
   const dayDone = !!completedDays[activeDay];
 
   async function markDayComplete() {
@@ -170,7 +109,6 @@ export default function DietScreen() {
     }
   }
 
-  // Meal-category accent hues (readable on both themes).
   const mealTypeColors: Record<string, string> = {
     Breakfast: "#f59e0b",
     "Pre Workout": c.primary,
@@ -178,8 +116,6 @@ export default function DietScreen() {
     "Post Workout": "#8b5cf6",
     Dinner: "#0ea5e9",
     Snack: "#f97316",
-    Meal: c.textSecondary,
-    "Today's Plan": c.textSecondary,
   };
 
   if (loading) {
@@ -255,15 +191,21 @@ export default function DietScreen() {
       {meals.length === 0 ? (
         <AppEmptyState
           emoji="🍽️"
-          title="No diet plan"
-          description="No diet plan assigned for this day."
+          title="No meals"
+          description="No meals assigned for this day."
         />
       ) : (
         <View style={{ gap: 12 }}>
-          {meals.map((meal, idx) => {
-            const accentColor = mealTypeColors[meal.type] ?? c.textSecondary;
+          {meals.map((meal) => {
+            const label = mealTypeLabel(meal.mealType);
+            const accentColor = mealTypeColors[label] ?? c.textSecondary;
+            const macros = [
+              meal.protein != null ? `P ${meal.protein}g` : null,
+              meal.carbs != null ? `C ${meal.carbs}g` : null,
+              meal.fats != null ? `F ${meal.fats}g` : null,
+            ].filter(Boolean);
             return (
-              <AppCard key={`${meal.type}-${idx}`}>
+              <AppCard key={meal.id}>
                 <View
                   style={{
                     flexDirection: "row",
@@ -281,32 +223,31 @@ export default function DietScreen() {
                     }}
                   />
                   <AppText variant="overline" style={{ color: accentColor }}>
-                    {meal.type}
+                    {label}
                   </AppText>
                 </View>
 
-                {meal.items.map((item, i) => (
-                  <AppText
-                    key={i}
-                    variant={i === 0 ? "bodyStrong" : "body"}
-                    style={{ lineHeight: 22 }}
-                  >
-                    {item}
+                <AppText variant="bodyStrong" style={{ lineHeight: 22 }}>
+                  {meal.title}
+                </AppText>
+                {meal.description ? (
+                  <AppText variant="body" color="textSecondary" style={{ marginTop: 2 }}>
+                    {meal.description}
                   </AppText>
-                ))}
+                ) : null}
 
-                {meal.calories ? (
+                {meal.calories != null ? (
                   <AppText
                     variant="label"
                     style={{ color: "#f59e0b", marginTop: 8 }}
                   >
-                    {meal.calories}
+                    {meal.calories} kcal
                   </AppText>
                 ) : null}
 
-                {meal.macros ? (
+                {macros.length > 0 ? (
                   <AppText variant="caption" color="textMuted" style={{ marginTop: 4 }}>
-                    {meal.macros}
+                    {macros.join("  ·  ")}
                   </AppText>
                 ) : null}
               </AppCard>

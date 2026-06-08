@@ -151,12 +151,36 @@ export class DietService {
         memberId,
       },
       include: {
+        // Include structured meals so trainer-built (diet-builder) plans are
+        // visible — they store DietMeal rows, not the legacy day-string fields.
+        meals: { orderBy: [{ dayOfWeek: "asc" }, { createdAt: "asc" }] },
         member: {
           include: {
             user: true,
             trainer: true,
           },
         },
+      },
+    });
+  }
+
+  /** The logged-in member's own diet plan, with structured meals. */
+  static async getMyPlan(user: AuthUser) {
+    const gymId = requireGym(user);
+
+    const member = await prisma.member.findFirst({
+      where: { userId: user.id, gymId },
+    });
+
+    if (!member) {
+      throw new AppError("Member profile not found", 404);
+    }
+
+    return prisma.dietPlan.findFirst({
+      where: { gymId, memberId: member.id },
+      include: {
+        meals: { orderBy: [{ dayOfWeek: "asc" }, { createdAt: "asc" }] },
+        member: { include: { user: true, trainer: true } },
       },
     });
   }

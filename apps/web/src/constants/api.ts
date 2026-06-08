@@ -3,12 +3,13 @@
 import axios from "axios";
 
 /**
- * Base API URL from environment variables.
- * Example:
- * VITE_API_URL=http://localhost:3000/api
+ * Base API URL — VITE_API_URL is the host root (e.g. http://localhost:5050);
+ * the API is served under /api/v1. Must match @/lib/api so every client hits
+ * the versioned routes (a missing /api/v1 was causing 404s).
  */
-export const API_BASE =
-  import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+export const API_BASE = `${
+  import.meta.env.VITE_API_URL || "http://localhost:5050"
+}/api/v1`;
 
 /**
  * Axios instance used throughout the frontend.

@@ -103,11 +103,22 @@ export const trainerService = {
 
   /**
    * Fetch performance stats for a specific trainer.
-   * GET /trainers/:id/stats
+   * There is no `/trainers/:id/stats` endpoint — derive from the trainer
+   * analytics detail (`GET /trainer-analytics/:id`) instead.
    */
   getStats: async (id: string): Promise<ApiResponse<TrainerStats>> => {
-    const res = await api.get<ApiResponse<TrainerStats>>(`/trainers/${id}/stats`)
-    return res.data
+    const res = await api.get<ApiResponse<{ activeClients?: number }>>(
+      `/trainer-analytics/${id}`,
+    )
+    const activeClients = res.data.data?.activeClients ?? 0
+    return {
+      success: true,
+      data: {
+        totalMembers: activeClients,
+        activeMembers: activeClients,
+        sessionsThisMonth: 0,
+      },
+    }
   },
 
   /**

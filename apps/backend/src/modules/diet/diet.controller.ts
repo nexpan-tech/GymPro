@@ -42,6 +42,18 @@ export class DietController {
     });
   }
 
+  static async getMy(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    const diet = await DietService.getMyPlan(user);
+
+    return res.json({
+      success: true,
+      data: diet,
+    });
+  }
+
   static async getByMember(req: Request, res: Response) {
     const user = requireAuth(req, res);
     if (!user) return;

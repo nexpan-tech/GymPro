@@ -12,9 +12,15 @@ import { useAuthStore } from "@/store/auth.store";
 
 // ── Hook ───────────────────────────────────────────────────────────────────────
 
+// The gym-wide notifications feed (GET /notifications) is restricted to
+// ADMIN/RECEPTIONIST server-side. Other roles have no list endpoint, so we skip
+// the call entirely rather than spamming 403s.
+const NOTIFICATION_ROLES = ["ADMIN", "RECEPTIONIST"];
+
 export function useNotifications() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
+  const canListNotifications = NOTIFICATION_ROLES.includes(user?.role ?? "");
 
   const { setNotifications, addNotification, markRead, markAllRead } =
     useNotificationStore();
@@ -50,7 +56,8 @@ export function useNotifications() {
       setNotifications(list);
       return list;
     },
-    enabled: Boolean(user?.id),
+    enabled: Boolean(user?.id) && canListNotifications,
+    retry: false,
     staleTime: 1000 * 60 * 2, // 2 minutes
     refetchOnWindowFocus: false,
   });

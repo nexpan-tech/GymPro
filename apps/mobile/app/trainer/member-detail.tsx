@@ -92,21 +92,11 @@ export default function MemberDetailScreen() {
 
   const name = member.user?.name ?? "Member";
 
-  const DAYS: (keyof DietPlan)[] = [
-    "monday",
-    "tuesday",
-    "wednesday",
-    "thursday",
-    "friday",
-    "saturday",
-    "sunday",
-  ];
-
   const workoutDaysCount = workout
     ? new Set(workout.exercises.map((e) => e.dayNumber)).size
     : 0;
   const dietDaysCount = diet
-    ? DAYS.filter((d) => (diet as unknown as Record<string, unknown>)[d]).length
+    ? new Set((diet.meals ?? []).map((m) => (m.dayOfWeek ?? "").toLowerCase())).size
     : 0;
 
   const streak = attendance.length;
@@ -252,7 +242,10 @@ function DietTab({ diet, daysCount }: { diet: DietPlan | null; daysCount: number
       </AppCard>
     );
   }
-  const DAYS: (keyof DietPlan)[] = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+  const DAY_ORDER = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+  const dayNames = Array.from(
+    new Set((diet.meals ?? []).map((m) => (m.dayOfWeek ?? "").toLowerCase())),
+  ).sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
   return (
     <View style={{ gap: 12 }}>
       <AppCard>
@@ -266,13 +259,19 @@ function DietTab({ diet, daysCount }: { diet: DietPlan | null; daysCount: number
           {daysCount} day{daysCount !== 1 ? "s" : ""} scheduled
         </AppText>
       </AppCard>
-      {DAYS.map((day) => {
-        const val = (diet as unknown as Record<string, unknown>)[day] as string | null;
-        if (!val) return null;
+      {dayNames.map((day) => {
+        const dayMeals = (diet.meals ?? []).filter(
+          (m) => (m.dayOfWeek ?? "").toLowerCase() === day,
+        );
         return (
           <AppCard key={day}>
             <Text style={styles.dayLabel}>{day.charAt(0).toUpperCase() + day.slice(1)}</Text>
-            <Text style={styles.dayValue}>{val}</Text>
+            {dayMeals.map((m) => (
+              <Text key={m.id} style={styles.dayValue}>
+                {m.mealType.replace(/_/g, " ")}: {m.title}
+                {m.calories != null ? ` — ${m.calories} kcal` : ""}
+              </Text>
+            ))}
           </AppCard>
         );
       })}

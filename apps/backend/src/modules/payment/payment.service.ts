@@ -106,6 +106,28 @@ export const getPayments = async (gymId: string) => {
   });
 };
 
+// Member self-service — the caller's own payment history.
+export const getMyPayments = async (gymId: string, userId: string) => {
+  const member = await prisma.member.findFirst({
+    where: { userId, gymId },
+  });
+  if (!member) return [];
+
+  return prisma.payment.findMany({
+    where: { gymId, memberId: member.id },
+    include: {
+      member: {
+        include: {
+          user: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+};
+
 export const getPaymentById = async (gymId: string, id: string) => {
   const payment = await prisma.payment.findFirst({
     where: {

@@ -109,6 +109,30 @@ export class MemberService {
     });
   }
 
+  /** The caller's own member profile (MEMBER self-service). */
+  static async getMyProfile(user: AuthUser) {
+    const gymId = requireGym(user);
+
+    const member = await prisma.member.findFirst({
+      where: { userId: user.id, gymId },
+      include: {
+        user: true,
+        trainer: true,
+        branch: true,
+        memberships: {
+          include: { planRef: true },
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
+
+    if (!member) {
+      throw new AppError("Member profile not found", 404);
+    }
+
+    return member;
+  }
+
   static async getById(user: AuthUser, id: string) {
     const gymId = requireGym(user);
 

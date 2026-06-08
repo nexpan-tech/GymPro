@@ -45,8 +45,25 @@ function buildTrend(completedAts: Date[], days = 7) {
 }
 
 export class WorkoutService {
+  // A TRAINER may only target members assigned to them; ADMIN may target any
+  // member in the gym. Throws 404 (not in gym) or 403 (not assigned).
+  private static async assertMemberAssignable(user: AuthUser, memberId: string) {
+    const member = await prisma.member.findFirst({
+      where: { id: memberId, gymId: user.gymId! },
+    });
+    if (!member) throw new AppError("Member not found", 404);
+    if (user.role === "TRAINER" && member.trainerId !== user.id) {
+      throw new AppError("You can only assign to your assigned members", 403);
+    }
+    return member;
+  }
+
   static async createPlan(user: AuthUser, data: any) {
     if (!user.gymId) throw new AppError("Gym context missing", 403);
+
+    if (data.memberId) {
+      await this.assertMemberAssignable(user, data.memberId);
+    }
 
     return prisma.workoutPlan.create({
       data: {
@@ -173,14 +190,8 @@ export class WorkoutService {
   static async assignToMember(user: AuthUser, planId: string, memberId: string) {
     if (!user.gymId) throw new AppError("Gym context missing", 403);
 
-    const member = await prisma.member.findFirst({
-      where: {
-        id: memberId,
-        gymId: user.gymId,
-      },
-    });
-
-    if (!member) throw new AppError("Member not found", 404);
+    // Enforce trainer → assigned-member (ADMIN may target any gym member).
+    await this.assertMemberAssignable(user, memberId);
 
     const plan = await prisma.workoutPlan.findFirst({
       where: {

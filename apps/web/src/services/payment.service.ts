@@ -55,6 +55,15 @@ export const paymentService = {
   },
 
   /**
+   * Member self-service payment history.
+   * GET /payments/my  (the gym-wide /payments list is ADMIN/RECEPTIONIST only)
+   */
+  getMy: async (): Promise<ApiResponse<PaymentListResponse>> => {
+    const res = await api.get<ApiResponse<Payment[]>>('/payments/my')
+    return { ...res.data, data: { payments: res.data.data ?? [] } }
+  },
+
+  /**
    * Fetch a single payment by ID.
    * GET /payments/:id
    */
@@ -100,14 +109,32 @@ export const paymentService = {
   },
 
   /**
-   * Fetch payment summary/aggregates for a gym.
-   * GET /payments/summary?gymId=&startDate=&endDate=
+   * Payment summary/aggregates for a gym. There is no `/payments/summary`
+   * endpoint, so aggregate from the payments list client-side.
    */
   getSummary: async (gymId: string, startDate?: string, endDate?: string): Promise<ApiResponse<PaymentSummary>> => {
-    const res = await api.get<ApiResponse<PaymentSummary>>('/payments/summary', {
+    const res = await api.get<ApiResponse<PaymentListResponse>>('/payments', {
       params: { gymId, startDate, endDate },
     })
-    return res.data
+    const payments = res.data.data?.payments ?? []
+    const sumWhere = (s: string) =>
+      payments
+        .filter((p) => (p as { status?: string }).status === s)
+        .reduce((t, p) => t + (Number((p as { amount?: number }).amount) || 0), 0)
+    const totalRevenue = payments.reduce(
+      (t, p) => t + (Number((p as { amount?: number }).amount) || 0),
+      0,
+    )
+    return {
+      success: true,
+      data: {
+        totalRevenue,
+        totalPaid: sumWhere('PAID'),
+        totalPending: sumWhere('PENDING'),
+        totalOverdue: sumWhere('OVERDUE'),
+        transactionCount: payments.length,
+      },
+    }
   },
 
   /**

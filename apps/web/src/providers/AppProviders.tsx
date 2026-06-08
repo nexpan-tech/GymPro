@@ -26,12 +26,23 @@ import { AuthProvider } from "@/context/AuthContext";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      // Never retry client errors (401/403/404/429) — retrying a forbidden or
+      // rate-limited call just spams the server and the console. Retry other
+      // failures (network/5xx) once.
+      retry: (failureCount, error) => {
+        const status = (error as { response?: { status?: number } })?.response
+          ?.status;
+        // Never retry client errors (esp. 403/404/429) — retrying a forbidden or
+        // rate-limited call just spams the server and the console.
+        if (status && status >= 400 && status < 500) return false;
+        // Retry transient failures (network / 5xx) up to twice.
+        return failureCount < 2;
+      },
       staleTime: 30_000, // 30 seconds
       refetchOnWindowFocus: false,
     },
     mutations: {
-      retry: 1,
+      retry: 0,
     },
   },
 });

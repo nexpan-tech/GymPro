@@ -724,7 +724,10 @@ export default function TrainerDashboardPage() {
       gymId
         ? attendanceService.getByDate(gymId, todayStr)
         : Promise.resolve({ data: { attendance: [] } } as never),
-    enabled: Boolean(gymId),
+    // /attendance/today is ADMIN/RECEPTIONIST-only — trainers can't read the
+    // gym-wide feed, so we don't call it here (avoids a 403 on every load).
+    enabled: false,
+    retry: false,
     staleTime: 60_000,
     select: (res) =>
       (res?.data as { attendance?: { memberId: string }[] })?.attendance ?? [],
@@ -748,7 +751,10 @@ export default function TrainerDashboardPage() {
         gymId: gymId || undefined,
         limit: 10,
       }),
-    enabled: Boolean(gymId),
+    // GET /notifications is ADMIN/RECEPTIONIST-only; trainers have no feed
+    // endpoint, so skip the call instead of 403-spamming.
+    enabled: false,
+    retry: false,
     staleTime: 30_000,
     select: (res) =>
       (res?.data as { notifications?: Notification[] })?.notifications ?? [],

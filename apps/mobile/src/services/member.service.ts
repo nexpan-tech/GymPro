@@ -7,8 +7,9 @@ function unwrap<T>(res: { data: { data?: T } | T }): T {
 
 export const memberService = {
   getMyProfile: async (): Promise<Member | null> => {
-    const res = await api.get("/members");
-    const members = unwrap<Member[]>(res);
-    return Array.isArray(members) ? members[0] ?? null : null;
+    // Members can only read their own record via /members/me — the gym-wide
+    // /members list is staff-only (was returning 403).
+    const res = await api.get("/members/me");
+    return unwrap<Member | null>(res);
   },
 };

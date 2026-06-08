@@ -56,20 +56,26 @@ export const useToastStore = create<ToastStore>((set) => ({
 
 // ─── Convenience hook ─────────────────────────────────────────────────────────
 
-export function useToast() {
-  const { showToast, dismissToast, clearAll, toasts } = useToastStore();
+// IMPORTANT: this object is defined ONCE at module scope so `useToast()` always
+// returns the SAME reference. Previously it returned a fresh object literal on
+// every render, which meant any `useCallback(fn, [toast])` was recreated every
+// render and any `useEffect(() => load(), [load])` re-fired every render — an
+// infinite refetch loop (e.g. /members and /workouts hammered hundreds of times
+// a second, exhausting the DB pool into 500s). The methods read the store via
+// getState(), so they never need a fresh closure.
+const toastApi = {
+  success: (message: string, duration?: number) =>
+    useToastStore.getState().showToast("success", message, duration),
+  error: (message: string, duration?: number) =>
+    useToastStore.getState().showToast("error", message, duration),
+  warning: (message: string, duration?: number) =>
+    useToastStore.getState().showToast("warning", message, duration),
+  info: (message: string, duration?: number) =>
+    useToastStore.getState().showToast("info", message, duration),
+  dismiss: (id: string) => useToastStore.getState().dismissToast(id),
+  clearAll: () => useToastStore.getState().clearAll(),
+};
 
-  return {
-    toasts,
-    success: (message: string, duration?: number) =>
-      showToast("success", message, duration),
-    error: (message: string, duration?: number) =>
-      showToast("error", message, duration),
-    warning: (message: string, duration?: number) =>
-      showToast("warning", message, duration),
-    info: (message: string, duration?: number) =>
-      showToast("info", message, duration),
-    dismiss: dismissToast,
-    clearAll,
-  };
+export function useToast() {
+  return toastApi;
 }

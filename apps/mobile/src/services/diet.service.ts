@@ -1,17 +1,24 @@
 import { api } from "../api/client";
 
+export interface DietMeal {
+  id: string;
+  dayOfWeek: string;
+  mealType: string;
+  title: string;
+  description?: string | null;
+  calories?: number | null;
+  protein?: number | null;
+  carbs?: number | null;
+  fats?: number | null;
+  time?: string | null;
+}
+
 export interface DietPlan {
   id: string;
   memberId: string;
   goal?: string | null;
   notes?: string | null;
-  monday?: string | null;
-  tuesday?: string | null;
-  wednesday?: string | null;
-  thursday?: string | null;
-  friday?: string | null;
-  saturday?: string | null;
-  sunday?: string | null;
+  meals: DietMeal[];
 }
 
 function unwrap<T>(res: { data: { data?: T } | T }): T {
@@ -26,6 +33,15 @@ export interface CompleteDietInput {
 }
 
 export const dietService = {
+  // Logged-in member's own structured plan (includes DietMeal rows created via
+  // the trainer's diet builder). Derived from the auth token server-side.
+  getMyPlan: async (): Promise<DietPlan | null> => {
+    const res = await api.get(`/diets/my`);
+    return unwrap<DietPlan | null>(res);
+  },
+
+  // A specific member's structured plan (trainer/admin viewing an assigned
+  // member). Backend enforces access + returns meals.
   getByMember: async (memberId: string): Promise<DietPlan | null> => {
     const res = await api.get(`/diets/${memberId}`);
     return unwrap<DietPlan | null>(res);

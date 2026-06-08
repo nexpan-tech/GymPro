@@ -31,6 +31,13 @@ router.get(
   controller.getPayments
 );
 
+// Member self-service payment history. Before "/:id" so "my" isn't an id.
+router.get(
+  "/my",
+  roleMiddleware([ROLES.MEMBER, ROLES.ADMIN, ROLES.RECEPTIONIST]),
+  controller.getMyPayments
+);
+
 router.get(
   "/:id",
   roleMiddleware([ROLES.ADMIN, ROLES.RECEPTIONIST]),
