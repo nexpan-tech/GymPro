@@ -162,7 +162,7 @@ export class MobileService {
       features: {
         qrAttendance: true,
         pushNotifications: true,
-        progressPhotos: true,
+        progressPhotos: false,
       },
       version: "1.0.0",
       minAppVersion: "1.0.0",

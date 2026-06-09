@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { Dumbbell, Salad } from "lucide-react-native";
+import { Dumbbell, Salad, LineChart } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -145,7 +145,9 @@ export default function MemberDetailScreen() {
         <WorkoutsTab workout={workout} daysCount={workoutDaysCount} />
       )}
       {activeTab === "diet" && <DietTab diet={diet} daysCount={dietDaysCount} />}
-      {activeTab === "progress" && <ProgressTab attendance={attendance} streak={streak} />}
+      {activeTab === "progress" && (
+        <ProgressTab attendance={attendance} streak={streak} memberId={memberId} memberName={name} />
+      )}
 
       {/* Actions */}
       <View style={{ flexDirection: "row", gap: 12, marginTop: 4 }}>
@@ -279,12 +281,31 @@ function DietTab({ diet, daysCount }: { diet: DietPlan | null; daysCount: number
   );
 }
 
-function ProgressTab({ attendance, streak }: { attendance: Attendance[]; streak: number }) {
+function ProgressTab({
+  attendance,
+  streak,
+  memberId,
+  memberName,
+}: {
+  attendance: Attendance[];
+  streak: number;
+  memberId: string;
+  memberName: string;
+}) {
   const { theme } = useTheme();
   const c = theme.colors;
   const styles = useThemedStyles();
   return (
     <View style={{ gap: 12 }}>
+      <AppButton
+        icon={<LineChart color="#fff" size={18} />}
+        onPress={() =>
+          router.push({ pathname: "/trainer/member-progress", params: { memberId, name: memberName } })
+        }
+      >
+        Record / View Body Progress
+      </AppButton>
+
       <AppCard>
         <AppText variant="subtitle">Attendance Streak</AppText>
         <Text style={[styles.streakValue, { color: c.primary }]}>{streak}</Text>

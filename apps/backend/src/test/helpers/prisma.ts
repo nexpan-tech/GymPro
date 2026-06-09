@@ -19,7 +19,7 @@ export function createPrismaMock(): PrismaClient {
     'user','gym','member','membership','attendance','payment',
     'notification','workoutPlan','dietPlan','session','lead',
     'campaign','branch','auditLog','due','badge','memberBadge',
-    'goal','bodyMeasurement','progressPhoto','exercise',
+    'goal','bodyMeasurement','exercise',
     'workoutExercise','workoutCompletion','dietMeal','dietCompletion',
   ]
 

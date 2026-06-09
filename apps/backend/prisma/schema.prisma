@@ -100,12 +100,6 @@ enum BadgeType {
   SPECIAL
 }
 
-enum ProgressPhotoType {
-  BEFORE
-  PROGRESS
-  AFTER
-}
-
 enum ExerciseCategory {
   STRENGTH
   CARDIO
@@ -296,7 +290,6 @@ model Gym {
   bodyMeasurements BodyMeasurement[]
   goals            Goal[]
   memberBadges     MemberBadge[]
-  progressPhotos   ProgressPhoto[]
 
   users           User[]
   members         Member[]
@@ -371,6 +364,8 @@ model User {
   // trainer → members mapping
   trainedMembers Member[] @relation("TrainerMembers")
 
+  recordedMeasurements BodyMeasurement[] @relation("RecordedMeasurements")
+
   trainerWorkoutPlans WorkoutPlan[] @relation("TrainerWorkoutPlans")
 
   trainerMessages  TrainerMessage[]  @relation("TrainerMessages")
@@ -421,7 +416,6 @@ model Member {
   bodyMeasurements BodyMeasurement[]
   goals            Goal[]
   memberBadges     MemberBadge[]
-  progressPhotos   ProgressPhoto[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -711,7 +705,17 @@ model BodyMeasurement {
   memberId String
   member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
+  // Who recorded this entry (member self, trainer, or admin). Nullable for
+  // legacy rows created before this field existed.
+  recordedById String?
+  recordedBy   User?   @relation("RecordedMeasurements", fields: [recordedById], references: [id], onDelete: SetNull)
+
+  // Effective date of the measurement (can be back-dated); createdAt is the
+  // insert time. Timeline/charts order by recordedAt.
+  recordedAt DateTime @default(now())
+
   weight Float?
+  height Float?
 
   chest  Float?
   waist  Float?
@@ -720,6 +724,7 @@ model BodyMeasurement {
   thighs Float?
 
   bodyFatPercentage Float?
+  muscleMass        Float?
 
   bmi Float?
 
@@ -730,6 +735,7 @@ model BodyMeasurement {
 
   @@index([gymId])
   @@index([memberId])
+  @@index([recordedAt])
 }
 
 model Goal {
@@ -745,8 +751,12 @@ model Goal {
 
   description String?
 
-  targetValue Float?
+  // Optional metric key (e.g. "weight", "bodyFatPercentage", "waist") this goal
+  // tracks, enabling goal-progress % against a body metric.
+  metric String?
 
+  startValue   Float?
+  targetValue  Float?
   currentValue Float?
 
   unit String?
@@ -794,30 +804,6 @@ model MemberBadge {
   @@unique([memberId, badgeId])
   @@index([gymId])
   @@index([memberId])
-}
-
-model ProgressPhoto {
-  id String @id @default(uuid())
-
-  gymId String
-  gym   Gym    @relation(fields: [gymId], references: [id], onDelete: Cascade)
-
-  memberId String
-  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
-
-  imageUrl String
-  type     ProgressPhotoType @default(PROGRESS)
-
-  notes String?
-
-  takenAt DateTime @default(now())
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([gymId])
-  @@index([memberId])
-  @@index([takenAt])
 }
 
 model Exercise {

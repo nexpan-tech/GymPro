@@ -34,14 +34,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "GymPro uses the camera to scan attendance QR codes and capture progress photos."
-        }
-      ],
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "GymPro accesses your photos so you can upload progress pictures.",
-          "cameraPermission": "GymPro uses the camera to capture progress photos."
+          "cameraPermission": "GymPro uses the camera to scan attendance QR codes."
         }
       ]
     ]

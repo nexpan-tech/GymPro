@@ -14,7 +14,7 @@ export const scalabilityConfig = {
   cdn: {
     enabled: false,
     provider: "future-cloudfront-or-cloudflare",
-    assetFolders: ["uploads", "reports", "progress-photos"],
+    assetFolders: ["uploads", "reports"],
   },
 
   scaleTargets: {

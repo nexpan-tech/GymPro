@@ -55,8 +55,6 @@ export type {
   GoalType,
   Goal,
   BodyMeasurement,
-  PhotoAngle,
-  ProgressPhoto,
   SessionStatus,
   Session,
   ChallengeStatus,

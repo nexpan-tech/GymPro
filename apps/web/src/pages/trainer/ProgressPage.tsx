@@ -1,10 +1,14 @@
+import PageHeader from "@/components/common/PageHeader";
+import MemberProgressReview from "@/components/stage5/MemberProgressReview";
+
 export default function TrainerProgressPage() {
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Progress Tracking</h1>
-      <p className="text-gray-600 dark:text-gray-400">
-        Monitor member transformation and measurements.
-      </p>
+    <div className="space-y-6">
+      <PageHeader
+        title="Member Progress"
+        description="Review and record measurable progress for your assigned members."
+      />
+      <MemberProgressReview />
     </div>
   );
 }

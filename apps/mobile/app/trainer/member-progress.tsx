@@ -1,11 +1,11 @@
-import { router } from "expo-router";
-import { Plus, TrendingDown, TrendingUp, Minus, Target } from "lucide-react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { Plus } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 
 import {
-  getMySummary, getMyTimeline, getMyGoals, createMyEntry,
-  type ProgressSummary, type ProgressEntry, type ProgressGoal, type Trend,
+  getMemberSummary, getMemberTimeline, createMemberEntry,
+  type ProgressSummary, type ProgressEntry,
 } from "../../src/api/progress.api";
 import { useTheme } from "../../src/theme";
 import {
@@ -32,36 +32,32 @@ const CARDS = [
   { key: "waist", label: "Waist", unit: "cm" },
 ];
 
-function TrendIcon({ trend, color }: { trend: Trend; color: string }) {
-  if (trend === "UP") return <TrendingUp size={16} color="#f59e0b" />;
-  if (trend === "DOWN") return <TrendingDown size={16} color="#10b981" />;
-  return <Minus size={16} color={color} />;
-}
-
-export default function ProgressScreen() {
+export default function MemberProgressScreen() {
   const { theme } = useTheme();
   const c = theme.colors;
+  const params = useLocalSearchParams<{ memberId?: string; name?: string }>();
+  const memberId = params.memberId ?? "";
 
   const [summary, setSummary] = useState<ProgressSummary | null>(null);
   const [timeline, setTimeline] = useState<ProgressEntry[]>([]);
-  const [goals, setGoals] = useState<ProgressGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
+    if (!memberId) { setLoading(false); return; }
     try {
-      const [s, t, g] = await Promise.all([
-        getMySummary(), getMyTimeline(), getMyGoals(),
+      const [s, t] = await Promise.all([
+        getMemberSummary(memberId), getMemberTimeline(memberId),
       ]);
-      setSummary(s); setTimeline(t); setGoals(g);
+      setSummary(s); setTimeline(t);
     } catch (err) {
-      console.log("Progress load failed", err);
+      console.log("Member progress load failed", err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [memberId]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -75,7 +71,7 @@ export default function ProgressScreen() {
     if (form.notes?.trim()) payload.notes = form.notes.trim();
     setSaving(true);
     try {
-      await createMyEntry(payload);
+      await createMemberEntry(memberId, payload);
       setForm({});
       setShowForm(false);
       setLoading(true);
@@ -90,7 +86,7 @@ export default function ProgressScreen() {
   if (loading) {
     return (
       <AppScreen>
-        <AppHeader title="My Progress" onBack={() => router.back()} />
+        <AppHeader title="Member Progress" onBack={() => router.back()} />
         <AppLoadingState rows={4} />
       </AppScreen>
     );
@@ -102,8 +98,8 @@ export default function ProgressScreen() {
   return (
     <AppScreen>
       <AppHeader
-        title="My Progress"
-        subtitle="Measurable fitness progress"
+        title={params.name ? `${params.name} — Progress` : "Member Progress"}
+        subtitle="Record & review measurements"
         onBack={() => router.back()}
         right={
           <AppButton size="sm" icon={<Plus size={16} color={c.onPrimary} />} onPress={() => setShowForm((s) => !s)}>
@@ -112,10 +108,9 @@ export default function ProgressScreen() {
         }
       />
 
-      {/* Add-entry form (numeric only — no photos/camera) */}
       {showForm ? (
         <AppCard>
-          <AppText variant="label" color="textSecondary">New entry (BMI auto-calculated)</AppText>
+          <AppText variant="label" color="textSecondary">New entry for this member</AppText>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
             {FIELDS.map((f) => (
               <View key={f.key} style={{ width: "47%" }}>
@@ -135,16 +130,12 @@ export default function ProgressScreen() {
         </AppCard>
       ) : null}
 
-      {/* Metric cards */}
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
         {CARDS.map((card) => {
           const data = m[card.key];
           return (
             <AppCard key={card.key} style={{ width: "47%" }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                <AppText variant="caption" color="textSecondary">{card.label}</AppText>
-                {data ? <TrendIcon trend={data.trend} color={c.textMuted} /> : null}
-              </View>
+              <AppText variant="caption" color="textSecondary">{card.label}</AppText>
               <AppText variant="title" style={{ marginTop: 4 }}>
                 {data ? `${data.latest}${card.unit}` : "—"}
               </AppText>
@@ -159,10 +150,9 @@ export default function ProgressScreen() {
       </View>
 
       {!hasData ? (
-        <AppEmptyState emoji="📈" title="No progress yet" description="Tap Add to record your first measurements." />
+        <AppEmptyState emoji="📈" title="No progress yet" description="Tap Add to record the first measurement." />
       ) : (
         <>
-          {/* Summary */}
           <AppCard>
             <AppText variant="label" color="textSecondary">Summary</AppText>
             <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 8 }}>
@@ -177,28 +167,6 @@ export default function ProgressScreen() {
             </View>
           </AppCard>
 
-          {/* Goals */}
-          {goals.length > 0 ? (
-            <AppCard>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                <Target size={16} color={c.primary} />
-                <AppText variant="label" color="textSecondary">Goals</AppText>
-              </View>
-              {goals.map((g) => (
-                <View key={g.id} style={{ marginBottom: 12 }}>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                    <AppText variant="bodyStrong">{g.title}</AppText>
-                    <AppText variant="caption" color="primary">{g.progressPercent}%</AppText>
-                  </View>
-                  <View style={{ height: 6, borderRadius: 3, backgroundColor: c.muted, marginTop: 6, overflow: "hidden" }}>
-                    <View style={{ height: "100%", width: `${g.progressPercent}%`, backgroundColor: c.primary, borderRadius: 3 }} />
-                  </View>
-                </View>
-              ))}
-            </AppCard>
-          ) : null}
-
-          {/* Timeline */}
           <AppText variant="label" color="textSecondary" style={{ marginTop: 4 }}>Timeline</AppText>
           <View style={{ gap: 8 }}>
             {timeline.map((e) => (

@@ -64,7 +64,7 @@ const TRAINER_NAV: NavItem[] = [
   { label: "Diet Plans",         path: "/trainer/diet-plans",    icon: "Salad",           group: "Programs" },
   { label: "Attendance",         path: "/trainer/attendance",    icon: "CalendarCheck",   group: "Tracking" },
   { label: "Progress Tracking",  path: "/trainer/progress",      icon: "TrendingUp",      group: "Tracking" },
-  { label: "Transformations",    path: "/trainer/transformations", icon: "Sparkles",      group: "Tracking" },
+  { label: "Progress",           path: "/trainer/progress",      icon: "TrendingUp",      group: "Tracking" },
   { label: "Schedule",           path: "/trainer/schedule",      icon: "CalendarDays",    group: "Schedule" },
   { label: "Notifications",      path: "/trainer/notifications", icon: "Bell",            group: "Schedule" },
 ];

@@ -1,57 +1,89 @@
 import { apiClient } from './client';
-import { unwrapListResponse } from '../lib/api-response';
+import { unwrapApiResponse, unwrapListResponse } from '../lib/api-response';
 
-export interface ProgressPhoto {
-  id: string;
-  imageUrl: string;
-  // Backend fields (ProgressPhoto model): notes + takenAt.
-  notes?: string | null;
-  takenAt?: string;
-  type?: string;
-  memberId?: string;
-  createdAt?: string;
-}
+// Numeric progress only — GymPro does NOT store progress photos.
 
-export interface BodyMeasurement {
+export interface ProgressEntry {
   id: string;
+  recordedAt: string;
   weight?: number | null;
-  bodyFatPercentage?: number | null;
+  height?: number | null;
   bmi?: number | null;
+  bodyFatPercentage?: number | null;
+  muscleMass?: number | null;
   chest?: number | null;
   waist?: number | null;
   hips?: number | null;
   arms?: number | null;
   thighs?: number | null;
   notes?: string | null;
-  createdAt?: string;
-  [key: string]: unknown;
 }
 
-export interface Goal {
+export interface CreateProgressEntry {
+  weight?: number;
+  height?: number;
+  chest?: number;
+  waist?: number;
+  hips?: number;
+  arms?: number;
+  thighs?: number;
+  bodyFatPercentage?: number;
+  muscleMass?: number;
+  notes?: string;
+}
+
+export type Trend = 'UP' | 'DOWN' | 'FLAT';
+
+export interface MetricSummary {
+  latest: number;
+  first: number;
+  previous: number | null;
+  changeSinceFirst: number;
+  changeSincePrevious: number | null;
+  monthlyAverage: number | null;
+  trend: Trend;
+}
+
+export interface ProgressSummary {
+  entryCount: number;
+  consistencyScore: number;
+  firstEntryAt: string | null;
+  lastEntryAt: string | null;
+  metrics: Record<string, MetricSummary>;
+}
+
+export interface ProgressGoal {
   id: string;
   title: string;
-  description?: string | null;
-  targetDate?: string | null;
-  isCompleted: boolean;
-  createdAt?: string;
+  metric?: string | null;
+  targetValue?: number | null;
+  currentValue?: number | null;
+  unit?: string | null;
+  status: string;
+  progressPercent: number;
 }
 
-export async function getMyProgressPhotos(): Promise<ProgressPhoto[]> {
-  const res = await apiClient.get('/progress/photos');
-  return unwrapListResponse<ProgressPhoto>(res);
+// ── Self (member) ────────────────────────────────────────────────────────────
+export async function getMyTimeline(): Promise<ProgressEntry[]> {
+  return unwrapListResponse<ProgressEntry>(await apiClient.get('/progress/my/timeline'));
+}
+export async function getMySummary(): Promise<ProgressSummary> {
+  return unwrapApiResponse<ProgressSummary>(await apiClient.get('/progress/my/summary'));
+}
+export async function getMyGoals(): Promise<ProgressGoal[]> {
+  return unwrapListResponse<ProgressGoal>(await apiClient.get('/progress/my/goals'));
+}
+export async function createMyEntry(data: CreateProgressEntry): Promise<ProgressEntry> {
+  return unwrapApiResponse<ProgressEntry>(await apiClient.post('/progress/my', data));
 }
 
-export async function deleteProgressPhoto(id: string): Promise<void> {
-  await apiClient.delete(`/progress/photos/${id}`);
+// ── Member (trainer/admin) ───────────────────────────────────────────────────
+export async function getMemberTimeline(memberId: string): Promise<ProgressEntry[]> {
+  return unwrapListResponse<ProgressEntry>(await apiClient.get(`/progress/member/${memberId}/timeline`));
 }
-
-export async function getBodyMeasurements(): Promise<BodyMeasurement[]> {
-  // Backend exposes the member's own measurements at /progress/measurements/me.
-  const res = await apiClient.get('/progress/measurements/me');
-  return unwrapListResponse<BodyMeasurement>(res);
+export async function getMemberSummary(memberId: string): Promise<ProgressSummary> {
+  return unwrapApiResponse<ProgressSummary>(await apiClient.get(`/progress/member/${memberId}/summary`));
 }
-
-export async function getGoals(): Promise<Goal[]> {
-  const res = await apiClient.get('/goals');
-  return unwrapListResponse<Goal>(res);
+export async function createMemberEntry(memberId: string, data: CreateProgressEntry): Promise<ProgressEntry> {
+  return unwrapApiResponse<ProgressEntry>(await apiClient.post(`/progress/member/${memberId}`, data));
 }

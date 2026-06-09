@@ -198,21 +198,7 @@ export interface BodyMeasurement {
   createdAt: string;
 }
 
-// ─── Progress Photo ───────────────────────────────────────────────────────────
-
-export type PhotoAngle = "FRONT" | "BACK" | "LEFT_SIDE" | "RIGHT_SIDE";
-
-export interface ProgressPhoto {
-  id: string;
-  memberId: string;
-  gymId: string;
-  photoUrl: string;
-  angle?: PhotoAngle | null;
-  takenAt: string;
-  notes?: string | null;
-  isPrivate: boolean;
-  createdAt: string;
-}
+// Progress photos are intentionally NOT supported (no media uploads).
 
 // ─── Session (Trainer-Member) ─────────────────────────────────────────────────
 
