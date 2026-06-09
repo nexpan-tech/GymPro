@@ -21,6 +21,7 @@ export function createPrismaMock(): PrismaClient {
     'campaign','branch','auditLog','due','badge','memberBadge',
     'goal','bodyMeasurement','exercise',
     'workoutExercise','workoutCompletion','dietMeal','dietCompletion',
+    'invoice','saaSPlan','gymSubscription','saaSInvoice','gymMembershipPlan',
   ]
 
   const mock: Record<string, unknown> = {

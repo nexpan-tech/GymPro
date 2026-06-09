@@ -14,6 +14,7 @@ const SUPER_ADMIN_NAV: NavItem[] = [
   { label: "Dashboard",        path: "/super-admin/dashboard",  icon: "LayoutDashboard", group: "Platform" },
   { label: "Gyms",             path: "/super-admin/gyms",       icon: "Building2",       group: "Platform" },
   { label: "Subscriptions",    path: "/super-admin/plans",      icon: "CreditCard",      group: "Platform" },
+  { label: "SaaS Billing",     path: "/super-admin/billing",    icon: "Receipt",         group: "Platform" },
 
   // Analytics
   { label: "Revenue Analytics", path: "/super-admin/analytics", icon: "TrendingUp",      group: "Analytics" },
@@ -81,6 +82,7 @@ const MEMBER_NAV: NavItem[] = [
   { label: "Community",    path: "/member/community",           icon: "Users",           group: "Community" },
   { label: "Membership",   path: "/member/membership-details",  icon: "IdCard",          group: "Account" },
   { label: "Payments",     path: "/member/payment-history",     icon: "CreditCard",      group: "Account" },
+  { label: "Invoices",     path: "/member/invoices",            icon: "Receipt",         group: "Account" },
   { label: "Notifications", path: "/member/notifications",      icon: "Bell",            group: "Account" },
 ];
 

@@ -28,6 +28,19 @@ export interface MyMembership {
   history: Membership[];
 }
 
+export interface MembershipPlanOption {
+  id: string;
+  name: string;
+  description?: string | null;
+  durationDays: number;
+  price: number;
+}
+
+export interface PublicPlans {
+  gstPercent: number;
+  plans: MembershipPlanOption[];
+}
+
 function unwrap<T>(res: { data: { data?: T } | T }): T {
   return ((res.data as { data?: T }).data ?? res.data) as T;
 }
@@ -47,5 +60,15 @@ export const membershipService = {
   getMyMembership: async (): Promise<Membership | null> => {
     const { current } = await membershipService.getMy();
     return current;
+  },
+
+  /** Active plans for the member's gym (+ GST %) for the renew/pay flow. */
+  getPlans: async (): Promise<PublicPlans> => {
+    const res = await api.get("/memberships/plans/public");
+    const data = unwrap<PublicPlans>(res);
+    return {
+      gstPercent: typeof data?.gstPercent === "number" ? data.gstPercent : 0,
+      plans: Array.isArray(data?.plans) ? data.plans : [],
+    };
   },
 };

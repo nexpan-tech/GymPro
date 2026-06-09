@@ -1,5 +1,7 @@
 import { prisma } from "../../config/db";
 import { AppError } from "../../utils/response";
+import { InvoiceService } from "../invoice/invoice.service";
+import { sendInvoiceEmail } from "../invoice/invoiceEmail.service";
 
 type PaymentStatus = "PAID" | "PENDING" | "OVERDUE";
 type DueStatus = "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" | "WAIVED";
@@ -10,20 +12,24 @@ export const createPayment = async (gymId: string, payload: any) => {
       id: payload.memberId,
       gymId,
     },
+    include: { user: true },
   });
 
   if (!member) {
     throw new AppError("Member not found in this gym", 404);
   }
 
-  return prisma.$transaction(async (tx) => {
+  const { payment, invoice } = await prisma.$transaction(async (tx) => {
+    const status: PaymentStatus = (payload.status as PaymentStatus) || "PAID";
     const payment = await tx.payment.create({
       data: {
         gymId,
         memberId: payload.memberId,
+        membershipId: payload.membershipId ?? undefined,
         amount: Number(payload.amount),
         method: payload.method,
-        status: (payload.status as PaymentStatus) || "PAID",
+        status,
+        gateway: "MANUAL",
       },
       include: {
         member: {
@@ -33,6 +39,24 @@ export const createPayment = async (gymId: string, payload: any) => {
         },
       },
     });
+
+    // Generate a GST invoice for fully-paid, non-due (i.e. membership/one-off)
+    // payments. Partial due settlements are tracked on the Due, not invoiced here.
+    let invoice = null;
+    if (status === "PAID" && !payload.dueId) {
+      invoice = await InvoiceService.generate(
+        {
+          gymId,
+          memberId: payload.memberId,
+          membershipId: payload.membershipId ?? undefined,
+          paymentId: payment.id,
+          amount: Number(payload.amount),
+          customerName: member.user?.name ?? "Member",
+          status: "PAID",
+        },
+        tx as never,
+      );
+    }
 
     if (payload.dueId) {
       const due = await tx.due.findFirst({
@@ -84,8 +108,19 @@ export const createPayment = async (gymId: string, payload: any) => {
       });
     }
 
-    return payment;
+    return { payment, invoice };
   });
+
+  // Best-effort invoice email, sent post-commit so mail issues never roll back.
+  if (invoice) {
+    await sendInvoiceEmail({
+      to: payment.member.user?.email,
+      memberName: payment.member.user?.name ?? "Member",
+      invoice,
+    });
+  }
+
+  return payment;
 };
 
 export const getPayments = async (gymId: string) => {

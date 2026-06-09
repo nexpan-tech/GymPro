@@ -34,6 +34,30 @@ export class MembershipPlanService {
     });
   }
 
+  /**
+   * Member-facing catalogue: only the ACTIVE plans for the member's own gym,
+   * plus the gym's GST percentage so the client can show a GST breakdown before
+   * checkout. Never exposes other gyms' plans.
+   */
+  static async listPublic(gymId: string) {
+    const [gym, plans] = await Promise.all([
+      prisma.gym.findUnique({ where: { id: gymId }, select: { gstPercent: true } }),
+      prisma.gymMembershipPlan.findMany({
+        where: { gymId, isActive: true },
+        orderBy: { price: "asc" },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          durationDays: true,
+          price: true,
+        },
+      }),
+    ]);
+
+    return { gstPercent: gym?.gstPercent ?? 0, plans };
+  }
+
   static async getById(gymId: string, id: string) {
     const plan = await prisma.gymMembershipPlan.findFirst({
       where: { id, gymId },

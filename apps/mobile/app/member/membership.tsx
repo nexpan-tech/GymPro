@@ -10,6 +10,7 @@ import {
 import { useTheme } from "../../src/theme";
 import {
   AppBadge,
+  AppButton,
   AppCard,
   AppHeader,
   AppLoadingState,
@@ -29,6 +30,17 @@ function planLabel(m?: Membership | null) {
 
 function fmt(d?: string) {
   return d ? new Date(d).toLocaleDateString() : "—";
+}
+
+/** Derive a human renewal status from the live membership state. */
+function renewalStatus(m?: Membership | null) {
+  const status = m?.effectiveStatus ?? m?.status;
+  if (!m || status === "EXPIRED" || status === "CANCELLED") return "Renewal due";
+  const days = m.daysRemaining ?? 0;
+  if (status === "FROZEN") return "Frozen";
+  if (days <= 7) return "Renew now";
+  if (days <= 30) return "Renew soon";
+  return "Up to date";
 }
 
 export default function MembershipScreen() {
@@ -65,12 +77,13 @@ export default function MembershipScreen() {
   }
 
   const status = current?.effectiveStatus ?? current?.status;
+  const isActive = status === "ACTIVE";
 
   return (
     <AppScreen>
       <AppHeader
         title="Membership"
-        subtitle="Your subscription"
+        subtitle="Your plan & status"
         onBack={() => router.back()}
       />
 
@@ -94,10 +107,13 @@ export default function MembershipScreen() {
 
         {current ? (
           <>
-            <Row label="Valid until" value={fmt(current.endDate)} />
+            <Row label="Status" value={isActive ? "Active" : (status ?? "—")} />
+            <Row label="Start date" value={fmt(current.startDate)} />
+            <Row label="End date" value={fmt(current.endDate)} />
             <Row label="Days remaining" value={`${current.daysRemaining ?? 0} days`} />
             <Row label="Amount" value={`₹${current.amount ?? 0}`} />
             <Row label="Payment" value={current.paymentStatus ?? "—"} />
+            <Row label="Renewal" value={renewalStatus(current)} />
             {status === "FROZEN" && (
               <Row
                 label="Frozen"
@@ -109,10 +125,20 @@ export default function MembershipScreen() {
           </>
         ) : (
           <AppText variant="body" color="textSecondary" style={{ textAlign: "center" }}>
-            You don't have a membership yet. Please contact your gym.
+            You don't have a membership yet. Choose a plan to get started.
           </AppText>
         )}
       </AppCard>
+
+      {/* Primary actions */}
+      <View style={{ gap: 12 }}>
+        <AppButton onPress={() => router.push("/member/renew-membership")}>
+          {current ? "Renew Membership" : "Choose a Plan"}
+        </AppButton>
+        <AppButton variant="secondary" onPress={() => router.push("/member/payments")}>
+          View Payment History
+        </AppButton>
+      </View>
 
       {history.length > 0 && (
         <View style={{ marginTop: 8, gap: 12 }}>

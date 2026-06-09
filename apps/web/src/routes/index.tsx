@@ -36,6 +36,8 @@ import GymAdminMemberProfilePage from "@/pages/gym-admin/MemberProfilePage";
 import GymAdminMembershipsPage from "@/pages/gym-admin/MembershipsPage";
 import GymAdminAttendancePage from "@/pages/gym-admin/AttendancePage";
 import GymAdminPaymentsPage from "@/pages/gym-admin/PaymentsPage";
+import GymAdminBillingPage from "@/pages/gym-admin/BillingPage";
+import MemberInvoicesPage from "@/pages/member/InvoicesPage";
 import GymAdminTrainersPage from "@/pages/gym-admin/TrainersPage";
 import GymAdminWorkoutsPage from "@/pages/gym-admin/WorkoutPlansPage";
 import GymAdminDietsPage from "@/pages/gym-admin/DietPlansPage";
@@ -117,6 +119,7 @@ const router = createBrowserRouter([
           { path: "memberships", element: <GymAdminMembershipsPage /> },
           { path: "attendance", element: <GymAdminAttendancePage /> },
           { path: "payments", element: <GymAdminPaymentsPage /> },
+          { path: "billing", element: <GymAdminBillingPage /> },
           { path: "trainers", element: <GymAdminTrainersPage /> },
           { path: "workout-plans", element: <GymAdminWorkoutsPage /> },
           { path: "diet-plans", element: <GymAdminDietsPage /> },
@@ -162,6 +165,7 @@ const router = createBrowserRouter([
           { path: "attendance-history", element: <AttendanceHistoryPage /> },
           { path: "membership-details", element: <MembershipDetailsPage /> },
           { path: "payment-history", element: <PaymentHistoryPage /> },
+          { path: "invoices", element: <MemberInvoicesPage /> },
           { path: "workout-plan", element: <WorkoutPlanPage /> },
           { path: "diet-plan", element: <DietPlanPage /> },
           { path: "progress", element: <ProgressPage /> },

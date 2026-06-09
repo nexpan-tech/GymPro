@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -27,11 +28,32 @@ export default function ScannerPage() {
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Ask for camera access on first mount (QR scanning only — no gallery/photos).
   useEffect(() => {
-    if (!permission) {
+    if (permission && !permission.granted && permission.canAskAgain) {
       void requestPermission();
     }
   }, [permission, requestPermission]);
+
+  // Surface the denial in logs so QA can tell "camera not opening" apart from
+  // "permission denied".
+  useEffect(() => {
+    if (permission && !permission.granted && !permission.canAskAgain) {
+      console.warn("[scanner] camera permission denied permanently — open settings to enable");
+    }
+  }, [permission]);
+
+  async function handleAllowCamera() {
+    // If the OS won't show the prompt again, send the user to system settings.
+    if (permission && !permission.canAskAgain) {
+      await Linking.openSettings();
+      return;
+    }
+    const res = await requestPermission();
+    if (!res.granted) {
+      console.warn("[scanner] camera permission request was denied");
+    }
+  }
 
   async function handleScan(data: string) {
     if (scanned || loading) return;
@@ -54,6 +76,7 @@ export default function ScannerPage() {
       }
 
       if (!gymId) {
+        console.warn("[scanner] invalid QR payload:", data);
         Alert.alert("Invalid QR", "This QR code is not a valid gym code.");
         setScanned(false);
         setLoading(false);
@@ -72,6 +95,11 @@ export default function ScannerPage() {
         ]);
       }
     } catch (error: any) {
+      console.warn(
+        `[scanner] attendance ${action} API failed:`,
+        error?.response?.status,
+        error?.response?.data?.message ?? error?.message,
+      );
       Alert.alert(
         action === "checkout" ? "Check-out Failed" : "Check-in Failed",
         error?.response?.data?.message ||
@@ -113,10 +141,15 @@ export default function ScannerPage() {
           Camera Permission Required
         </AppText>
         <AppText variant="body" color="textSecondary" style={{ textAlign: "center" }}>
-          Enable camera access to scan gym QR codes.
+          {permission.canAskAgain
+            ? "Enable camera access to scan gym QR codes."
+            : "Camera access is blocked. Open Settings to enable it for GymPro, then return to scan."}
         </AppText>
-        <AppButton onPress={() => void requestPermission()} style={{ marginTop: 8 }}>
-          Allow Camera
+        <AppButton onPress={() => void handleAllowCamera()} style={{ marginTop: 8 }}>
+          {permission.canAskAgain ? "Allow Camera" : "Open Settings"}
+        </AppButton>
+        <AppButton variant="secondary" onPress={() => router.back()}>
+          Go Back
         </AppButton>
       </AppScreen>
     );

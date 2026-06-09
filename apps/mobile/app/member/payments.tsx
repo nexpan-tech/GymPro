@@ -5,6 +5,7 @@ import { View } from "react-native";
 import { paymentService, type Payment } from "../../src/services/payment.service";
 import {
   AppBadge,
+  AppButton,
   AppCard,
   AppEmptyState,
   AppHeader,
@@ -12,6 +13,12 @@ import {
   AppScreen,
   AppText,
 } from "../../src/components/ui";
+
+function gatewayLabel(p: Payment) {
+  if (p.gateway && p.gateway !== "MANUAL") return p.gateway;
+  if (p.gateway === "MANUAL") return `${p.method || "Cash"} · Front desk`;
+  return p.method || "UPI";
+}
 
 export default function PaymentsScreen() {
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -52,7 +59,16 @@ export default function PaymentsScreen() {
       }}
       refreshing={refreshing}
     >
-      <AppHeader title="Payments" subtitle="Your payment history" onBack={() => router.back()} />
+      <AppHeader
+        title="Payments"
+        subtitle="Your payment history"
+        onBack={() => router.back()}
+        right={
+          <AppButton size="sm" variant="secondary" onPress={() => router.push("/member/renew-membership")}>
+            Pay / Renew
+          </AppButton>
+        }
+      />
 
       {payments.length === 0 ? (
         <AppEmptyState
@@ -81,8 +97,13 @@ export default function PaymentsScreen() {
                   <View>
                     <AppText style={{ fontSize: 22, fontWeight: "900" }}>₹{item.amount}</AppText>
                     <AppText variant="caption" color="textSecondary" style={{ marginTop: 4 }}>
-                      {item.method || "UPI"}
+                      {gatewayLabel(item)}
                     </AppText>
+                    {item.membershipId ? (
+                      <AppText variant="caption" color="textMuted" style={{ marginTop: 2 }}>
+                        Membership payment
+                      </AppText>
+                    ) : null}
                   </View>
                   <View style={{ alignItems: "flex-end", gap: 6 }}>
                     <AppBadge label={item.status} tone={tone} />

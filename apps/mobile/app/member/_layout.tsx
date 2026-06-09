@@ -75,7 +75,9 @@ export default function MemberTabsLayout() {
       <Tabs.Screen name="attendance" options={{ href: null }} />
       <Tabs.Screen name="scanner" options={{ href: null }} />
       <Tabs.Screen name="membership" options={{ href: null }} />
+      <Tabs.Screen name="renew-membership" options={{ href: null }} />
       <Tabs.Screen name="payments" options={{ href: null }} />
+      <Tabs.Screen name="invoices" options={{ href: null }} />
       <Tabs.Screen name="notifications" options={{ href: null }} />
     </Tabs>
   );

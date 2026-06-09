@@ -38,6 +38,19 @@ router.get(
   controller.getMyPayments
 );
 
+// Gateway checkout — member (or staff on a member's behalf) starts/verifies a
+// Razorpay order. Static paths, before "/:id".
+router.post(
+  "/checkout/order",
+  roleMiddleware([ROLES.MEMBER, ROLES.ADMIN, ROLES.RECEPTIONIST]),
+  controller.createOrder
+);
+router.post(
+  "/checkout/verify",
+  roleMiddleware([ROLES.MEMBER, ROLES.ADMIN, ROLES.RECEPTIONIST]),
+  controller.verifyPayment
+);
+
 router.get(
   "/:id",
   roleMiddleware([ROLES.ADMIN, ROLES.RECEPTIONIST]),

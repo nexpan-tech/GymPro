@@ -4,6 +4,7 @@ import {
   Calendar,
   CheckCircle2,
   CreditCard,
+  Crown,
   DoorOpen,
   Dumbbell,
   Flame,
@@ -13,6 +14,7 @@ import {
   Salad,
   Star,
   Target,
+  Wallet,
 } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
 import { Alert, ScrollView, TouchableOpacity, View } from "react-native";
@@ -363,7 +365,7 @@ export default function MemberDashboardScreen() {
 
           {daysLeft !== null && daysLeft < 30 ? (
             <TouchableOpacity
-              onPress={() => router.push("/member/membership")}
+              onPress={() => router.push("/member/renew-membership")}
               activeOpacity={0.8}
               style={{
                 paddingHorizontal: 16,
@@ -481,6 +483,21 @@ export default function MemberDashboardScreen() {
       {/* Quick Actions */}
       <AppText variant="heading">Quick Actions</AppText>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+        <QuickAction
+          icon={<Crown color={c.primary} size={22} />}
+          label="Membership"
+          onPress={() => router.push("/member/membership")}
+        />
+        <QuickAction
+          icon={<Wallet color={c.success} size={22} />}
+          label="Payments"
+          onPress={() => router.push("/member/payments")}
+        />
+        <QuickAction
+          icon={<CreditCard color="#f97316" size={22} />}
+          label="Renew"
+          onPress={() => router.push("/member/renew-membership")}
+        />
         <QuickAction
           icon={<ImagePlus color={c.success} size={22} />}
           label="Progress"

@@ -35,6 +35,14 @@ enum PaymentStatus {
   OVERDUE
 }
 
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
 enum MemberStatus {
   ACTIVE
   INACTIVE
@@ -227,6 +235,7 @@ enum GymSubscriptionStatus {
   ACTIVE
   TRIALING
   PAST_DUE
+  SUSPENDED
   CANCELLED
   EXPIRED
 }
@@ -282,10 +291,17 @@ model Gym {
   logo     String?
   isActive Boolean @default(true)
 
+  // Stage 6 — GST / invoicing config. stateCode drives CGST+SGST (intra-state)
+  // vs IGST (inter-state) splits on member invoices.
+  gstNumber String?
+  gstPercent Float  @default(18)
+  stateCode  String?
+
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   auditLogs AuditLog[]
   dues      Due[]
+  invoices  Invoice[]
 
   bodyMeasurements BodyMeasurement[]
   goals            Goal[]
@@ -433,6 +449,7 @@ model Member {
   dietPlan      DietPlan?
   notifications Notification[]
   payments      Payment[]
+  invoices      Invoice[]
 
   workoutCompletions WorkoutCompletion[]
   dietCompletions    DietCompletion[]
@@ -482,6 +499,8 @@ model Membership {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   dues      Due[]
+  payments  Payment[]
+  invoices  Invoice[]
 
   @@index([gymId])
   @@index([memberId])
@@ -615,13 +634,70 @@ model Payment {
   memberId String
   member   Member @relation(fields: [memberId], references: [id])
 
+  // Optional links so a payment can settle a membership and/or a recorded due.
+  membershipId String?
+  membership   Membership? @relation(fields: [membershipId], references: [id])
+
   amount Float
-  method String // UPI, CASH, CARD, etc
+  method String // UPI, CASH, CARD, RAZORPAY, etc
   status PaymentStatus
   paidAt DateTime      @default(now())
 
+  // Stage 6 — gateway reconciliation (Razorpay/Stripe). Null for manual/cash.
+  gateway         String? // RAZORPAY | STRIPE | MANUAL
+  gatewayOrderId  String?
+  gatewayPaymentId String?
+
+  invoice Invoice?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([gymId])
+  @@index([memberId])
+  @@index([membershipId])
+}
+
+// ── Member invoices (Gym → Member) with GST. Metadata only (no PDF). ─────────
+model Invoice {
+  id    String @id @default(cuid())
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id])
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id])
+
+  membershipId String?
+  membership   Membership? @relation(fields: [membershipId], references: [id])
+
+  // One invoice per payment (when a payment generated it).
+  paymentId String? @unique
+  payment   Payment? @relation(fields: [paymentId], references: [id])
+
+  invoiceNumber String   @unique
+  invoiceDate   DateTime @default(now())
+
+  customerName String
+  customerGST  String?
+
+  subtotal    Float
+  gstPercent  Float @default(0)
+  cgst        Float @default(0)
+  sgst        Float @default(0)
+  igst        Float @default(0)
+  gstAmount   Float @default(0)
+  totalAmount Float
+
+  status InvoiceStatus @default(ISSUED)
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gymId])
+  @@index([memberId])
+  @@index([status])
 }
 
 model Session {

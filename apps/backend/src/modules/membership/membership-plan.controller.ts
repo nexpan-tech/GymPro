@@ -55,6 +55,15 @@ export class MembershipPlanController {
     return res.json({ success: true, data: plans });
   }
 
+  /** Member-facing active plan catalogue for the caller's own gym (+ GST %). */
+  static async listPublic(req: Request, res: Response) {
+    const gymId = requireGym(req, res);
+    if (!gymId) return;
+
+    const data = await MembershipPlanService.listPublic(gymId);
+    return res.json({ success: true, data });
+  }
+
   static async update(req: Request, res: Response) {
     const gymId = requireGym(req, res);
     if (!gymId) return;

@@ -16,6 +16,13 @@ router.use(authMiddleware);
  */
 
 // ─── Membership plans (gym-scoped catalogue) ─────────────────────────────────
+// Member-facing active catalogue (+ GST %). Declared before "/plans/:id" and
+// open to members so they can pick a plan to pay/renew — own gym only.
+router.get(
+  "/plans/public",
+  roleMiddleware([ROLES.ADMIN, ROLES.RECEPTIONIST, ROLES.TRAINER, ROLES.MEMBER]),
+  MembershipPlanController.listPublic
+);
 router.get(
   "/plans",
   roleMiddleware([ROLES.ADMIN, ROLES.RECEPTIONIST]),

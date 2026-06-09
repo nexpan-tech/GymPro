@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { AuditAction } from "@prisma/client";
 import * as paymentService from "./payment.service";
+import { PaymentCheckoutService } from "./payment.checkout.service";
 import { createAuditLog } from "../../utils/audit";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { successResponse } from "../../utils/response";
@@ -11,6 +12,19 @@ function getRequestMeta(req: Request) {
     userAgent: req.headers["user-agent"] || null,
   };
 }
+
+// ── Gateway checkout (Razorpay) ──────────────────────────────────────────────
+export const createOrder = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) return res.status(401).json({ success: false, message: "Unauthorized" });
+  const data = await PaymentCheckoutService.createOrder(req.user, req.body);
+  return successResponse(res, "Order created", data, 201);
+});
+
+export const verifyPayment = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) return res.status(401).json({ success: false, message: "Unauthorized" });
+  const data = await PaymentCheckoutService.verifyPayment(req.user, req.body);
+  return successResponse(res, "Payment verified", data, 200);
+});
 
 export const createPayment = asyncHandler(
   async (req: Request, res: Response) => {
