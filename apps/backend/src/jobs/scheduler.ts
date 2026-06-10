@@ -4,6 +4,10 @@ import { processDueReminders } from "./dueReminder.job";
 import { processRenewalCampaigns } from "./renewalCampaign.job";
 import { processInactiveMembers } from "./inactiveMember.job";
 import { processRenewalReminders } from "./renewalReminder.job";
+import { processEngagementReminders } from "./engagement-reminder.job";
+import { processScoreRecompute } from "./scoreRecompute.job";
+import { processChurnRiskAlerts } from "./churnRisk.job";
+import { processTrialConversionReminders } from "./trialConversion.job";
 
 export function startSchedulers() {
   logger.info("Automation schedulers initialized");
@@ -30,5 +34,31 @@ export function startSchedulers() {
   cron.schedule("45 8 * * *", async () => {
     logger.info("Running renewal reminder scan");
     await processRenewalReminders();
+  });
+
+  // ── Stage 7 — retention & CRM automation ──────────────────────────────────
+
+  // 02:00 — recompute + persist retention/risk scores while traffic is low.
+  cron.schedule("0 2 * * *", async () => {
+    logger.info("Running retention score recompute");
+    await processScoreRecompute();
+  });
+
+  // 09:00 — alert staff to HIGH/CRITICAL churn-risk members (post-recompute).
+  cron.schedule("0 9 * * *", async () => {
+    logger.info("Running churn risk alerts");
+    await processChurnRiskAlerts();
+  });
+
+  // 09:15 — engagement nudges (missed workouts, goals, attendance drop).
+  cron.schedule("15 9 * * *", async () => {
+    logger.info("Running engagement reminders");
+    await processEngagementReminders();
+  });
+
+  // 09:30 — trial-conversion follow-ups + lapse expired trials.
+  cron.schedule("30 9 * * *", async () => {
+    logger.info("Running trial conversion reminders");
+    await processTrialConversionReminders();
   });
 }

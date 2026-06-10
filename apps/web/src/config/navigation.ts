@@ -18,6 +18,7 @@ const SUPER_ADMIN_NAV: NavItem[] = [
 
   // Analytics
   { label: "Revenue Analytics", path: "/super-admin/analytics", icon: "TrendingUp",      group: "Analytics" },
+  { label: "Retention",         path: "/super-admin/retention", icon: "HeartPulse",      group: "Analytics" },
   { label: "Platform Metrics",  path: "/super-admin/metrics",   icon: "BarChart3",       group: "Analytics" },
 
   // Operations
@@ -42,6 +43,8 @@ const ADMIN_NAV: NavItem[] = [
   // Growth
   { label: "Analytics",   path: "/gym-admin/analytics",    icon: "BarChart3",       group: "Growth" },
   { label: "Leads CRM",   path: "/gym-admin/leads",        icon: "Funnel",          group: "Growth" },
+  { label: "Retention",   path: "/gym-admin/retention",    icon: "HeartPulse",      group: "Growth" },
+  { label: "Automation",  path: "/gym-admin/automation",   icon: "Bot",             group: "Growth" },
   { label: "Campaigns",   path: "/gym-admin/campaigns",    icon: "Megaphone",       group: "Growth" },
   { label: "Reports",     path: "/gym-admin/reports",      icon: "FileText",        group: "Growth" },
 
@@ -61,6 +64,7 @@ const ADMIN_NAV: NavItem[] = [
 const TRAINER_NAV: NavItem[] = [
   { label: "Dashboard",          path: "/trainer/dashboard",     icon: "LayoutDashboard", group: "Core" },
   { label: "My Members",         path: "/trainer/my-members",    icon: "Users",           group: "Core" },
+  { label: "Member Risk",        path: "/trainer/retention",     icon: "ShieldAlert",     group: "Core" },
   { label: "Workout Plans",      path: "/trainer/workout-plans", icon: "Dumbbell",        group: "Programs" },
   { label: "Diet Plans",         path: "/trainer/diet-plans",    icon: "Salad",           group: "Programs" },
   { label: "Attendance",         path: "/trainer/attendance",    icon: "CalendarCheck",   group: "Tracking" },

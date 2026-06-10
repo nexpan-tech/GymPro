@@ -12,6 +12,7 @@ import {
   LogIn,
   LogOut,
   Salad,
+  Sparkles,
   Star,
   Target,
   Wallet,
@@ -483,6 +484,11 @@ export default function MemberDashboardScreen() {
       {/* Quick Actions */}
       <AppText variant="heading">Quick Actions</AppText>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+        <QuickAction
+          icon={<Sparkles color={c.primary} size={22} />}
+          label="Insights"
+          onPress={() => router.push("/member/insights")}
+        />
         <QuickAction
           icon={<Crown color={c.primary} size={22} />}
           label="Membership"

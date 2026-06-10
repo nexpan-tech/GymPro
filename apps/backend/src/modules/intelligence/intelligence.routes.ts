@@ -1,10 +1,14 @@
 import { Router } from "express";
 import { authMiddleware } from "../../middleware/auth.middleware";
+import { roleMiddleware } from "../../middleware/role.middleware";
+import { ROLES } from "../../constants/roles";
 import { IntelligenceController } from "./intelligence.controller";
 
 const router = Router();
 
 router.use(authMiddleware);
+// Business intelligence is management-only.
+router.use(roleMiddleware([ROLES.ADMIN, ROLES.RECEPTIONIST, ROLES.SUPER_ADMIN]));
 
 router.get("/dashboard", IntelligenceController.dashboard);
 router.get("/revenue", IntelligenceController.revenue);

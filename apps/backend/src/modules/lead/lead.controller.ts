@@ -108,4 +108,25 @@ static async processFollowUps(req: Request, res: Response) {
     data,
   });
 }
+
+  static async addActivity(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const data = await LeadService.addActivity(user, req.params.id as string, req.body);
+    return res.status(201).json({ success: true, message: "Activity added", data });
+  }
+
+  static async getActivities(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const data = await LeadService.getActivities(user, req.params.id as string);
+    return res.json({ success: true, data });
+  }
+
+  static async changeStatus(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const data = await LeadService.changeStatus(user, req.params.id as string, req.body.status);
+    return res.json({ success: true, message: "Lead status updated", data });
+  }
 }

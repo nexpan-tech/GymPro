@@ -163,6 +163,8 @@ export class LeadService {
   const funnel = {
     NEW: 0,
     CONTACTED: 0,
+    INTERESTED: 0,
+    TRIAL: 0,
     TRIAL_BOOKED: 0,
     TRIAL_COMPLETED: 0,
     NEGOTIATION: 0,
@@ -192,7 +194,8 @@ export class LeadService {
     let score = 0;
 
     if (lead.status === "CONTACTED") score += 20;
-    if (lead.status === "TRIAL_BOOKED") score += 50;
+    if (lead.status === "INTERESTED") score += 35;
+    if (lead.status === "TRIAL" || lead.status === "TRIAL_BOOKED") score += 50;
     if (lead.status === "TRIAL_COMPLETED") score += 70;
     if (lead.status === "NEGOTIATION") score += 85;
     if (lead.status === "CONVERTED") score += 100;
@@ -258,4 +261,76 @@ static async processFollowUps(user: AuthUser) {
     notifications: created,
   };
 }
+
+  // ── Stage 7: CRM activity log + conversion ─────────────────────────────────
+
+  /** Append a follow-up / activity entry to a lead's history. */
+  static async addActivity(
+    user: AuthUser,
+    leadId: string,
+    data: { type?: string; note?: string; followUpDate?: string },
+  ) {
+    if (!user.gymId) throw new AppError("Gym context missing", 403);
+    const lead = await prisma.lead.findFirst({ where: { id: leadId, gymId: user.gymId } });
+    if (!lead) throw new AppError("Lead not found", 404);
+
+    const activity = await prisma.leadActivity.create({
+      data: {
+        gymId: user.gymId,
+        leadId,
+        type: (data.type as never) ?? "NOTE",
+        note: data.note,
+        createdById: user.id,
+      },
+    });
+
+    if (data.followUpDate) {
+      await prisma.lead.update({
+        where: { id: leadId },
+        data: { followUpDate: new Date(data.followUpDate) },
+      });
+    }
+    return activity;
+  }
+
+  static async getActivities(user: AuthUser, leadId: string) {
+    if (!user.gymId) throw new AppError("Gym context missing", 403);
+    const lead = await prisma.lead.findFirst({ where: { id: leadId, gymId: user.gymId } });
+    if (!lead) throw new AppError("Lead not found", 404);
+    return prisma.leadActivity.findMany({
+      where: { gymId: user.gymId, leadId },
+      include: { createdBy: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  /** Move a lead to a new pipeline stage and record the transition. */
+  static async changeStatus(user: AuthUser, leadId: string, toStatus: string) {
+    if (!user.gymId) throw new AppError("Gym context missing", 403);
+    const lead = await prisma.lead.findFirst({ where: { id: leadId, gymId: user.gymId } });
+    if (!lead) throw new AppError("Lead not found", 404);
+
+    const isConversion = toStatus === "CONVERTED";
+    const updated = await prisma.lead.update({
+      where: { id: leadId },
+      data: {
+        status: toStatus as never,
+        convertedAt: isConversion ? new Date() : lead.convertedAt,
+      },
+    });
+
+    await prisma.leadActivity.create({
+      data: {
+        gymId: user.gymId,
+        leadId,
+        type: isConversion ? "CONVERSION" : "STATUS_CHANGE",
+        note: `Status: ${lead.status} → ${toStatus}`,
+        fromStatus: lead.status,
+        toStatus: toStatus as never,
+        createdById: user.id,
+      },
+    });
+
+    return updated;
+  }
 }

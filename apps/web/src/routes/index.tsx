@@ -24,6 +24,7 @@ import SuperAdminAnalyticsPage from "@/pages/super-admin/AnalyticsPage";
 import SuperAdminGymsPage from "@/pages/super-admin/GymsPage";
 import SuperAdminPlansPage from "@/pages/super-admin/PlansPage";
 import SuperAdminBillingPage from "@/pages/super-admin/BillingPage";
+import SuperAdminRetentionPage from "@/pages/super-admin/RetentionPage";
 import SuperAdminSettingsPage from "@/pages/super-admin/SettingsPage";
 
 // Gym Admin
@@ -38,6 +39,9 @@ import GymAdminAttendancePage from "@/pages/gym-admin/AttendancePage";
 import GymAdminPaymentsPage from "@/pages/gym-admin/PaymentsPage";
 import GymAdminBillingPage from "@/pages/gym-admin/BillingPage";
 import MemberInvoicesPage from "@/pages/member/InvoicesPage";
+import GymAdminLeadsPage from "@/pages/gym-admin/LeadsPage";
+import GymAdminRetentionPage from "@/pages/gym-admin/RetentionPage";
+import GymAdminAutomationPage from "@/pages/gym-admin/AutomationPage";
 import GymAdminTrainersPage from "@/pages/gym-admin/TrainersPage";
 import GymAdminWorkoutsPage from "@/pages/gym-admin/WorkoutPlansPage";
 import GymAdminDietsPage from "@/pages/gym-admin/DietPlansPage";
@@ -51,6 +55,7 @@ import TrainerAttendancePage from "@/pages/trainer/AttendancePage";
 import TrainerWorkoutsPage from "@/pages/trainer/WorkoutPlansPage";
 import TrainerDietsPage from "@/pages/trainer/DietPlansPage";
 import TrainerProgressPage from "@/pages/trainer/ProgressPage";
+import TrainerRetentionPage from "@/pages/trainer/RetentionPage";
 
 // Member
 import MemberLayout from "@/layouts/MemberLayout";
@@ -90,6 +95,7 @@ const router = createBrowserRouter([
           { path: "gyms", element: <SuperAdminGymsPage /> },
           { path: "plans", element: <SuperAdminPlansPage /> },
           { path: "billing", element: <SuperAdminBillingPage /> },
+          { path: "retention", element: <SuperAdminRetentionPage /> },
           { path: "audit", element: <AuditLogsPage /> },
           { path: "settings", element: <SuperAdminSettingsPage /> },
         ],
@@ -120,6 +126,9 @@ const router = createBrowserRouter([
           { path: "attendance", element: <GymAdminAttendancePage /> },
           { path: "payments", element: <GymAdminPaymentsPage /> },
           { path: "billing", element: <GymAdminBillingPage /> },
+          { path: "leads", element: <GymAdminLeadsPage /> },
+          { path: "retention", element: <GymAdminRetentionPage /> },
+          { path: "automation", element: <GymAdminAutomationPage /> },
           { path: "trainers", element: <GymAdminTrainersPage /> },
           { path: "workout-plans", element: <GymAdminWorkoutsPage /> },
           { path: "diet-plans", element: <GymAdminDietsPage /> },
@@ -146,6 +155,7 @@ const router = createBrowserRouter([
           { path: "workout-plans", element: <TrainerWorkoutsPage /> },
           { path: "diet-plans", element: <TrainerDietsPage /> },
           { path: "progress", element: <TrainerProgressPage /> },
+          { path: "retention", element: <TrainerRetentionPage /> },
         ],
       },
     ],

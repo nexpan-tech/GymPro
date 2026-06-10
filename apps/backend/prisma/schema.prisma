@@ -161,11 +161,42 @@ enum FeedbackRating {
 enum LeadStatus {
   NEW
   CONTACTED
+  INTERESTED
+  TRIAL
   TRIAL_BOOKED
   TRIAL_COMPLETED
   NEGOTIATION
   CONVERTED
   LOST
+}
+
+// Stage 7 — retention/churn risk band stored on Member.
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// Stage 7 — CRM lead activity / follow-up history.
+enum LeadActivityType {
+  NOTE
+  CALL
+  WHATSAPP
+  EMAIL
+  MEETING
+  STATUS_CHANGE
+  FOLLOW_UP
+  TRIAL_STARTED
+  CONVERSION
+}
+
+// Stage 7 — trial membership lifecycle.
+enum TrialStatus {
+  ACTIVE
+  EXPIRED
+  CONVERTED
+  CANCELLED
 }
 
 enum LeadSource {
@@ -319,6 +350,8 @@ model Gym {
 
   exercises       Exercise[]
   leads           Lead[]
+  leadActivities  LeadActivity[]
+  trialMemberships TrialMembership[]
   campaigns       Campaign[]
   communityGroups CommunityGroup[]
 
@@ -375,6 +408,7 @@ model User {
   memberProfile Member?
 
   assignedLeads Lead[]
+  leadActivities LeadActivity[] @relation("LeadActivityAuthor")
   campaigns     Campaign[]
 
   // trainer → members mapping
@@ -456,6 +490,14 @@ model Member {
 
   trainerMessages  TrainerMessage[]
   trainerFeedbacks TrainerFeedback[]
+
+  // Stage 7 — persisted retention/churn scoring (recomputed by a nightly job).
+  retentionScore Int?
+  riskScore      Int?
+  riskLevel      RiskLevel?
+  scoredAt       DateTime?
+
+  trialMemberships TrialMembership[]
 
   branchId String?
   branch   Branch? @relation(fields: [branchId], references: [id])
@@ -1117,8 +1159,70 @@ model Lead {
 
   leadScore Int @default(0)
 
+  // Stage 7 — CRM follow-up history + trial lifecycle
+  activities LeadActivity[]
+  trials     TrialMembership[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([gymId])
+  @@index([status])
+}
+
+// Stage 7 — chronological CRM activity / follow-up log for a lead.
+model LeadActivity {
+  id     String @id @default(cuid())
+  gymId  String
+  gym    Gym    @relation(fields: [gymId], references: [id])
+  leadId String
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  type LeadActivityType @default(NOTE)
+  note String?
+
+  // Stage transition captured on the activity, when relevant.
+  fromStatus LeadStatus?
+  toStatus   LeadStatus?
+
+  createdById String?
+  createdBy   User?   @relation("LeadActivityAuthor", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([gymId])
+  @@index([leadId])
+}
+
+// Stage 7 — trial membership that can convert into a paid Membership.
+model TrialMembership {
+  id    String @id @default(cuid())
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id])
+
+  // A trial may originate from a lead and/or be attached to a member profile.
+  leadId   String?
+  lead     Lead?   @relation(fields: [leadId], references: [id])
+  memberId String?
+  member   Member? @relation(fields: [memberId], references: [id])
+
+  planId String?
+
+  startDate DateTime  @default(now())
+  endDate   DateTime
+  status    TrialStatus @default(ACTIVE)
+
+  // Conversion tracking
+  convertedAt           DateTime?
+  convertedMembershipId String?
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gymId])
+  @@index([status])
 }
 
 model Campaign {

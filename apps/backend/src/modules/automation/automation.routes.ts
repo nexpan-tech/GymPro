@@ -9,6 +9,9 @@ import { processRenewalCampaigns } from "../../jobs/renewalCampaign.job";
 import { processInactiveMembers } from "../../jobs/inactiveMember.job";
 import { processRetentionAlerts } from "../../jobs/retention.job";
 import { processEngagementReminders } from "../../jobs/engagement-reminder.job";
+import { processScoreRecompute } from "../../jobs/scoreRecompute.job";
+import { processChurnRiskAlerts } from "../../jobs/churnRisk.job";
+import { processTrialConversionReminders } from "../../jobs/trialConversion.job";
 
 const router = Router();
 
@@ -78,5 +81,19 @@ router.post("/engagement-reminders", async (_req, res) => {
     message: "Engagement reminders processed successfully",
     data: result,
   });
+});
+
+// ── Stage 7 — retention & CRM automation ──────────────────────────────────
+router.post("/score-recompute", async (_req, res) => {
+  const result = await processScoreRecompute();
+  return res.json({ success: true, message: "Retention scores recomputed", data: result });
+});
+router.post("/churn-risk", async (_req, res) => {
+  const result = await processChurnRiskAlerts();
+  return res.json({ success: true, message: "Churn risk alerts processed", data: result });
+});
+router.post("/trial-conversion", async (_req, res) => {
+  const result = await processTrialConversionReminders();
+  return res.json({ success: true, message: "Trial conversion reminders processed", data: result });
 });
 export default router;
