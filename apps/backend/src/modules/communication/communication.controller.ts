@@ -82,4 +82,26 @@ export class CommunicationController {
       data,
     });
   }
+
+  // ── Stage 9 — chat threads + read receipts ─────────────────────────────────
+  static async getMyThread(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const data = await CommunicationService.getMyThread(user);
+    return res.json({ success: true, data });
+  }
+
+  static async getThreads(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const data = await CommunicationService.getThreads(user);
+    return res.json({ success: true, data });
+  }
+
+  static async markThreadRead(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const data = await CommunicationService.markThreadRead(user, req.params.memberId as string);
+    return res.json({ success: true, message: "Thread marked read", data });
+  }
 }

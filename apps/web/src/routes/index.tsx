@@ -52,6 +52,10 @@ import GymAdminWorkoutsPage from "@/pages/gym-admin/WorkoutPlansPage";
 import GymAdminDietsPage from "@/pages/gym-admin/DietPlansPage";
 import GymAdminNotificationsPage from "@/pages/gym-admin/NotificationsPage";
 import GymAdminSettingsPage from "@/pages/gym-admin/SettingsPage";
+import GymAdminBroadcastPage from "@/pages/gym-admin/BroadcastPage";
+import GymAdminAnnouncementsPage from "@/pages/gym-admin/AnnouncementsPage";
+import GymAdminCommunicationAnalyticsPage from "@/pages/gym-admin/CommunicationAnalyticsPage";
+import ChatThreadsPage from "@/pages/shared/ChatThreadsPage";
 
 // Trainer
 import TrainerDashboardPage from "@/pages/trainer/DashboardPage";
@@ -76,6 +80,8 @@ import ProgressPage from "@/pages/member/ProgressPage";
 import MemberAchievementsPage from "@/pages/member/AchievementsPage";
 import MemberChallengesPage from "@/pages/member/ChallengesPage";
 import MemberRewardsPage from "@/pages/member/RewardsPage";
+import MemberAnnouncementsPage from "@/pages/member/AnnouncementsPage";
+import MemberChatPage from "@/pages/member/ChatPage";
 
 const router = createBrowserRouter([
   // ── Public routes (redirect to dashboard when already authenticated) ──────
@@ -143,6 +149,10 @@ const router = createBrowserRouter([
           { path: "rewards", element: <GymAdminRewardsPage /> },
           { path: "leaderboard", element: <GymAdminLeaderboardPage /> },
           { path: "referrals", element: <GymAdminReferralsPage /> },
+          { path: "broadcast", element: <GymAdminBroadcastPage /> },
+          { path: "announcements", element: <GymAdminAnnouncementsPage /> },
+          { path: "communication-analytics", element: <GymAdminCommunicationAnalyticsPage /> },
+          { path: "chat", element: <ChatThreadsPage /> },
           { path: "trainers", element: <GymAdminTrainersPage /> },
           { path: "workout-plans", element: <GymAdminWorkoutsPage /> },
           { path: "diet-plans", element: <GymAdminDietsPage /> },
@@ -171,6 +181,7 @@ const router = createBrowserRouter([
           { path: "progress", element: <TrainerProgressPage /> },
           { path: "retention", element: <TrainerRetentionPage /> },
           { path: "engagement", element: <TrainerEngagementPage /> },
+          { path: "chat", element: <ChatThreadsPage /> },
         ],
       },
     ],
@@ -197,6 +208,8 @@ const router = createBrowserRouter([
           { path: "achievements", element: <MemberAchievementsPage /> },
           { path: "challenges", element: <MemberChallengesPage /> },
           { path: "rewards", element: <MemberRewardsPage /> },
+          { path: "announcements", element: <MemberAnnouncementsPage /> },
+          { path: "chat", element: <MemberChatPage /> },
         ],
       },
     ],

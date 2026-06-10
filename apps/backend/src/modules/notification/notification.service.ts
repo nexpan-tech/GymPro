@@ -97,4 +97,45 @@ export class NotificationService {
       },
     });
   }
+
+  // ── Stage 9 — member self-service + read receipts ──────────────────────────
+
+  private static async resolveMember(userId: string, gymId: string) {
+    const member = await prisma.member.findFirst({ where: { userId, gymId } });
+    if (!member) throw new AppError("Member profile not found", 404);
+    return member;
+  }
+
+  /** The caller's own notifications (member self-list) with unread count. */
+  static async listMine(userId: string, gymId: string, opts: { unreadOnly?: boolean } = {}) {
+    const member = await this.resolveMember(userId, gymId);
+    const where: Record<string, unknown> = { gymId, memberId: member.id };
+    if (opts.unreadOnly) where.isRead = false;
+    const [items, unreadCount] = await Promise.all([
+      prisma.notification.findMany({ where, orderBy: { createdAt: "desc" }, take: 100 }),
+      prisma.notification.count({ where: { gymId, memberId: member.id, isRead: false } }),
+    ]);
+    return { items, unreadCount };
+  }
+
+  /** Mark one of the caller's notifications read (ownership-checked). */
+  static async markRead(userId: string, gymId: string, id: string) {
+    const member = await this.resolveMember(userId, gymId);
+    const notif = await prisma.notification.findFirst({ where: { id, gymId, memberId: member.id } });
+    if (!notif) throw new AppError("Notification not found", 404);
+    return prisma.notification.update({
+      where: { id },
+      data: { isRead: true, readAt: new Date() },
+    });
+  }
+
+  /** Mark all the caller's notifications read. */
+  static async markAllRead(userId: string, gymId: string) {
+    const member = await this.resolveMember(userId, gymId);
+    const res = await prisma.notification.updateMany({
+      where: { gymId, memberId: member.id, isRead: false },
+      data: { isRead: true, readAt: new Date() },
+    });
+    return { updated: res.count };
+  }
 }

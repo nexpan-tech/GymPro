@@ -1,6 +1,8 @@
 import { prisma } from "../../config/db";
 import { AppError } from "../../utils/response";
 import { GamificationEvents } from "../gamification/engagement-events.service";
+import { emitToGym } from "../../realtime/socket";
+import { SOCKET_EVENTS } from "../../realtime/socket-events";
 
 type AuthUser = {
   id: string;
@@ -145,6 +147,9 @@ export class CommunityService {
         title: participant.challenge.title,
       });
     }
+
+    // Stage 9 — realtime challenge update for live leaderboards.
+    emitToGym(user.gymId, SOCKET_EVENTS.CHALLENGE_UPDATED, { challengeId, memberId, progress, isCompleted });
 
     return updated;
   }

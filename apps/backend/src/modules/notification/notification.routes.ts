@@ -28,6 +28,11 @@ router.get(
   NotificationController.getAll
 );
 
+// ── Stage 9 — member self-service (static paths before "/:id" + "/member") ──
+router.get("/me", authMiddleware, roleMiddleware([ROLES.MEMBER]), NotificationController.listMine);
+router.patch("/read-all", authMiddleware, roleMiddleware([ROLES.MEMBER]), NotificationController.markAllRead);
+router.patch("/:id/read", authMiddleware, roleMiddleware([ROLES.MEMBER]), NotificationController.markRead);
+
 router.get(
   "/member/:memberId",
   authMiddleware,

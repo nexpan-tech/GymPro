@@ -78,4 +78,25 @@ export class NotificationController {
       data: updated,
     });
   }
+
+  // ── Stage 9 — member self-service ──────────────────────────────────────────
+  static async listMine(req: Request, res: Response) {
+    if (!req.user?.gymId) return res.status(400).json({ success: false, message: "Gym ID required" });
+    const data = await NotificationService.listMine(req.user.id, req.user.gymId, {
+      unreadOnly: req.query.unreadOnly === "true",
+    });
+    res.json({ success: true, data });
+  }
+
+  static async markRead(req: Request, res: Response) {
+    if (!req.user?.gymId) return res.status(400).json({ success: false, message: "Gym ID required" });
+    const data = await NotificationService.markRead(req.user.id, req.user.gymId, req.params.id as string);
+    res.json({ success: true, message: "Marked read", data });
+  }
+
+  static async markAllRead(req: Request, res: Response) {
+    if (!req.user?.gymId) return res.status(400).json({ success: false, message: "Gym ID required" });
+    const data = await NotificationService.markAllRead(req.user.id, req.user.gymId);
+    res.json({ success: true, message: "All marked read", data });
+  }
 }

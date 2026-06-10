@@ -75,6 +75,51 @@ enum NotificationType {
   GENERAL
 }
 
+// Stage 9 — communication channels handled by the orchestrator.
+enum CommChannel {
+  IN_APP
+  PUSH
+  EMAIL
+  SMS
+  WHATSAPP
+  SOCKET
+}
+
+// Stage 9 — announcement targeting + lifecycle.
+enum AnnouncementAudience {
+  ALL
+  MEMBERS
+  TRAINERS
+  STAFF
+  BRANCH
+  CUSTOM
+}
+
+enum AnnouncementStatus {
+  DRAFT
+  SCHEDULED
+  SENT
+  EXPIRED
+  CANCELLED
+}
+
+enum AnnouncementPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+// Stage 9 — per-channel delivery outcome for the delivery log.
+enum DeliveryStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  SKIPPED
+}
+
 enum AuditAction {
   CREATE
   UPDATE
@@ -422,6 +467,8 @@ model Gym {
   apiKeys          ApiKey[]
   webhookEndpoints WebhookEndpoint[]
   integrations     Integration[]
+  announcements    Announcement[]
+  deliveryLogs     DeliveryLog[]
 }
 
 //////////////////////////////////////////////////////
@@ -464,6 +511,8 @@ model User {
   trainerMessages  TrainerMessage[]  @relation("TrainerMessages")
   sentMessages     TrainerMessage[]  @relation("MessageSender")
   trainerFeedbacks TrainerFeedback[] @relation("TrainerFeedbacks")
+  createdAnnouncements Announcement[]        @relation("AnnouncementAuthor")
+  announcementReceipts AnnouncementReceipt[] @relation("AnnouncementReceipts")
 
   branchId         String?
   branch           Branch?                 @relation(fields: [branchId], references: [id])
@@ -710,7 +759,14 @@ model Notification {
   isSent Boolean   @default(false)
   sentAt DateTime?
 
+  // Stage 9 — read receipts
+  isRead Boolean   @default(false)
+  readAt DateTime?
+
   createdAt DateTime @default(now())
+
+  @@index([gymId])
+  @@index([memberId])
 }
 
 //////////////////////////////////////////////////////
@@ -1152,6 +1208,10 @@ model TrainerMessage {
   type    MessageType @default(TEXT)
   message String
 
+  // Stage 9 — chat read receipts
+  isRead Boolean   @default(false)
+  readAt DateTime?
+
   createdAt DateTime @default(now())
 
   @@index([gymId])
@@ -1327,6 +1387,7 @@ model Branch {
   membershipPlans  GymMembershipPlan[]
   attendances      Attendance[]
   regionalManagers RegionalManagerBranch[]
+  announcements    Announcement[]
 }
 
 model RegionalManagerBranch {
@@ -1805,6 +1866,95 @@ model DeviceSession {
   @@index([userId])
   @@index([gymId])
   @@index([deviceId])
+}
+
+// Stage 9 — gym announcement with audience targeting + lifecycle + read receipts.
+model Announcement {
+  id    String @id @default(cuid())
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User   @relation("AnnouncementAuthor", fields: [createdById], references: [id])
+
+  title   String
+  message String
+
+  audience AnnouncementAudience @default(ALL)
+  // For BRANCH audience.
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
+  // For CUSTOM audience — explicit member ids.
+  memberIds String[] @default([])
+
+  priority AnnouncementPriority @default(NORMAL)
+  status   AnnouncementStatus   @default(DRAFT)
+
+  // Channels to fan out on when sent (besides IN_APP).
+  channels CommChannel[] @default([])
+
+  scheduledAt DateTime?
+  expiresAt   DateTime?
+  sentAt      DateTime?
+
+  receipts AnnouncementReceipt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gymId])
+  @@index([status])
+}
+
+// Stage 9 — per-recipient delivery + read receipt for an announcement.
+model AnnouncementReceipt {
+  id             String       @id @default(cuid())
+  announcementId String
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation("AnnouncementReceipts", fields: [userId], references: [id], onDelete: Cascade)
+
+  deliveredAt DateTime @default(now())
+  readAt      DateTime?
+
+  @@unique([announcementId, userId])
+  @@index([userId])
+}
+
+// Stage 9 — append-only per-channel delivery log (orchestrator writes this).
+// recipientId/userId kept as plain strings (no FK) so logs survive deletes.
+model DeliveryLog {
+  id    String @id @default(cuid())
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  channel CommChannel
+  status  DeliveryStatus @default(QUEUED)
+
+  // Who/what this delivery targeted.
+  userId        String?
+  memberId      String?
+  recipientAddr String? // email / phone / token (for traceability)
+
+  // Source reference (notification id, announcement id, broadcast id…).
+  refType String?
+  refId   String?
+
+  provider String?
+  title    String?
+  error    String?
+
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  readAt      DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([gymId])
+  @@index([channel])
+  @@index([status])
+  @@index([refType, refId])
 }
 
 model AuditLog {

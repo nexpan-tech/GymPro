@@ -13,6 +13,8 @@ import {
   LogOut,
   Gift,
   Medal,
+  Megaphone,
+  MessageSquare,
   Salad,
   Sparkles,
   Star,
@@ -531,6 +533,16 @@ export default function MemberDashboardScreen() {
           icon={<Bell color={c.warning} size={22} />}
           label="Alerts"
           onPress={() => router.push("/member/notifications")}
+        />
+        <QuickAction
+          icon={<Megaphone color="#6366f1" size={22} />}
+          label="News"
+          onPress={() => router.push("/member/announcements")}
+        />
+        <QuickAction
+          icon={<MessageSquare color={c.success} size={22} />}
+          label="Chat"
+          onPress={() => router.push("/member/chat")}
         />
         <QuickAction
           icon={<Target color="#f97316" size={22} />}

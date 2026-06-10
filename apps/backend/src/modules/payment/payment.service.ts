@@ -2,6 +2,8 @@ import { prisma } from "../../config/db";
 import { AppError } from "../../utils/response";
 import { InvoiceService } from "../invoice/invoice.service";
 import { sendInvoiceEmail } from "../invoice/invoiceEmail.service";
+import { emitToGym } from "../../realtime/socket";
+import { SOCKET_EVENTS } from "../../realtime/socket-events";
 
 type PaymentStatus = "PAID" | "PENDING" | "OVERDUE";
 type DueStatus = "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" | "WAIVED";
@@ -119,6 +121,9 @@ export const createPayment = async (gymId: string, payload: any) => {
       invoice,
     });
   }
+
+  // Stage 9 — realtime payment update for admin dashboards.
+  emitToGym(gymId, SOCKET_EVENTS.PAYMENT_UPDATED, { paymentId: payment.id, memberId: payload.memberId, amount: payment.amount, status: payment.status });
 
   return payment;
 };

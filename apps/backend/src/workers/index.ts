@@ -1,5 +1,8 @@
 import { initSentry, Sentry } from '../config/sentry'
-import { notificationWorker } from "./jobs/notification.worker";
+// Stage 9 — use the REAL delivery worker (email/sms/whatsapp/push/socket), not
+// the old stub in ./jobs/notification.worker which silently dropped jobs it
+// picked up off the shared "notifications" queue.
+import { notificationWorker } from "../jobs/notification.job";
 import { emailWorker } from "./jobs/email.worker";
 import { billingWorker } from "./jobs/billing.worker";
 import { instrumentWorkerWithMetrics } from "../utils/queue-metrics";

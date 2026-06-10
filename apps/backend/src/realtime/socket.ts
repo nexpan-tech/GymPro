@@ -24,12 +24,22 @@ export function initSocket(server: HttpServer) {
     },
   });
 
-  const pubClient = createRedisConnection();
-  const subClient = createRedisConnection();
-
+  // Redis adapter enables horizontal socket scaling. If Redis is unavailable we
+  // fall back to the in-memory adapter so a single instance still works instead
+  // of crashing on boot.
+  try {
+    const pubClient = createRedisConnection();
+    const subClient = createRedisConnection();
+    pubClient.on?.("error", (e: Error) => console.error("[socket] redis pub error:", e.message));
+    subClient.on?.("error", (e: Error) => console.error("[socket] redis sub error:", e.message));
     io.adapter(createAdapter(pubClient, subClient));
-
     console.log("✅ Socket.IO Redis adapter enabled");
+  } catch (err) {
+    console.error(
+      "⚠️  Socket.IO Redis adapter unavailable — falling back to in-memory adapter (single-instance only):",
+      err instanceof Error ? err.message : err,
+    );
+  }
 
   // Instrument socket with metrics
   instrumentSocketWithMetrics(io);
@@ -56,6 +66,10 @@ export function initSocket(server: HttpServer) {
 
     if (user.gymId) {
       socket.join(`gym:${user.gymId}`);
+      // Role-scoped rooms so broadcasts can target staff/trainers/admins.
+      const role = (user.role || "").toUpperCase();
+      socket.join(`gym:${user.gymId}:role:${role}`);
+      if (role === "ADMIN" || role === "RECEPTIONIST") socket.join(`gym:${user.gymId}:staff`);
     }
 
     socket.emit(SOCKET_EVENTS.CONNECTED, {
@@ -93,4 +107,19 @@ export function emitNotificationToUser(userId: string, payload: any) {
 
 export function emitDashboardUpdate(gymId: string, payload: any) {
   emitToGym(gymId, SOCKET_EVENTS.DASHBOARD_UPDATE, payload);
+}
+
+// ── Stage 9 — communication emit helpers ──────────────────────────────────────
+export function emitToRole(gymId: string, role: string, event: string, payload: any) {
+  io?.to(`gym:${gymId}:role:${role.toUpperCase()}`).emit(event, payload);
+}
+
+/** Realtime chat delivery to both participants' user rooms. */
+export function emitChatMessage(userIds: string[], payload: any) {
+  for (const id of userIds) emitToUser(id, SOCKET_EVENTS.CHAT_MESSAGE, payload);
+}
+
+/** Announcement push to a gym (optionally a role/branch sub-room). */
+export function emitAnnouncement(gymId: string, payload: any) {
+  emitToGym(gymId, SOCKET_EVENTS.ANNOUNCEMENT_SENT, payload);
 }

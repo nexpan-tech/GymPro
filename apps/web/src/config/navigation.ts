@@ -50,7 +50,11 @@ const ADMIN_NAV: NavItem[] = [
   { label: "Reports",     path: "/gym-admin/reports",      icon: "FileText",        group: "Growth" },
 
   // Communication
-  { label: "Communication", path: "/gym-admin/notifications", icon: "Bell",          group: "Communication" },
+  { label: "Notifications", path: "/gym-admin/notifications", icon: "Bell",          group: "Communication" },
+  { label: "Broadcast",     path: "/gym-admin/broadcast",     icon: "Megaphone",     group: "Communication" },
+  { label: "Announcements", path: "/gym-admin/announcements", icon: "Megaphone",     group: "Communication" },
+  { label: "Member Chat",   path: "/gym-admin/chat",          icon: "MessageSquare", group: "Communication" },
+  { label: "Comms Analytics", path: "/gym-admin/communication-analytics", icon: "BarChart3", group: "Communication" },
   { label: "Audit Logs",    path: "/gym-admin/audit",         icon: "ScrollText",    group: "Communication" },
 
   // Engagement
@@ -73,6 +77,7 @@ const TRAINER_NAV: NavItem[] = [
   { label: "My Members",         path: "/trainer/my-members",    icon: "Users",           group: "Core" },
   { label: "Member Risk",        path: "/trainer/retention",     icon: "ShieldAlert",     group: "Core" },
   { label: "Engagement",         path: "/trainer/engagement",    icon: "Trophy",          group: "Core" },
+  { label: "Member Chat",        path: "/trainer/chat",          icon: "MessageSquare",   group: "Core" },
   { label: "Workout Plans",      path: "/trainer/workout-plans", icon: "Dumbbell",        group: "Programs" },
   { label: "Diet Plans",         path: "/trainer/diet-plans",    icon: "Salad",           group: "Programs" },
   { label: "Attendance",         path: "/trainer/attendance",    icon: "CalendarCheck",   group: "Tracking" },
@@ -92,6 +97,8 @@ const MEMBER_NAV: NavItem[] = [
   { label: "Challenges",   path: "/member/challenges",          icon: "Flame",           group: "Community" },
   { label: "Achievements", path: "/member/achievements",        icon: "Trophy",          group: "Community" },
   { label: "Rewards",      path: "/member/rewards",             icon: "Gift",            group: "Community" },
+  { label: "Announcements", path: "/member/announcements",      icon: "Megaphone",       group: "Account" },
+  { label: "Chat",         path: "/member/chat",                icon: "MessageSquare",   group: "Account" },
   { label: "Membership",   path: "/member/membership-details",  icon: "IdCard",          group: "Account" },
   { label: "Payments",     path: "/member/payment-history",     icon: "CreditCard",      group: "Account" },
   { label: "Invoices",     path: "/member/invoices",            icon: "Receipt",         group: "Account" },
