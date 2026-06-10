@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authMiddleware } from "../../middleware/auth.middleware";
 import { roleMiddleware } from "../../middleware/role.middleware";
 import { ROLES } from "../../constants/roles";
+import { chatLimiter } from "../../middleware/rateLimits";
 import { CommunicationController } from "./communication.controller";
 
 const router = Router();
@@ -17,7 +18,7 @@ router.get("/messages/me", roleMiddleware([ROLES.MEMBER]), CommunicationControll
 // Trainer/admin thread list.
 router.get("/threads", roleMiddleware([ROLES.TRAINER, ...STAFF]), CommunicationController.getThreads);
 
-router.post("/messages", roleMiddleware(CHAT), CommunicationController.sendMessage);
+router.post("/messages", chatLimiter, roleMiddleware(CHAT), CommunicationController.sendMessage);
 router.get("/messages/member/:memberId", roleMiddleware(CHAT), CommunicationController.getMemberMessages);
 router.patch("/messages/member/:memberId/read", roleMiddleware(CHAT), CommunicationController.markThreadRead);
 

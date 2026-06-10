@@ -1,0 +1,56 @@
+# Render blueprint — GymPro backend API + worker + Redis.
+# Database is external (Neon); set DATABASE_URL / DIRECT_URL as secrets.
+services:
+  - type: web
+    name: gympro-api
+    runtime: docker
+    dockerfilePath: ./apps/backend/Dockerfile
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "5050"
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          name: gympro-redis
+          type: redis
+          property: connectionString
+      - key: CORS_ORIGIN
+        sync: false
+
+  - type: worker
+    name: gympro-worker
+    runtime: docker
+    dockerfilePath: ./apps/backend/Dockerfile
+    dockerContext: .
+    dockerCommand: node dist/workers/index.js
+    plan: starter
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          name: gympro-redis
+          type: redis
+          property: connectionString
+
+  - type: redis
+    name: gympro-redis
+    plan: starter
+    ipAllowList: []
+    maxmemoryPolicy: noeviction

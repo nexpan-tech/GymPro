@@ -8,6 +8,7 @@ import {
   Banknote,
   Bell,
   Bot,
+  Brain,
   Building2,
   CalendarCheck,
   CalendarDays,
@@ -41,6 +42,8 @@ import {
   Trophy,
   Users,
   UserCheck,
+  Flag,
+  Palette,
   type LucideIcon,
 } from "lucide-react";
 
@@ -54,6 +57,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Banknote,
   Bell,
   Bot,
+  Brain,
   Building2,
   CalendarCheck,
   CalendarDays,
@@ -85,6 +89,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Trophy,
   Users,
   UserCheck,
+  Flag,
+  Palette,
 };
 
 function resolveIcon(name: string): LucideIcon {

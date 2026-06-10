@@ -17,6 +17,7 @@ const SUPER_ADMIN_NAV: NavItem[] = [
   { label: "SaaS Billing",     path: "/super-admin/billing",    icon: "Receipt",         group: "Platform" },
 
   // Analytics
+  { label: "Enterprise Analytics", path: "/super-admin/enterprise", icon: "Building2",   group: "Analytics" },
   { label: "Revenue Analytics", path: "/super-admin/analytics", icon: "TrendingUp",      group: "Analytics" },
   { label: "Retention",         path: "/super-admin/retention", icon: "HeartPulse",      group: "Analytics" },
   { label: "Engagement",        path: "/super-admin/engagement", icon: "Trophy",         group: "Analytics" },
@@ -28,6 +29,7 @@ const SUPER_ADMIN_NAV: NavItem[] = [
   { label: "Audit Logs",       path: "/super-admin/audit",      icon: "ScrollText",      group: "Operations" },
 
   // Config
+  { label: "Feature Flags",    path: "/super-admin/feature-flags", icon: "Flag",         group: "Config" },
   { label: "Settings",         path: "/super-admin/settings",   icon: "Settings",        group: "Config" },
 ];
 
@@ -45,6 +47,7 @@ const ADMIN_NAV: NavItem[] = [
   { label: "Analytics",   path: "/gym-admin/analytics",    icon: "BarChart3",       group: "Growth" },
   { label: "Leads CRM",   path: "/gym-admin/leads",        icon: "Funnel",          group: "Growth" },
   { label: "Retention",   path: "/gym-admin/retention",    icon: "HeartPulse",      group: "Growth" },
+  { label: "AI Insights", path: "/gym-admin/ai-insights",  icon: "Brain",           group: "Growth" },
   { label: "Automation",  path: "/gym-admin/automation",   icon: "Bot",             group: "Growth" },
   { label: "Campaigns",   path: "/gym-admin/campaigns",    icon: "Megaphone",       group: "Growth" },
   { label: "Reports",     path: "/gym-admin/reports",      icon: "FileText",        group: "Growth" },
@@ -69,6 +72,7 @@ const ADMIN_NAV: NavItem[] = [
   { label: "Billing",     path: "/gym-admin/billing",      icon: "Receipt",         group: "Multi-branch" },
 
   // Config
+  { label: "White Label", path: "/gym-admin/white-label",  icon: "Palette",         group: "Config" },
   { label: "Settings",    path: "/gym-admin/settings",     icon: "Settings",        group: "Config" },
 ];
 

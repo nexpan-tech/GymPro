@@ -5,6 +5,7 @@ import { razorpayWebhook } from "./payment.webhook";
 import { authMiddleware } from "../../middleware/auth.middleware";
 import { roleMiddleware } from "../../middleware/role.middleware";
 import { ROLES } from "../../constants/roles";
+import { paymentLimiter } from "../../middleware/rateLimits";
 
 const router = Router();
 
@@ -21,6 +22,7 @@ router.use(authMiddleware);
 
 router.post(
   "/",
+  paymentLimiter,
   roleMiddleware([ROLES.ADMIN, ROLES.RECEPTIONIST]),
   controller.createPayment
 );
@@ -42,6 +44,7 @@ router.get(
 // Razorpay order. Static paths, before "/:id".
 router.post(
   "/checkout/order",
+  paymentLimiter,
   roleMiddleware([ROLES.MEMBER, ROLES.ADMIN, ROLES.RECEPTIONIST]),
   controller.createOrder
 );

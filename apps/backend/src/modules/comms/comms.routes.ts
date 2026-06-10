@@ -3,6 +3,7 @@ import * as controller from "./comms.controller";
 import { authMiddleware } from "../../middleware/auth.middleware";
 import { roleMiddleware } from "../../middleware/role.middleware";
 import { ROLES } from "../../constants/roles";
+import { broadcastLimiter } from "../../middleware/rateLimits";
 
 const router = Router();
 
@@ -14,7 +15,7 @@ const STAFF = [ROLES.ADMIN, ROLES.RECEPTIONIST];
 router.get("/channels", roleMiddleware([...STAFF, ROLES.TRAINER]), controller.channels);
 
 // Broadcast center + analytics (management).
-router.post("/broadcast", roleMiddleware(STAFF), controller.broadcast);
+router.post("/broadcast", broadcastLimiter, roleMiddleware(STAFF), controller.broadcast);
 router.get("/analytics", roleMiddleware(STAFF), controller.analytics);
 router.get("/delivery-logs", roleMiddleware(STAFF), controller.deliveryLogs);
 

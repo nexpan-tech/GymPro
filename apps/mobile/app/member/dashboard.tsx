@@ -510,6 +510,11 @@ export default function MemberDashboardScreen() {
           onPress={() => router.push("/member/insights")}
         />
         <QuickAction
+          icon={<Sparkles color="#a855f7" size={22} />}
+          label="AI Coach"
+          onPress={() => router.push("/member/coach")}
+        />
+        <QuickAction
           icon={<Crown color={c.primary} size={22} />}
           label="Membership"
           onPress={() => router.push("/member/membership")}

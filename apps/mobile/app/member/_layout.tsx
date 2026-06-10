@@ -81,6 +81,7 @@ export default function MemberTabsLayout() {
       <Tabs.Screen name="rewards" options={{ href: null }} />
       <Tabs.Screen name="announcements" options={{ href: null }} />
       <Tabs.Screen name="chat" options={{ href: null }} />
+      <Tabs.Screen name="coach" options={{ href: null }} />
       <Tabs.Screen name="renew-membership" options={{ href: null }} />
       <Tabs.Screen name="payments" options={{ href: null }} />
       <Tabs.Screen name="invoices" options={{ href: null }} />

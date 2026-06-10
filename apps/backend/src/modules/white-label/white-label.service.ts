@@ -11,35 +11,28 @@ export class WhiteLabelService {
   static async upsertSettings(user: AuthUser, data: any) {
     if (!user.gymId) throw new AppError("Gym context missing", 403);
 
+    // Stage 10 — branding fields (incl. email branding). Stored config only.
+    const fields = {
+      appName: data.appName,
+      logoUrl: data.logoUrl,
+      faviconUrl: data.faviconUrl,
+      primaryColor: data.primaryColor,
+      secondaryColor: data.secondaryColor,
+      accentColor: data.accentColor,
+      customDomain: data.customDomain,
+      mobileAppName: data.mobileAppName,
+      playStoreUrl: data.playStoreUrl,
+      appStoreUrl: data.appStoreUrl,
+      emailFromName: data.emailFromName,
+      emailLogoUrl: data.emailLogoUrl,
+      emailFooterText: data.emailFooterText,
+      supportEmail: data.supportEmail,
+    };
+
     return prisma.whiteLabelSetting.upsert({
-      where: {
-        gymId: user.gymId,
-      },
-      update: {
-        appName: data.appName,
-        logoUrl: data.logoUrl,
-        faviconUrl: data.faviconUrl,
-        primaryColor: data.primaryColor,
-        secondaryColor: data.secondaryColor,
-        accentColor: data.accentColor,
-        customDomain: data.customDomain,
-        mobileAppName: data.mobileAppName,
-        playStoreUrl: data.playStoreUrl,
-        appStoreUrl: data.appStoreUrl,
-      },
-      create: {
-        gymId: user.gymId,
-        appName: data.appName,
-        logoUrl: data.logoUrl,
-        faviconUrl: data.faviconUrl,
-        primaryColor: data.primaryColor,
-        secondaryColor: data.secondaryColor,
-        accentColor: data.accentColor,
-        customDomain: data.customDomain,
-        mobileAppName: data.mobileAppName,
-        playStoreUrl: data.playStoreUrl,
-        appStoreUrl: data.appStoreUrl,
-      },
+      where: { gymId: user.gymId },
+      update: fields,
+      create: { gymId: user.gymId, ...fields },
     });
   }
 

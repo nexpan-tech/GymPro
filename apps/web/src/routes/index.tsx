@@ -26,6 +26,8 @@ import SuperAdminPlansPage from "@/pages/super-admin/PlansPage";
 import SuperAdminBillingPage from "@/pages/super-admin/BillingPage";
 import SuperAdminRetentionPage from "@/pages/super-admin/RetentionPage";
 import SuperAdminEngagementPage from "@/pages/super-admin/EngagementPage";
+import SuperAdminEnterpriseAnalyticsPage from "@/pages/super-admin/EnterpriseAnalyticsPage";
+import SuperAdminFeatureFlagsPage from "@/pages/super-admin/FeatureFlagsPage";
 import SuperAdminSettingsPage from "@/pages/super-admin/SettingsPage";
 
 // Gym Admin
@@ -56,6 +58,8 @@ import GymAdminBroadcastPage from "@/pages/gym-admin/BroadcastPage";
 import GymAdminAnnouncementsPage from "@/pages/gym-admin/AnnouncementsPage";
 import GymAdminCommunicationAnalyticsPage from "@/pages/gym-admin/CommunicationAnalyticsPage";
 import ChatThreadsPage from "@/pages/shared/ChatThreadsPage";
+import GymAdminAIInsightsPage from "@/pages/gym-admin/AIInsightsPage";
+import GymAdminWhiteLabelPage from "@/pages/gym-admin/WhiteLabelPage";
 
 // Trainer
 import TrainerDashboardPage from "@/pages/trainer/DashboardPage";
@@ -112,6 +116,8 @@ const router = createBrowserRouter([
           { path: "billing", element: <SuperAdminBillingPage /> },
           { path: "retention", element: <SuperAdminRetentionPage /> },
           { path: "engagement", element: <SuperAdminEngagementPage /> },
+          { path: "enterprise", element: <SuperAdminEnterpriseAnalyticsPage /> },
+          { path: "feature-flags", element: <SuperAdminFeatureFlagsPage /> },
           { path: "audit", element: <AuditLogsPage /> },
           { path: "settings", element: <SuperAdminSettingsPage /> },
         ],
@@ -153,6 +159,8 @@ const router = createBrowserRouter([
           { path: "announcements", element: <GymAdminAnnouncementsPage /> },
           { path: "communication-analytics", element: <GymAdminCommunicationAnalyticsPage /> },
           { path: "chat", element: <ChatThreadsPage /> },
+          { path: "ai-insights", element: <GymAdminAIInsightsPage /> },
+          { path: "white-label", element: <GymAdminWhiteLabelPage /> },
           { path: "trainers", element: <GymAdminTrainersPage /> },
           { path: "workout-plans", element: <GymAdminWorkoutsPage /> },
           { path: "diet-plans", element: <GymAdminDietsPage /> },

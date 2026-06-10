@@ -469,6 +469,7 @@ model Gym {
   integrations     Integration[]
   announcements    Announcement[]
   deliveryLogs     DeliveryLog[]
+  featureFlagAssignments FeatureFlagAssignment[]
 }
 
 //////////////////////////////////////////////////////
@@ -1758,8 +1759,48 @@ model WhiteLabelSetting {
   playStoreUrl  String?
   appStoreUrl   String?
 
+  // Stage 10 — email branding
+  emailFromName    String?
+  emailLogoUrl     String?
+  emailFooterText  String?
+  supportEmail     String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Stage 10 — platform feature catalogue (defined once, super-admin managed).
+model FeatureFlag {
+  id          String  @id @default(cuid())
+  key         String  @unique
+  label       String
+  description String?
+  category    String? // e.g. "Engagement", "Billing", "Core"
+  // Default rollout when a gym has no explicit assignment.
+  defaultEnabled Boolean @default(true)
+
+  assignments FeatureFlagAssignment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Stage 10 — per-gym override of a feature flag.
+model FeatureFlagAssignment {
+  id      String @id @default(cuid())
+  flagKey String
+  flag    FeatureFlag @relation(fields: [flagKey], references: [key], onDelete: Cascade)
+
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  enabled Boolean
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@unique([flagKey, gymId])
+  @@index([gymId])
 }
 
 model MarketplaceItem {
