@@ -6,6 +6,7 @@ import { AppError } from "../../utils/response";
 import { requireGym } from "../../utils/tenant";
 import { emitToGym } from "../../realtime/socket";
 import { SOCKET_EVENTS } from "../../realtime/socket-events";
+import { GamificationEvents } from "../gamification/engagement-events.service";
 
 interface AuthUser {
   id: string;
@@ -121,6 +122,9 @@ export class AttendanceService {
       data: { gymId, memberId, branchId, date: today, source, status: "CHECKED_IN" },
       include: memberInclude,
     });
+
+    // Stage 8 — award points + advance the attendance streak (best-effort).
+    await GamificationEvents.attendanceCheckin({ gymId, memberId, attendanceId: attendance.id, date: today });
 
     await emitOccupancy(gymId, "checkin");
     return { attendance, alreadyCheckedIn: false };

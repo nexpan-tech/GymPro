@@ -1,13 +1,31 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Role } from '@prisma/client'
 
-const { prismaMock } = vi.hoisted(() => ({
-  prismaMock: {
+const { prismaMock } = vi.hoisted(() => {
+  // Stage 8 engagement-engine surface so the points event hook fired by
+  // production code (progressUpdated) runs silently in unit tests.
+  const engagement = {
+    pointTransaction: { create: vi.fn().mockResolvedValue({}), aggregate: vi.fn().mockResolvedValue({ _sum: { points: 0 } }) },
+    memberXP: { findUnique: vi.fn().mockResolvedValue(null), upsert: vi.fn().mockResolvedValue({ xp: 0, level: 1 }) },
+    memberStreak: {
+      findUnique: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockResolvedValue({ current: 1, longest: 1 }),
+      update: vi.fn().mockResolvedValue({}),
+      findMany: vi.fn().mockResolvedValue([]),
+    },
+    rewardRedemption: { create: vi.fn(), findMany: vi.fn() },
+    referral: { create: vi.fn(), findFirst: vi.fn(), findMany: vi.fn(), update: vi.fn() },
+    notification: { create: vi.fn().mockResolvedValue({ id: 'n', type: 'GENERAL' }) },
+  }
+  const prismaMock: any = {
     member: { findFirst: vi.fn() },
     bodyMeasurement: { create: vi.fn(), findMany: vi.fn(), findFirst: vi.fn(), delete: vi.fn() },
     goal: { findMany: vi.fn(), create: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
-  },
-}))
+    ...engagement,
+  }
+  prismaMock.$transaction = vi.fn(async (fn: any) => fn(prismaMock))
+  return { prismaMock }
+})
 
 vi.mock('../../config/db', () => ({ prisma: prismaMock }))
 

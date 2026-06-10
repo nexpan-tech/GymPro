@@ -1,17 +1,26 @@
 import { Router } from "express";
 import { authMiddleware } from "../../middleware/auth.middleware";
+import { roleMiddleware } from "../../middleware/role.middleware";
+import { ROLES } from "../../constants/roles";
 import { BadgeController } from "./badge.controller";
 
 const router = Router();
 
 router.use(authMiddleware);
 
-router.post("/", BadgeController.createBadge);
-router.get("/", BadgeController.getBadges);
-router.post("/award", BadgeController.awardBadge);
-router.get("/me", BadgeController.getMyBadges);
-router.get("/member/:memberId", BadgeController.getMemberBadges);
-router.post("/auto/goal/:memberId", BadgeController.autoAwardGoalBadge);
-router.post("/auto/attendance/:memberId", BadgeController.autoAwardAttendanceBadge);
+const STAFF = [ROLES.ADMIN, ROLES.RECEPTIONIST];
+const STAFF_TRAINER = [...STAFF, ROLES.TRAINER];
+
+// Catalogue management + awarding (staff).
+router.post("/", roleMiddleware(STAFF), BadgeController.createBadge);
+router.get("/", roleMiddleware([...STAFF_TRAINER, ROLES.MEMBER]), BadgeController.getBadges);
+router.post("/award", roleMiddleware(STAFF_TRAINER), BadgeController.awardBadge);
+
+// Member self-service — before "/member/:memberId".
+router.get("/me", roleMiddleware([ROLES.MEMBER, ...STAFF_TRAINER]), BadgeController.getMyBadges);
+
+router.get("/member/:memberId", roleMiddleware(STAFF_TRAINER), BadgeController.getMemberBadges);
+router.post("/auto/goal/:memberId", roleMiddleware(STAFF_TRAINER), BadgeController.autoAwardGoalBadge);
+router.post("/auto/attendance/:memberId", roleMiddleware(STAFF_TRAINER), BadgeController.autoAwardAttendanceBadge);
 
 export default router;

@@ -1,5 +1,6 @@
 import { prisma } from "../../config/db";
 import { AppError } from "../../utils/response";
+import { GamificationEvents } from "../gamification/engagement-events.service";
 
 type AuthUser = {
   id: string;
@@ -68,7 +69,7 @@ export class CommunityService {
 
     if (!member) throw new AppError("Member not found", 404);
 
-    return prisma.challengeParticipant.upsert({
+    const participant = await prisma.challengeParticipant.upsert({
       where: {
         challengeId_memberId: {
           challengeId,
@@ -89,6 +90,11 @@ export class CommunityService {
         },
       },
     });
+
+    // Stage 8 — join points (idempotent per member+challenge).
+    await GamificationEvents.challengeJoined({ gymId: user.gymId, memberId, challengeId });
+
+    return participant;
   }
 
   static async updateProgress(
@@ -120,7 +126,7 @@ export class CommunityService {
         ? progress >= participant.challenge.targetValue
         : false;
 
-    return prisma.challengeParticipant.update({
+    const updated = await prisma.challengeParticipant.update({
       where: {
         id: participant.id,
       },
@@ -129,6 +135,18 @@ export class CommunityService {
         isCompleted,
       },
     });
+
+    // Stage 8 — award completion points the first time the target is reached.
+    if (isCompleted && !participant.isCompleted) {
+      await GamificationEvents.challengeCompleted({
+        gymId: user.gymId,
+        memberId,
+        challengeId,
+        title: participant.challenge.title,
+      });
+    }
+
+    return updated;
   }
 
   static async leaderboard(user: AuthUser, challengeId: string) {

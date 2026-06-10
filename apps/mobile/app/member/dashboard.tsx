@@ -11,10 +11,13 @@ import {
   ImagePlus,
   LogIn,
   LogOut,
+  Gift,
+  Medal,
   Salad,
   Sparkles,
   Star,
   Target,
+  Trophy,
   Wallet,
 } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
@@ -484,6 +487,21 @@ export default function MemberDashboardScreen() {
       {/* Quick Actions */}
       <AppText variant="heading">Quick Actions</AppText>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+        <QuickAction
+          icon={<Trophy color="#f59e0b" size={22} />}
+          label="Achievements"
+          onPress={() => router.push("/member/achievements")}
+        />
+        <QuickAction
+          icon={<Medal color={c.primary} size={22} />}
+          label="Challenges"
+          onPress={() => router.push("/member/challenges")}
+        />
+        <QuickAction
+          icon={<Gift color="#ec4899" size={22} />}
+          label="Rewards"
+          onPress={() => router.push("/member/rewards")}
+        />
         <QuickAction
           icon={<Sparkles color={c.primary} size={22} />}
           label="Insights"

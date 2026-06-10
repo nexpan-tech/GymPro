@@ -247,6 +247,45 @@ enum RewardType {
   GIFT
 }
 
+// Stage 8 — points ledger event types (idempotent earning events).
+enum PointEvent {
+  ATTENDANCE_CHECKIN
+  WORKOUT_COMPLETED
+  DIET_COMPLETED
+  PROGRESS_UPDATED
+  CHALLENGE_JOINED
+  CHALLENGE_COMPLETED
+  REFERRAL_CONVERTED
+  MEMBERSHIP_RENEWED
+  REWARD_REDEEMED
+  MISSION_COMPLETED
+  STREAK_MILESTONE
+}
+
+// Stage 8 — independent streak tracks per member.
+enum StreakType {
+  ATTENDANCE
+  WORKOUT
+  DIET
+}
+
+// Stage 8 — reward redemption lifecycle.
+enum RedemptionStatus {
+  PENDING
+  APPROVED
+  FULFILLED
+  REJECTED
+  CANCELLED
+}
+
+// Stage 8 — referral lifecycle.
+enum ReferralStatus {
+  PENDING
+  CONVERTED
+  REWARDED
+  EXPIRED
+}
+
 enum CommunityGroupType {
   FITNESS
   WEIGHT_LOSS
@@ -365,6 +404,10 @@ model Gym {
   memberXps     MemberXP[]
   dailyMissions DailyMission[]
   rewards       Reward[]
+  pointTransactions PointTransaction[]
+  memberStreaks     MemberStreak[]
+  rewardRedemptions RewardRedemption[]
+  referrals         Referral[]
 
   branches                Branch[]
   regionalManagerBranches RegionalManagerBranch[]
@@ -498,6 +541,12 @@ model Member {
   scoredAt       DateTime?
 
   trialMemberships TrialMembership[]
+
+  // Stage 8 — engagement engine
+  pointTransactions PointTransaction[]
+  streaks           MemberStreak[]
+  rewardRedemptions RewardRedemption[]
+  referralsMade     Referral[]         @relation("MemberReferrals")
 
   branchId String?
   branch   Branch? @relation(fields: [branchId], references: [id])
@@ -1400,10 +1449,117 @@ model Reward {
   type        RewardType
   xpCost      Int?
 
+  // Stage 8 — points cost + finite availability (null stock = unlimited).
+  pointsCost Int     @default(0)
+  stock      Int?
+
   isActive Boolean @default(true)
+
+  redemptions RewardRedemption[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Stage 8 — append-only points ledger. The `eventKey` makes earning idempotent
+// (one row per logical event), so re-firing the same event grants no extra points.
+model PointTransaction {
+  id    String @id @default(cuid())
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id])
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  event  PointEvent
+  points Int
+
+  // Source reference (e.g. attendanceId, challengeId, rewardId) for traceability.
+  refType String?
+  refId   String?
+
+  // Deduplication key: unique per gym so the same logical event can't double-grant.
+  eventKey String
+
+  createdAt DateTime @default(now())
+
+  @@unique([gymId, eventKey])
+  @@index([gymId])
+  @@index([memberId])
+}
+
+// Stage 8 — per-member, per-type streak with longest-ever tracking.
+model MemberStreak {
+  id    String @id @default(cuid())
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id])
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  type StreakType
+
+  current       Int       @default(0)
+  longest       Int       @default(0)
+  lastActivityDate DateTime?
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([memberId, type])
+  @@index([gymId])
+}
+
+// Stage 8 — reward redemption (points are spent via a PointTransaction).
+model RewardRedemption {
+  id    String @id @default(cuid())
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id])
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  rewardId String
+  reward   Reward @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+
+  pointsSpent Int
+  status      RedemptionStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gymId])
+  @@index([memberId])
+}
+
+// Stage 8 — member referral. Integrates with the Stage 7 Lead (referredLeadId)
+// without a hard FK so leads can be deleted independently.
+model Referral {
+  id    String @id @default(cuid())
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id])
+
+  referrerId String
+  referrer   Member @relation("MemberReferrals", fields: [referrerId], references: [id], onDelete: Cascade)
+
+  code String
+
+  // Invitee details (before they become a lead/member).
+  inviteeName  String?
+  inviteePhone String?
+  inviteeEmail String?
+
+  referredLeadId String?
+
+  status      ReferralStatus @default(PENDING)
+  rewardPoints Int           @default(0)
+  convertedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gymId])
+  @@index([referrerId])
+  @@index([code])
 }
 
 model CommunityGroup {

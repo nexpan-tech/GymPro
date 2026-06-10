@@ -22,6 +22,12 @@ export function createPrismaMock(): PrismaClient {
     'goal','bodyMeasurement','exercise',
     'workoutExercise','workoutCompletion','dietMeal','dietCompletion',
     'invoice','saaSPlan','gymSubscription','saaSInvoice','gymMembershipPlan',
+    // Stage 7
+    'leadActivity','trialMembership',
+    // Stage 8 — gamification engagement engine
+    'memberXP','memberStreak','pointTransaction','rewardRedemption','reward',
+    'referral','challenge','challengeParticipant','dailyMission','missionCompletion',
+    'communityGroup','communityGroupMember',
   ]
 
   const mock: Record<string, unknown> = {

@@ -1,8 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const { prismaMock } = vi.hoisted(() => {
+  // Stage 8 engagement-engine surface so the membershipRenewed points hook runs
+  // silently. `$transaction` passes `tx`, so the points engine reads its ledger
+  // off `tx` too — give `tx` the pointTransaction + memberXP surface.
+  const engagement = {
+    pointTransaction: { create: vi.fn().mockResolvedValue({}), aggregate: vi.fn().mockResolvedValue({ _sum: { points: 0 } }) },
+    memberXP: { findUnique: vi.fn().mockResolvedValue(null), upsert: vi.fn().mockResolvedValue({ xp: 0, level: 1 }) },
+    memberStreak: {
+      findUnique: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockResolvedValue({ current: 1, longest: 1 }),
+      update: vi.fn().mockResolvedValue({}),
+      findMany: vi.fn().mockResolvedValue([]),
+    },
+    rewardRedemption: { create: vi.fn(), findMany: vi.fn() },
+    referral: { create: vi.fn(), findFirst: vi.fn(), findMany: vi.fn(), update: vi.fn() },
+    notification: { create: vi.fn().mockResolvedValue({ id: 'n', type: 'GENERAL' }) },
+  }
   const tx = {
     membership: { update: vi.fn(), create: vi.fn() },
+    ...engagement,
   }
   return {
     prismaMock: {
@@ -10,6 +27,7 @@ const { prismaMock } = vi.hoisted(() => {
       member: { findFirst: vi.fn() },
       membership: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
       gymMembershipPlan: { findFirst: vi.fn() },
+      ...engagement,
       $transaction: vi.fn(async (fn: any) => fn(tx)),
     },
   }

@@ -25,6 +25,7 @@ import SuperAdminGymsPage from "@/pages/super-admin/GymsPage";
 import SuperAdminPlansPage from "@/pages/super-admin/PlansPage";
 import SuperAdminBillingPage from "@/pages/super-admin/BillingPage";
 import SuperAdminRetentionPage from "@/pages/super-admin/RetentionPage";
+import SuperAdminEngagementPage from "@/pages/super-admin/EngagementPage";
 import SuperAdminSettingsPage from "@/pages/super-admin/SettingsPage";
 
 // Gym Admin
@@ -42,6 +43,10 @@ import MemberInvoicesPage from "@/pages/member/InvoicesPage";
 import GymAdminLeadsPage from "@/pages/gym-admin/LeadsPage";
 import GymAdminRetentionPage from "@/pages/gym-admin/RetentionPage";
 import GymAdminAutomationPage from "@/pages/gym-admin/AutomationPage";
+import GymAdminChallengesPage from "@/pages/gym-admin/ChallengesPage";
+import GymAdminRewardsPage from "@/pages/gym-admin/RewardsPage";
+import GymAdminLeaderboardPage from "@/pages/gym-admin/LeaderboardPage";
+import GymAdminReferralsPage from "@/pages/gym-admin/ReferralsPage";
 import GymAdminTrainersPage from "@/pages/gym-admin/TrainersPage";
 import GymAdminWorkoutsPage from "@/pages/gym-admin/WorkoutPlansPage";
 import GymAdminDietsPage from "@/pages/gym-admin/DietPlansPage";
@@ -56,6 +61,7 @@ import TrainerWorkoutsPage from "@/pages/trainer/WorkoutPlansPage";
 import TrainerDietsPage from "@/pages/trainer/DietPlansPage";
 import TrainerProgressPage from "@/pages/trainer/ProgressPage";
 import TrainerRetentionPage from "@/pages/trainer/RetentionPage";
+import TrainerEngagementPage from "@/pages/trainer/EngagementPage";
 
 // Member
 import MemberLayout from "@/layouts/MemberLayout";
@@ -67,6 +73,9 @@ import PaymentHistoryPage from "@/pages/member/PaymentHistoryPage";
 import WorkoutPlanPage from "@/pages/member/WorkoutPlanPage";
 import DietPlanPage from "@/pages/member/DietPlanPage";
 import ProgressPage from "@/pages/member/ProgressPage";
+import MemberAchievementsPage from "@/pages/member/AchievementsPage";
+import MemberChallengesPage from "@/pages/member/ChallengesPage";
+import MemberRewardsPage from "@/pages/member/RewardsPage";
 
 const router = createBrowserRouter([
   // ── Public routes (redirect to dashboard when already authenticated) ──────
@@ -96,6 +105,7 @@ const router = createBrowserRouter([
           { path: "plans", element: <SuperAdminPlansPage /> },
           { path: "billing", element: <SuperAdminBillingPage /> },
           { path: "retention", element: <SuperAdminRetentionPage /> },
+          { path: "engagement", element: <SuperAdminEngagementPage /> },
           { path: "audit", element: <AuditLogsPage /> },
           { path: "settings", element: <SuperAdminSettingsPage /> },
         ],
@@ -129,6 +139,10 @@ const router = createBrowserRouter([
           { path: "leads", element: <GymAdminLeadsPage /> },
           { path: "retention", element: <GymAdminRetentionPage /> },
           { path: "automation", element: <GymAdminAutomationPage /> },
+          { path: "challenges", element: <GymAdminChallengesPage /> },
+          { path: "rewards", element: <GymAdminRewardsPage /> },
+          { path: "leaderboard", element: <GymAdminLeaderboardPage /> },
+          { path: "referrals", element: <GymAdminReferralsPage /> },
           { path: "trainers", element: <GymAdminTrainersPage /> },
           { path: "workout-plans", element: <GymAdminWorkoutsPage /> },
           { path: "diet-plans", element: <GymAdminDietsPage /> },
@@ -156,6 +170,7 @@ const router = createBrowserRouter([
           { path: "diet-plans", element: <TrainerDietsPage /> },
           { path: "progress", element: <TrainerProgressPage /> },
           { path: "retention", element: <TrainerRetentionPage /> },
+          { path: "engagement", element: <TrainerEngagementPage /> },
         ],
       },
     ],
@@ -179,6 +194,9 @@ const router = createBrowserRouter([
           { path: "workout-plan", element: <WorkoutPlanPage /> },
           { path: "diet-plan", element: <DietPlanPage /> },
           { path: "progress", element: <ProgressPage /> },
+          { path: "achievements", element: <MemberAchievementsPage /> },
+          { path: "challenges", element: <MemberChallengesPage /> },
+          { path: "rewards", element: <MemberRewardsPage /> },
         ],
       },
     ],

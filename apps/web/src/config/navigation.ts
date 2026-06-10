@@ -19,6 +19,7 @@ const SUPER_ADMIN_NAV: NavItem[] = [
   // Analytics
   { label: "Revenue Analytics", path: "/super-admin/analytics", icon: "TrendingUp",      group: "Analytics" },
   { label: "Retention",         path: "/super-admin/retention", icon: "HeartPulse",      group: "Analytics" },
+  { label: "Engagement",        path: "/super-admin/engagement", icon: "Trophy",         group: "Analytics" },
   { label: "Platform Metrics",  path: "/super-admin/metrics",   icon: "BarChart3",       group: "Analytics" },
 
   // Operations
@@ -52,6 +53,12 @@ const ADMIN_NAV: NavItem[] = [
   { label: "Communication", path: "/gym-admin/notifications", icon: "Bell",          group: "Communication" },
   { label: "Audit Logs",    path: "/gym-admin/audit",         icon: "ScrollText",    group: "Communication" },
 
+  // Engagement
+  { label: "Challenges",   path: "/gym-admin/challenges",   icon: "Trophy",          group: "Engagement" },
+  { label: "Rewards",      path: "/gym-admin/rewards",      icon: "Gift",            group: "Engagement" },
+  { label: "Leaderboard",  path: "/gym-admin/leaderboard",  icon: "Medal",           group: "Engagement" },
+  { label: "Referrals",    path: "/gym-admin/referrals",    icon: "Share2",          group: "Engagement" },
+
   // Multi-branch
   { label: "Branches",    path: "/gym-admin/branches",     icon: "GitBranch",       group: "Multi-branch" },
   { label: "Marketplace", path: "/gym-admin/marketplace",  icon: "ShoppingBag",     group: "Multi-branch" },
@@ -65,6 +72,7 @@ const TRAINER_NAV: NavItem[] = [
   { label: "Dashboard",          path: "/trainer/dashboard",     icon: "LayoutDashboard", group: "Core" },
   { label: "My Members",         path: "/trainer/my-members",    icon: "Users",           group: "Core" },
   { label: "Member Risk",        path: "/trainer/retention",     icon: "ShieldAlert",     group: "Core" },
+  { label: "Engagement",         path: "/trainer/engagement",    icon: "Trophy",          group: "Core" },
   { label: "Workout Plans",      path: "/trainer/workout-plans", icon: "Dumbbell",        group: "Programs" },
   { label: "Diet Plans",         path: "/trainer/diet-plans",    icon: "Salad",           group: "Programs" },
   { label: "Attendance",         path: "/trainer/attendance",    icon: "CalendarCheck",   group: "Tracking" },
@@ -83,7 +91,7 @@ const MEMBER_NAV: NavItem[] = [
   { label: "Goals",        path: "/member/goals",               icon: "Target",          group: "Fitness" },
   { label: "Challenges",   path: "/member/challenges",          icon: "Flame",           group: "Community" },
   { label: "Achievements", path: "/member/achievements",        icon: "Trophy",          group: "Community" },
-  { label: "Community",    path: "/member/community",           icon: "Users",           group: "Community" },
+  { label: "Rewards",      path: "/member/rewards",             icon: "Gift",            group: "Community" },
   { label: "Membership",   path: "/member/membership-details",  icon: "IdCard",          group: "Account" },
   { label: "Payments",     path: "/member/payment-history",     icon: "CreditCard",      group: "Account" },
   { label: "Invoices",     path: "/member/invoices",            icon: "Receipt",         group: "Account" },

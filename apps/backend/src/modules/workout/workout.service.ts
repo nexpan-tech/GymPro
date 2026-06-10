@@ -1,4 +1,5 @@
 import { prisma } from "../../config/db";
+import { GamificationEvents } from "../gamification/engagement-events.service";
 import { AppError } from "../../utils/response";
 
 type AuthUser = {
@@ -267,7 +268,7 @@ export class WorkoutService {
     throw new AppError("You can only complete your own workout", 403);
   }
 
-  return prisma.workoutCompletion.create({
+  const completion = await prisma.workoutCompletion.create({
     data: {
       gymId: user.gymId,
       memberId: member.id,
@@ -290,6 +291,15 @@ export class WorkoutService {
       },
     },
   });
+
+  // Stage 8 — points + workout streak (best-effort).
+  await GamificationEvents.workoutCompleted({
+    gymId: user.gymId,
+    memberId: member.id,
+    completionId: completion.id,
+  });
+
+  return completion;
 }
 
 static async getCompletions(user: AuthUser, workoutPlanId: string) {

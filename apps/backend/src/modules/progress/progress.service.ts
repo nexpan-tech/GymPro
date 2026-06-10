@@ -1,4 +1,5 @@
 import { prisma } from "../../config/db";
+import { GamificationEvents } from "../gamification/engagement-events.service";
 import { AppError } from "../../utils/response";
 import type {
   CreateProgressEntryInput,
@@ -106,7 +107,7 @@ export class ProgressService {
     }
     const bmi = calculateBmi(data.weight ?? null, height);
 
-    return prisma.bodyMeasurement.create({
+    const measurement = await prisma.bodyMeasurement.create({
       data: {
         gymId: user.gymId!,
         memberId,
@@ -125,6 +126,11 @@ export class ProgressService {
         notes: data.notes,
       },
     });
+
+    // Stage 8 — points for logging progress (best-effort, idempotent per entry).
+    await GamificationEvents.progressUpdated({ gymId: user.gymId!, memberId, measurementId: measurement.id });
+
+    return measurement;
   }
 
   private static async fetchEntries(gymId: string, memberId: string) {

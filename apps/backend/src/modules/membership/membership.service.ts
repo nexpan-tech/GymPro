@@ -1,5 +1,6 @@
 import { prisma } from "../../config/db";
 import { MembershipPlan, MembershipStatus } from "@prisma/client";
+import { GamificationEvents } from "../gamification/engagement-events.service";
 import { AppError } from "../../utils/response";
 import {
   CreateMembershipInput,
@@ -291,6 +292,9 @@ export class MembershipService {
         include: membershipInclude,
       });
     });
+
+    // Stage 8 — award loyalty points for renewing (best-effort, idempotent).
+    await GamificationEvents.membershipRenewed({ gymId, memberId: created.memberId, membershipId: created.id });
 
     return this.decorate(created);
   }

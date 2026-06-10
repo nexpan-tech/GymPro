@@ -125,4 +125,77 @@ export class GamificationController {
     data,
   });
 }
+
+  // ── Stage 8 endpoints ──────────────────────────────────────────────────────
+  static async mySummary(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const data = await GamificationService.getSummary(user, req.query.memberId as string | undefined);
+    return res.json({ success: true, data });
+  }
+
+  static async myPointHistory(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const data = await GamificationService.getPointHistory(user, req.query.memberId as string | undefined);
+    return res.json({ success: true, data });
+  }
+
+  static async redeemReward(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const data = await GamificationService.redeemReward(user, req.params.id as string, req.body.memberId);
+    return res.status(201).json({ success: true, message: "Reward redeemed", data });
+  }
+
+  static async listRedemptions(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const data = await GamificationService.listRedemptions(user);
+    return res.json({ success: true, data });
+  }
+
+  static async myRedemptions(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const data = await GamificationService.myRedemptions(user);
+    return res.json({ success: true, data });
+  }
+
+  static async updateRedemptionStatus(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const data = await GamificationService.updateRedemptionStatus(user, req.params.id as string, req.body.status);
+    return res.json({ success: true, message: "Redemption updated", data });
+  }
+
+  static async leaderboard(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const data = await GamificationService.leaderboard(
+      user,
+      (req.query.scope as string) || "GYM",
+      req.query.refId as string | undefined,
+    );
+    return res.json({ success: true, data });
+  }
+
+  static async analytics(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const data = await GamificationService.analytics(user);
+    return res.json({ success: true, data });
+  }
+
+  static async trainerMembers(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const data = await GamificationService.getTrainerMembers(user);
+    return res.json({ success: true, data });
+  }
+
+  static async platformEngagement(_req: Request, res: Response) {
+    const data = await GamificationService.getPlatformEngagement();
+    return res.json({ success: true, data });
+  }
 }

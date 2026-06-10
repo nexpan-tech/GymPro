@@ -1,4 +1,5 @@
 import { prisma } from "../../config/db";
+import { GamificationEvents } from "../gamification/engagement-events.service";
 import { Role } from "@prisma/client";
 import {
   CreateDietPlanInput,
@@ -283,7 +284,7 @@ export class DietService {
       }
     }
 
-    return prisma.dietCompletion.create({
+    const completion = await prisma.dietCompletion.create({
       data: {
         gymId,
         memberId: member.id,
@@ -297,6 +298,11 @@ export class DietService {
         member: { include: { user: true } },
       },
     });
+
+    // Stage 8 — points + diet streak (best-effort).
+    await GamificationEvents.dietCompleted({ gymId, memberId: member.id, completionId: completion.id });
+
+    return completion;
   }
 
   static async getCompletions(user: AuthUser, memberId?: string) {
