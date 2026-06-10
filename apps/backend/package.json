@@ -9,7 +9,8 @@
     "worker": "tsx src/workers/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "cleanup:demo-data": "tsx prisma/cleanup-demo-data.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
