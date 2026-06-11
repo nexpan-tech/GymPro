@@ -175,7 +175,7 @@ export default function Sidebar({
     <aside
       style={{
         width: collapsed ? "var(--sidebar-collapsed-width, 72px)" : "var(--sidebar-width, 260px)",
-        backgroundColor: "var(--bg-sidebar, #0f172a)",
+        backgroundColor: "var(--bg-sidebar, #141414)",
         transition: "width var(--transition-slow, 300ms ease)",
       }}
       className="relative z-40 flex h-full shrink-0 flex-col overflow-hidden"
@@ -186,10 +186,13 @@ export default function Sidebar({
         style={{ borderColor: "rgba(255,255,255,0.08)" }}
       >
         <div className="flex min-w-0 items-center gap-3">
-          {/* Logo mark */}
+          {/* Logo mark — red energy glow for a "live OS" feel */}
           <div
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-black text-white shadow-lg"
-            style={{ background: "var(--gradient-primary, linear-gradient(135deg,#4f46e5,#7c3aed))" }}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-black text-white"
+            style={{
+              background: "var(--gradient-primary, linear-gradient(135deg,#e73725,#e73725))",
+              boxShadow: "0 8px 22px rgba(231,55,37,0.45), inset 0 1px 0 rgba(255,255,255,0.25)",
+            }}
           >
             GP
           </div>
@@ -284,8 +287,8 @@ export default function Sidebar({
                     isActive
                       ? {
                           background:
-                            "var(--gradient-primary, linear-gradient(135deg,#4f46e5,#7c3aed))",
-                          boxShadow: "0 8px 24px rgba(79,70,229,0.35)",
+                            "var(--gradient-primary, linear-gradient(135deg,#e73725,#e73725))",
+                          boxShadow: "0 8px 24px rgba(231,55,37,0.35)",
                           color: "#fff",
                         }
                       : {
@@ -307,17 +310,33 @@ export default function Sidebar({
                     }
                   }}
                 >
-                  <Icon className="h-4.5 w-4.5 shrink-0" />
+                  {({ isActive }) => (
+                    <>
+                      {/* Active energy rail on the left edge. */}
+                      {isActive && !collapsed && (
+                        <span
+                          className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full"
+                          style={{ background: "#fff", boxShadow: "0 0 12px rgba(255,255,255,0.6)" }}
+                          aria-hidden="true"
+                        />
+                      )}
+                      <Icon className="h-4.5 w-4.5 shrink-0" />
 
-                  {!collapsed && (
-                    <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                  )}
+                      {!collapsed && (
+                        <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                      )}
 
-                  {/* Badge */}
-                  {!collapsed && item.badge != null && item.badge > 0 && (
-                    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white">
-                      {item.badge > 99 ? "99+" : item.badge}
-                    </span>
+                      {/* Badge */}
+                      {!collapsed && item.badge != null && item.badge > 0 && (
+                        <span
+                          className={`ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-black ${
+                            isActive ? "bg-white text-primary" : "bg-primary text-white"
+                          }`}
+                        >
+                          {item.badge > 99 ? "99+" : item.badge}
+                        </span>
+                      )}
+                    </>
                   )}
                 </NavLink>
               );
@@ -340,7 +359,7 @@ export default function Sidebar({
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-black text-white"
             style={{
               background:
-                "var(--gradient-primary, linear-gradient(135deg,#4f46e5,#7c3aed))",
+                "var(--gradient-primary, linear-gradient(135deg,#e73725,#e73725))",
             }}
           >
             {getInitials(user?.name)}
@@ -367,9 +386,9 @@ export default function Sidebar({
                 className="rounded-lg p-1.5 transition-colors duration-150"
                 style={{ color: "rgba(255,255,255,0.45)" }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.color = "#ef4444";
+                  (e.currentTarget as HTMLButtonElement).style.color = "#e73725";
                   (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                    "rgba(239,68,68,0.12)";
+                    "rgba(231,55,37,0.12)";
                 }}
                 onMouseLeave={(e) => {
                   (e.currentTarget as HTMLButtonElement).style.color =
@@ -392,9 +411,9 @@ export default function Sidebar({
             className="mt-1.5 flex w-full items-center justify-center rounded-xl p-2.5 transition-colors duration-150"
             style={{ color: "rgba(255,255,255,0.45)" }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.color = "#ef4444";
+              (e.currentTarget as HTMLButtonElement).style.color = "#e73725";
               (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                "rgba(239,68,68,0.12)";
+                "rgba(231,55,37,0.12)";
             }}
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLButtonElement).style.color =
@@ -426,7 +445,7 @@ export default function Sidebar({
             className="flex h-full flex-col"
             style={{
               width: "var(--sidebar-width, 260px)",
-              backgroundColor: "var(--bg-sidebar, #0f172a)",
+              backgroundColor: "var(--bg-sidebar, #141414)",
               animation: "slideInLeft 0.22s ease",
             }}
           >

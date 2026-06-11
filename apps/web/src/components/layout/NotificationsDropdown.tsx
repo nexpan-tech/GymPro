@@ -62,14 +62,14 @@ export default function NotificationsDropdown() {
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         className={clsx(
-          "relative rounded-2xl border border-(--border) bg-(--surface) p-2.5 shadow-(--shadow-sm) transition-all duration-200",
+          "relative rounded-2xl border border-border bg-(--surface) p-2.5 shadow-(--shadow-sm) transition-all duration-200",
           "hover:bg-(--surface-hover) hover:shadow-(--shadow-md)"
         )}
       >
         <Bell className="h-5 w-5 text-(--text-secondary)" />
 
         {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white shadow-lg">
+          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-black text-white shadow-lg">
             {unreadCount}
           </span>
         )}
@@ -77,7 +77,7 @@ export default function NotificationsDropdown() {
 
       {open && (
         <div className="absolute right-0 top-full z-9999 mt-3 w-88 overflow-hidden rounded-2xl border border-(--glass-border) bg-(--glass) shadow-(--shadow-xl) backdrop-blur-xl">
-          <div className="flex items-center justify-between border-b border-(--border) px-5 py-4">
+          <div className="flex items-center justify-between border-b border-border px-5 py-4">
             <div>
               <h3 className="text-sm font-black text-(--text-primary)">
                 Notifications
@@ -100,7 +100,7 @@ export default function NotificationsDropdown() {
                   <div
                     className={clsx(
                       "mt-1 h-2.5 w-2.5 shrink-0 rounded-full",
-                      item.unread ? "bg-indigo-500" : "bg-(--border-strong)"
+                      item.unread ? "bg-primary" : "bg-(--border-strong)"
                     )}
                   />
 
@@ -125,7 +125,7 @@ export default function NotificationsDropdown() {
           <Link
             to="/notifications"
             onClick={() => setOpen(false)}
-            className="flex w-full items-center justify-center gap-2 border-t border-(--border) px-4 py-3 text-sm font-bold text-indigo-600 transition hover:bg-(--surface-hover) dark:text-indigo-400"
+            className="flex w-full items-center justify-center gap-2 border-t border-border px-4 py-3 text-sm font-bold text-primary transition hover:bg-(--surface-hover) dark:text-primary"
           >
             View all notifications
             <ExternalLink className="h-4 w-4" />

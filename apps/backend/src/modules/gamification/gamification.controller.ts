@@ -102,12 +102,28 @@ export class GamificationController {
     const user = requireAuth(req, res);
     if (!user) return;
 
-    const data = await GamificationService.getRewards(user);
+    // Staff can request ?all=true to also see inactive rewards.
+    const all = req.query.all === "true" && (user.role === "ADMIN" || user.role === "RECEPTIONIST");
+    const data = await GamificationService.getRewards(user, { all });
 
     return res.json({
       success: true,
       data,
     });
+  }
+
+  static async updateReward(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const data = await GamificationService.updateReward(user, req.params.id as string, req.body);
+    return res.json({ success: true, message: "Reward updated", data });
+  }
+
+  static async deleteReward(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const data = await GamificationService.deleteReward(user, req.params.id as string);
+    return res.json({ success: true, message: "Reward removed", data });
   }
 
   static async updateStreak(req: Request, res: Response) {

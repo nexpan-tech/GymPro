@@ -32,10 +32,17 @@ import {
   Area,
 } from "recharts";
 
-import KpiCard from "@/components/ui/KpiCard";
-import Badge from "@/components/ui/Badge";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
+import {
+  CommandHero,
+  Highlight,
+  MetricCard,
+  SectionHeader,
+  StatusPill,
+  ActionCard,
+  EmptyMomentumState,
+} from "@/components/premium";
 
 import { useAuthStore } from "@/store/auth.store";
 import { dashboardService } from "@/services/dashboard.service";
@@ -100,40 +107,6 @@ const FALLBACK_REVENUE_TREND = [
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-interface QuickActionProps {
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-  color?: string;
-}
-
-function QuickActionButton({ icon, label, onClick, color = "indigo" }: QuickActionProps) {
-  const colorMap: Record<string, string> = {
-    indigo: "bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 border-indigo-500/20",
-    emerald: "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20",
-    blue: "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-blue-500/20",
-    amber: "bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-amber-500/20",
-    violet: "bg-violet-500/10 text-violet-500 hover:bg-violet-500/20 border-violet-500/20",
-  };
-
-  return (
-    <button
-      onClick={onClick}
-      className={`
-        group flex shrink-0 flex-col items-center gap-2.5 rounded-2xl border
-        px-5 py-4 text-center transition-all duration-200
-        hover:-translate-y-0.5 hover:shadow-lg active:scale-95
-        ${colorMap[color] ?? colorMap.indigo}
-      `}
-    >
-      <span className="flex h-10 w-10 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-110">
-        {icon}
-      </span>
-      <span className="whitespace-nowrap text-xs font-semibold">{label}</span>
-    </button>
-  );
-}
-
 // ─── Custom Chart Tooltip ─────────────────────────────────────────────────────
 
 function ChartTooltip({
@@ -149,7 +122,7 @@ function ChartTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-xl border border-(--border) bg-(--glass-strong) px-3 py-2 text-sm shadow-xl backdrop-blur-xl">
+    <div className="rounded-xl border border-border bg-(--glass-strong) px-3 py-2 text-sm shadow-xl backdrop-blur-xl">
       <p className="font-semibold text-(--text-primary)">{label}</p>
       <p className="mt-0.5 text-(--text-secondary)">
         {prefix}
@@ -324,124 +297,118 @@ export default function DashboardPage() {
   // ── Quick actions nav ──────────────────────────────────────────────────────
 
   const quickActions = [
-    { icon: <UserPlus className="h-5 w-5" />, label: "Add Member", path: "/gym-admin/members", color: "indigo" },
-    { icon: <CreditCard className="h-5 w-5" />, label: "Record Payment", path: "/gym-admin/payments", color: "emerald" },
-    { icon: <ClipboardCheck className="h-5 w-5" />, label: "Mark Attendance", path: "/gym-admin/attendance", color: "blue" },
-    { icon: <Bell className="h-5 w-5" />, label: "Send Notification", path: "/gym-admin/notifications", color: "amber" },
-    { icon: <BarChart2 className="h-5 w-5" />, label: "View Reports", path: "/gym-admin/analytics", color: "violet" },
+    { icon: <UserPlus className="h-5 w-5" />, label: "Add Member", path: "/gym-admin/members" },
+    { icon: <CreditCard className="h-5 w-5" />, label: "Record Payment", path: "/gym-admin/payments" },
+    { icon: <ClipboardCheck className="h-5 w-5" />, label: "Mark Attendance", path: "/gym-admin/attendance" },
+    { icon: <Bell className="h-5 w-5" />, label: "Send Notification", path: "/gym-admin/notifications" },
+    { icon: <BarChart2 className="h-5 w-5" />, label: "View Reports", path: "/gym-admin/analytics" },
   ];
+
+  // Momentum sparklines for the KPI row.
+  const attendanceSpark = weeklyAttendanceData.map((d) => d.count);
+  const revenueSpark = revenueTrendData.map((r) => r.revenue);
 
   // ─────────────────────────────────────────────────────────────────────────
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────
 
+  // ── Hero copy ───────────────────────────────────────────────────────────────
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const ownerFirstName = (user?.name ?? "Coach").split(" ")[0];
+  const todayStr = new Date().toLocaleDateString("en-US", {
+    weekday: "long", month: "long", day: "numeric",
+  });
+
   return (
     <div className="space-y-8">
 
-      {/* ── Page Header ───────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-sm font-medium text-(--text-muted) uppercase tracking-wider">
-            Gym Admin
-          </p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight text-(--text-primary)">
-            Business Dashboard
-          </h1>
-          <p className="mt-1 text-sm text-(--text-secondary)">
-            Real-time overview of your gym's operations.
-          </p>
-        </div>
-        <button
-          onClick={() => window.location.reload()}
-          className="
-            inline-flex items-center gap-1.5 rounded-xl border border-(--border)
-            bg-(--surface-secondary) px-3 py-2 text-xs font-semibold text-(--text-secondary)
-            transition-all hover:bg-(--surface-hover) hover:text-(--text-primary)
-          "
-          title="Refresh data"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          Refresh
-        </button>
-      </div>
+      {/* ── Command-center Hero ───────────────────────────────────────────── */}
+      <CommandHero
+        eyebrow={`${greeting}, ${ownerFirstName} · ${todayStr}`}
+        title={
+          <>
+            Today is another opportunity to
+            <br className="hidden sm:block" /> build{" "}
+            <Highlight>stronger members.</Highlight>
+          </>
+        }
+        subtitle="Your command center for growth, retention, and performance — all in real time."
+        stats={[
+          { label: "Checked in today", value: kpiLoading ? "—" : attendanceToday.toLocaleString("en-IN") },
+          { label: "Active members", value: kpiLoading ? "—" : activeMembers.toLocaleString("en-IN") },
+        ]}
+        actions={
+          <button
+            onClick={() => window.location.reload()}
+            className="press inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/8 px-4 py-2 text-xs font-bold text-white/85 transition-colors hover:bg-white/15 hover:text-white"
+            title="Refresh data"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Refresh data
+          </button>
+        }
+      />
 
       {/* ── SECTION 1 — KPI Row ────────────────────────────────────────────── */}
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard
-          title="Active Members"
+      <div className="grid gap-5 stagger sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard
+          label="Active Members"
           value={kpiLoading ? "—" : activeMembers.toLocaleString("en-IN")}
           change={memberChange}
-          changeType={
-            memberChange === undefined
-              ? "neutral"
-              : memberChange >= 0
-              ? "up"
-              : "down"
-          }
           changeLabel="vs last month"
-          icon={<Users className="h-5 w-5" />}
-          color="indigo"
+          icon={<Users />}
+          tone="energy"
           loading={kpiLoading}
+          onClick={() => navigate("/gym-admin/members")}
         />
 
-        <KpiCard
-          title="Revenue This Month"
+        <MetricCard
+          label="Revenue This Month"
           value={kpiLoading ? "—" : formatCurrency(revenueThisMonth)}
           change={revenueChange}
-          changeType={
-            revenueChange === undefined
-              ? "neutral"
-              : revenueChange >= 0
-              ? "up"
-              : "down"
-          }
           changeLabel="vs last month"
-          icon={<TrendingUp className="h-5 w-5" />}
-          color="emerald"
+          icon={<TrendingUp />}
+          spark={revenueSpark}
+          tone="neutral"
           loading={kpiLoading}
+          onClick={() => navigate("/gym-admin/analytics")}
         />
 
-        <KpiCard
-          title="Today's Attendance"
+        <MetricCard
+          label="Today's Attendance"
           value={kpiLoading ? "—" : attendanceToday.toLocaleString("en-IN")}
           change={attendanceChange}
-          changeType={
-            attendanceChange === undefined
-              ? "neutral"
-              : attendanceChange >= 0
-              ? "up"
-              : "down"
-          }
           changeLabel="vs yesterday"
-          icon={<CheckSquare className="h-5 w-5" />}
-          color="sky"
+          icon={<CheckSquare />}
+          spark={attendanceSpark}
+          tone="energy"
           loading={kpiLoading}
+          onClick={() => navigate("/gym-admin/attendance")}
         />
 
-        <KpiCard
-          title="Pending Dues"
+        <MetricCard
+          label="Pending Dues"
           value={kpiLoading ? "—" : formatCurrency(pendingDues)}
-          changeLabel="requires action"
-          changeType={pendingDues > 0 ? "down" : "neutral"}
-          change={pendingDues > 0 ? undefined : 0}
-          icon={<AlertCircle className="h-5 w-5" />}
-          color="amber"
+          changeLabel={pendingDues > 0 ? "Requires action" : "All clear"}
+          trend={pendingDues > 0 ? "down" : "flat"}
+          icon={<AlertCircle />}
+          tone={pendingDues > 0 ? "energy" : "neutral"}
           loading={kpiLoading}
+          onClick={() => navigate("/gym-admin/payments")}
         />
       </div>
 
       {/* ── SECTION 2 — Quick Actions ─────────────────────────────────────── */}
       <div>
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-(--text-muted)">
-          Quick Actions
-        </h2>
+        <SectionHeader eyebrow="Quick Actions" title="Run your gym in one tap" />
         <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-thin">
           {quickActions.map((action) => (
-            <QuickActionButton
+            <ActionCard
               key={action.label}
+              compact
               icon={action.icon}
-              label={action.label}
-              color={action.color}
+              title={action.label}
               onClick={() => navigate(action.path)}
             />
           ))}
@@ -459,7 +426,7 @@ export default function DashboardPage() {
             action={
               <button
                 onClick={() => navigate("/gym-admin/attendance")}
-                className="flex items-center gap-1 text-xs font-semibold text-indigo-500 hover:text-indigo-400"
+                className="flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary"
               >
                 View all <ChevronRight className="h-3.5 w-3.5" />
               </button>
@@ -476,30 +443,30 @@ export default function DashboardPage() {
                 >
                   <defs>
                     <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#6366f1" stopOpacity={0.9} />
-                      <stop offset="100%" stopColor="#818cf8" stopOpacity={0.6} />
+                      <stop offset="0%" stopColor="#e73725" stopOpacity={0.9} />
+                      <stop offset="100%" stopColor="#ec5848" stopOpacity={0.6} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid
                     strokeDasharray="3 3"
-                    stroke="rgba(148,163,184,0.12)"
+                    stroke="rgba(143,143,143,0.12)"
                     vertical={false}
                   />
                   <XAxis
                     dataKey="day"
-                    tick={{ fontSize: 12, fill: "var(--text-secondary, #94a3b8)" }}
+                    tick={{ fontSize: 12, fill: "var(--text-secondary, #767676)" }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 11, fill: "var(--text-secondary, #94a3b8)" }}
+                    tick={{ fontSize: 11, fill: "var(--text-secondary, #767676)" }}
                     axisLine={false}
                     tickLine={false}
                     allowDecimals={false}
                   />
                   <Tooltip
                     content={<ChartTooltip />}
-                    cursor={{ fill: "rgba(99,102,241,0.06)", radius: 6 }}
+                    cursor={{ fill: "rgba(231,55,37,0.06)", radius: 6 }}
                   />
                   <Bar
                     dataKey="count"
@@ -522,7 +489,7 @@ export default function DashboardPage() {
             action={
               <button
                 onClick={() => navigate("/gym-admin/analytics")}
-                className="flex items-center gap-1 text-xs font-semibold text-emerald-500 hover:text-emerald-400"
+                className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-muted-foreground"
               >
                 Full report <ChevronRight className="h-3.5 w-3.5" />
               </button>
@@ -539,23 +506,23 @@ export default function DashboardPage() {
                 >
                   <defs>
                     <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
-                      <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
+                      <stop offset="0%" stopColor="#767676" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="#767676" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid
                     strokeDasharray="3 3"
-                    stroke="rgba(148,163,184,0.12)"
+                    stroke="rgba(143,143,143,0.12)"
                     vertical={false}
                   />
                   <XAxis
                     dataKey="month"
-                    tick={{ fontSize: 12, fill: "var(--text-secondary, #94a3b8)" }}
+                    tick={{ fontSize: 12, fill: "var(--text-secondary, #767676)" }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 11, fill: "var(--text-secondary, #94a3b8)" }}
+                    tick={{ fontSize: 11, fill: "var(--text-secondary, #767676)" }}
                     axisLine={false}
                     tickLine={false}
                     tickFormatter={(v) =>
@@ -564,16 +531,16 @@ export default function DashboardPage() {
                   />
                   <Tooltip
                     content={<ChartTooltip prefix="₹" />}
-                    cursor={{ stroke: "#10b981", strokeWidth: 1, strokeDasharray: "4 4" }}
+                    cursor={{ stroke: "#767676", strokeWidth: 1, strokeDasharray: "4 4" }}
                   />
                   <Area
                     type="monotone"
                     dataKey="revenue"
-                    stroke="#10b981"
+                    stroke="#767676"
                     strokeWidth={2.5}
                     fill="url(#revenueGradient)"
-                    dot={{ fill: "#10b981", r: 4, strokeWidth: 0 }}
-                    activeDot={{ r: 6, fill: "#10b981", strokeWidth: 2, stroke: "#fff" }}
+                    dot={{ fill: "#767676", r: 4, strokeWidth: 0 }}
+                    activeDot={{ r: 6, fill: "#767676", strokeWidth: 2, stroke: "#fff" }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -593,7 +560,7 @@ export default function DashboardPage() {
             action={
               <button
                 onClick={() => navigate("/gym-admin/members")}
-                className="flex items-center gap-1 text-xs font-semibold text-indigo-500 hover:text-indigo-400"
+                className="flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary"
               >
                 All <ChevronRight className="h-3.5 w-3.5" />
               </button>
@@ -603,12 +570,22 @@ export default function DashboardPage() {
             {membersLoading ? (
               <MemberRowSkeleton />
             ) : !recentMembers?.length ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <Users className="mb-2 h-8 w-8 text-(--text-muted)" />
-                <p className="text-sm text-(--text-muted)">No members yet</p>
-              </div>
+              <EmptyMomentumState
+                size="sm"
+                icon={<Users />}
+                title="Start building your community"
+                description="Add your first member and begin their transformation journey."
+                action={
+                  <button
+                    onClick={() => navigate("/gym-admin/members")}
+                    className="text-xs font-bold text-primary hover:underline"
+                  >
+                    Add member →
+                  </button>
+                }
+              />
             ) : (
-              <ul className="divide-y divide-(--border)">
+              <ul className="divide-y divide-border">
                 {recentMembers.map((member) => {
                   const plan = member.activeMembership?.planName ?? "—";
                   const isActive = member.status === "ACTIVE";
@@ -619,7 +596,7 @@ export default function DashboardPage() {
                     >
                       <div className="flex min-w-0 items-center gap-3">
                         {/* Avatar */}
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-500/10 text-sm font-bold text-indigo-500">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary ring-1 ring-primary/20">
                           {memberDisplayName(member).charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0">
@@ -629,13 +606,9 @@ export default function DashboardPage() {
                           <p className="truncate text-xs text-(--text-muted)">{plan}</p>
                         </div>
                       </div>
-                      <Badge
-                        variant={isActive ? "success" : "warning"}
-                        dot
-                        size="sm"
-                      >
+                      <StatusPill tone={isActive ? "active" : "pending"} size="sm">
                         {isActive ? "Active" : member.status.charAt(0) + member.status.slice(1).toLowerCase()}
-                      </Badge>
+                      </StatusPill>
                     </li>
                   );
                 })}
@@ -652,7 +625,7 @@ export default function DashboardPage() {
             action={
               <button
                 onClick={() => navigate("/gym-admin/memberships")}
-                className="flex items-center gap-1 text-xs font-semibold text-amber-500 hover:text-amber-400"
+                className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-muted-foreground"
               >
                 All <ChevronRight className="h-3.5 w-3.5" />
               </button>
@@ -669,19 +642,21 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : !upcomingRenewals?.length ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <RefreshCw className="mb-2 h-8 w-8 text-(--text-muted)" />
-                <p className="text-sm text-(--text-muted)">No renewals due</p>
-              </div>
+              <EmptyMomentumState
+                size="sm"
+                icon={<RefreshCw />}
+                title="Every membership is current"
+                description="No renewals due this week — your retention game is strong."
+              />
             ) : (
-              <ul className="divide-y divide-(--border)">
+              <ul className="divide-y divide-border">
                 {upcomingRenewals.map((m) => {
                   const urgency =
                     m.daysLeft === 0
-                      ? "danger"
+                      ? ("expired" as const)
                       : m.daysLeft <= 2
-                      ? "warning"
-                      : "info";
+                      ? ("active" as const)
+                      : ("neutral" as const);
                   const label =
                     m.daysLeft === 0
                       ? "Today"
@@ -704,9 +679,9 @@ export default function DashboardPage() {
                           })}
                         </p>
                       </div>
-                      <Badge variant={urgency} size="sm" dot>
+                      <StatusPill tone={urgency} size="sm">
                         {label}
-                      </Badge>
+                      </StatusPill>
                     </li>
                   );
                 })}
@@ -721,10 +696,10 @@ export default function DashboardPage() {
             title="Today's Activity"
             subtitle="Live check-ins & payments"
             action={
-              <span className="flex items-center gap-1 text-xs font-medium text-emerald-500">
+              <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
                 <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-muted-foreground opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-muted-foreground" />
                 </span>
                 Live
               </span>
@@ -734,10 +709,12 @@ export default function DashboardPage() {
             {activityLoading ? (
               <ActivityFeedSkeleton />
             ) : !activityFeed?.length ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <Activity className="mb-2 h-8 w-8 text-(--text-muted)" />
-                <p className="text-sm text-(--text-muted)">No activity yet today</p>
-              </div>
+              <EmptyMomentumState
+                size="sm"
+                icon={<Activity />}
+                title="The floor is quiet — for now"
+                description="Check-ins and payments will light up here as your day kicks off."
+              />
             ) : (
               <ul className="space-y-3">
                 {activityFeed.map((item) => {
@@ -748,8 +725,8 @@ export default function DashboardPage() {
                         className={`
                           flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs
                           ${isPayment
-                            ? "bg-emerald-500/10 text-emerald-500"
-                            : "bg-indigo-500/10 text-indigo-500"
+                            ? "bg-muted text-muted-foreground"
+                            : "bg-primary text-white"
                           }
                         `}
                       >
@@ -786,7 +763,7 @@ export default function DashboardPage() {
             action={
               <button
                 onClick={() => navigate("/gym-admin/payments")}
-                className="flex items-center gap-1 text-xs font-semibold text-indigo-500 hover:text-indigo-400"
+                className="flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary"
               >
                 Manage <ChevronRight className="h-3.5 w-3.5" />
               </button>
@@ -796,7 +773,7 @@ export default function DashboardPage() {
             {paymentLoading ? (
               <div className="space-y-3">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex items-center justify-between rounded-xl border border-(--border) px-4 py-3">
+                  <div key={i} className="flex items-center justify-between rounded-xl border border-border px-4 py-3">
                     <div className="flex items-center gap-3">
                       <Skeleton width="w-8" height="h-8" rounded="lg" />
                       <Skeleton height="h-4" width="w-28" />
@@ -807,27 +784,27 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="space-y-2.5">
-                {/* Total Collected */}
-                <div className="flex items-center justify-between rounded-2xl bg-emerald-500/5 border border-emerald-500/15 px-4 py-3">
+                {/* Total Collected — neutral */}
+                <div className="flex items-center justify-between rounded-2xl border border-border bg-(--surface-secondary) px-4 py-3 lift">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10">
-                      <TrendingUp className="h-4 w-4 text-emerald-500" />
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted ring-1 ring-border">
+                      <TrendingUp className="h-4 w-4 text-foreground" />
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-(--text-primary)">Total Collected</p>
                       <p className="text-xs text-(--text-muted)">All time</p>
                     </div>
                   </div>
-                  <p className="text-base font-black text-emerald-500">
+                  <p className="metric-number text-lg text-(--text-primary)">
                     {formatCurrency(paymentSummary?.totalRevenue ?? 0)}
                   </p>
                 </div>
 
-                {/* Paid This Month */}
-                <div className="flex items-center justify-between rounded-2xl border border-(--border) bg-(--surface-secondary) px-4 py-3">
+                {/* Paid This Month — positive, red accent on the number */}
+                <div className="flex items-center justify-between rounded-2xl border border-border bg-(--surface-secondary) px-4 py-3 lift">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-500/10">
-                      <CreditCard className="h-4 w-4 text-indigo-500" />
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
+                      <CreditCard className="h-4 w-4" />
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-(--text-primary)">Paid This Month</p>
@@ -836,39 +813,39 @@ export default function DashboardPage() {
                       </p>
                     </div>
                   </div>
-                  <p className="text-base font-black text-indigo-500">
+                  <p className="metric-number text-lg text-primary">
                     {formatCurrency(paymentSummary?.totalPaid ?? 0)}
                   </p>
                 </div>
 
-                {/* Pending */}
-                <div className="flex items-center justify-between rounded-2xl border border-amber-500/15 bg-amber-500/5 px-4 py-3">
+                {/* Pending — neutral */}
+                <div className="flex items-center justify-between rounded-2xl border border-border bg-(--surface-secondary) px-4 py-3 lift">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10">
-                      <AlertCircle className="h-4 w-4 text-amber-500" />
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted ring-1 ring-border">
+                      <Clock className="h-4 w-4 text-foreground" />
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-(--text-primary)">Pending</p>
                       <p className="text-xs text-(--text-muted)">Awaiting collection</p>
                     </div>
                   </div>
-                  <p className="text-base font-black text-amber-500">
+                  <p className="metric-number text-lg text-(--text-primary)">
                     {formatCurrency(paymentSummary?.totalPending ?? 0)}
                   </p>
                 </div>
 
-                {/* Overdue */}
-                <div className="flex items-center justify-between rounded-2xl border border-red-500/15 bg-red-500/5 px-4 py-3">
+                {/* Overdue — the only solid-red row; demands action */}
+                <div className="flex items-center justify-between rounded-2xl border border-primary/30 bg-primary/7 px-4 py-3 lift">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-500/10">
-                      <AlertCircle className="h-4 w-4 text-red-500" />
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-(image:--gradient-primary) text-white glow-red-sm">
+                      <AlertCircle className="h-4 w-4" />
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-(--text-primary)">Overdue</p>
-                      <p className="text-xs text-red-400 font-medium">Requires immediate action</p>
+                      <p className="text-xs font-medium text-primary">Requires immediate action</p>
                     </div>
                   </div>
-                  <p className="text-base font-black text-red-500">
+                  <p className="metric-number text-lg text-primary">
                     {formatCurrency(paymentSummary?.totalOverdue ?? 0)}
                   </p>
                 </div>
@@ -885,7 +862,7 @@ export default function DashboardPage() {
             action={
               <button
                 onClick={() => navigate("/gym-admin/trainers")}
-                className="flex items-center gap-1 text-xs font-semibold text-violet-500 hover:text-violet-400"
+                className="flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary"
               >
                 All <ChevronRight className="h-3.5 w-3.5" />
               </button>
@@ -906,25 +883,29 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : !trainers?.length ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <Dumbbell className="mb-2 h-8 w-8 text-(--text-muted)" />
-                <p className="text-sm text-(--text-muted)">No trainers added yet</p>
-                <button
-                  onClick={() => navigate("/gym-admin/trainers")}
-                  className="mt-2 text-xs font-semibold text-indigo-500 hover:underline"
-                >
-                  Add trainer
-                </button>
-              </div>
+              <EmptyMomentumState
+                size="sm"
+                icon={<Dumbbell />}
+                title="Build your coaching team"
+                description="Add trainers to assign members and track their performance."
+                action={
+                  <button
+                    onClick={() => navigate("/gym-admin/trainers")}
+                    className="text-xs font-bold text-primary hover:underline"
+                  >
+                    Add trainer →
+                  </button>
+                }
+              />
             ) : (
-              <ul className="divide-y divide-(--border)">
+              <ul className="divide-y divide-border">
                 {trainers.slice(0, 6).map((trainer) => (
                   <li
                     key={trainer.id}
                     className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
                   >
                     {/* Avatar */}
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-sm font-bold text-violet-500">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary ring-1 ring-primary/20">
                       {trainer.name.charAt(0).toUpperCase()}
                     </div>
 
@@ -939,9 +920,9 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Active badge */}
-                    <Badge variant="primary" size="sm">
+                    <StatusPill tone="active" size="sm">
                       Active
-                    </Badge>
+                    </StatusPill>
                   </li>
                 ))}
 
@@ -949,7 +930,7 @@ export default function DashboardPage() {
                   <li className="pt-3 text-center">
                     <button
                       onClick={() => navigate("/gym-admin/trainers")}
-                      className="text-xs font-semibold text-indigo-500 hover:underline"
+                      className="text-xs font-semibold text-primary hover:underline"
                     >
                       +{trainers.length - 6} more trainers
                     </button>

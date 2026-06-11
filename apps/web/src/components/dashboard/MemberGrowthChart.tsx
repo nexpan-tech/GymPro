@@ -33,12 +33,12 @@ export default function MemberGrowthChart({
   data = defaultData,
 }: MemberGrowthChartProps) {
   return (
-    <Card className="p-6 bg-white/95 dark:bg-slate-900/95 border border-slate-200/70 dark:border-slate-800 shadow-xl rounded-3xl">
+    <Card className="p-6 bg-white/95 dark:bg-muted border border-border dark:border-border shadow-xl rounded-3xl">
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+        <h3 className="text-lg font-semibold text-foreground dark:text-white">
           Member Growth
         </h3>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <p className="text-sm text-muted-foreground">
           Total member growth over the last 6 months
         </p>
       </div>
@@ -47,25 +47,25 @@ export default function MemberGrowthChart({
         <AreaChart data={data}>
           <defs>
             <linearGradient id="memberGrowthGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#6366f1" stopOpacity={0.45} />
-              <stop offset="100%" stopColor="#6366f1" stopOpacity={0.02} />
+              <stop offset="0%" stopColor="#e73725" stopOpacity={0.45} />
+              <stop offset="100%" stopColor="#e73725" stopOpacity={0.02} />
             </linearGradient>
           </defs>
 
           <CartesianGrid
             strokeDasharray="3 3"
-            stroke="rgba(148, 163, 184, 0.12)"
+            stroke="rgba(143,143,143, 0.12)"
           />
 
           <XAxis
             dataKey="month"
-            tick={{ fontSize: 12, fill: "#94a3b8" }}
+            tick={{ fontSize: 12, fill: "#767676" }}
             axisLine={false}
             tickLine={false}
           />
 
           <YAxis
-            tick={{ fontSize: 12, fill: "#94a3b8" }}
+            tick={{ fontSize: 12, fill: "#767676" }}
             axisLine={false}
             tickLine={false}
           />
@@ -73,8 +73,8 @@ export default function MemberGrowthChart({
           <Tooltip
             contentStyle={{
               borderRadius: "16px",
-              border: "1px solid rgba(148,163,184,0.15)",
-              backgroundColor: "rgba(15,23,42,0.95)",
+              border: "1px solid rgba(143,143,143,0.15)",
+              backgroundColor: "rgba(1,0,0,0.95)",
               color: "#fff",
             }}
           />
@@ -82,7 +82,7 @@ export default function MemberGrowthChart({
           <Area
             type="monotone"
             dataKey="members"
-            stroke="#6366f1"
+            stroke="#e73725"
             strokeWidth={3}
             fill="url(#memberGrowthGradient)"
           />

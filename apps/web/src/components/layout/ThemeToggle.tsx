@@ -12,7 +12,7 @@ export default function ThemeToggle() {
   ] as const;
 
   return (
-    <div className="flex items-center rounded-2xl border border-(--border) bg-(--surface) p-1 shadow-(--shadow-sm) backdrop-blur-xl">
+    <div className="flex items-center rounded-2xl border border-border bg-(--surface) p-1 shadow-(--shadow-sm) backdrop-blur-xl">
       {options.map((option) => {
         const Icon = option.icon;
         const active = theme === option.value;
@@ -26,7 +26,7 @@ export default function ThemeToggle() {
             className={clsx(
               "rounded-xl p-2 transition-all duration-200",
               active
-                ? "bg-[image:var(--gradient-primary)] text-white shadow-[0_8px_20px_rgba(79,70,229,0.25)]"
+                ? "bg-(image:--gradient-primary) text-white shadow-[0_8px_20px_rgba(231,55,37,0.28)]"
                 : "text-(--text-secondary) hover:bg-(--surface-hover) hover:text-(--text-primary)"
             )}
           >

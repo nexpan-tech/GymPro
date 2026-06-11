@@ -12,12 +12,12 @@ export default function Header({ title = "Dashboard" }: HeaderProps) {
   const { toggle } = useSidebar();
 
   return (
-    <header className="relative z-50 flex h-20 shrink-0 items-center justify-between border-b border-(--border) bg-(--header-bg) px-4 shadow-(--shadow-sm) backdrop-blur-2xl md:px-6">
+    <header className="relative z-50 flex h-20 shrink-0 items-center justify-between border-b border-border bg-(--header-bg) px-4 shadow-(--shadow-sm) backdrop-blur-2xl md:px-6">
       <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={toggle}
-          className="rounded-2xl border border-(--border) bg-(--surface) p-2.5 text-(--text-secondary) shadow-(--shadow-sm) transition hover:bg-(--surface-hover) hover:text-(--text-primary)"
+          className="rounded-2xl border border-border bg-(--surface) p-2.5 text-(--text-secondary) shadow-(--shadow-sm) transition hover:bg-(--surface-hover) hover:text-(--text-primary)"
         >
           <Menu className="h-5 w-5" />
         </button>

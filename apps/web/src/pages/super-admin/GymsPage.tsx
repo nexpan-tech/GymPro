@@ -274,7 +274,7 @@ export default function GymsPage() {
           <Card variant="solid" className="overflow-hidden p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-(--border) text-xs uppercase tracking-wide text-(--text-secondary)">
+                <thead className="border-b border-border text-xs uppercase tracking-wide text-(--text-secondary)">
                   <tr>
                     <th className="px-5 py-3 font-medium">Gym</th>
                     <th className="px-5 py-3 font-medium">Admin</th>
@@ -285,7 +285,7 @@ export default function GymsPage() {
                     <th className="px-5 py-3 text-right font-medium">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-(--border)">
+                <tbody className="divide-y divide-border">
                   {filtered.map((gym) => {
                     const admin = gym.users?.find((u) => u.role === "ADMIN");
                     return (
@@ -391,7 +391,7 @@ export default function GymsPage() {
             />
           </div>
 
-          <div className="rounded-xl border border-(--border) p-4">
+          <div className="rounded-xl border border-border p-4">
             <p className="mb-3 text-sm font-semibold text-(--text-primary)">
               Gym Admin (optional)
             </p>
@@ -445,10 +445,10 @@ function SummaryCard({
 }) {
   const toneClasses =
     tone === "success"
-      ? "text-emerald-600 dark:text-emerald-400"
+      ? "text-muted-foreground"
       : tone === "danger"
-        ? "text-red-600 dark:text-red-400"
-        : "text-indigo-600 dark:text-indigo-400";
+        ? "text-primary"
+        : "text-primary";
   return (
     <Card variant="solid" className="p-5">
       <div className="flex items-center justify-between">

@@ -17,39 +17,39 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary: [
-    "bg-[image:var(--gradient-primary)] text-white",
-    "shadow-[0_12px_30px_rgba(79,70,229,0.28)]",
-    "hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(79,70,229,0.36)]",
-    "focus:ring-indigo-500/20",
+    "bg-(image:--gradient-primary) text-white",
+    "shadow-[0_12px_30px_rgba(231,55,37,0.26)]",
+    "hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(231,55,37,0.34)]",
+    "focus:ring-[var(--brand-crimson)]/25",
     "disabled:shadow-none disabled:translate-y-0",
   ].join(" "),
 
   secondary: [
-    "border border-(--border) bg-(--surface-secondary)",
+    "border border-border bg-(--surface-secondary)",
     "text-(--text-primary)",
     "hover:bg-(--surface-hover)",
-    "focus:ring-slate-500/10",
+    "focus:ring-border",
   ].join(" "),
 
   ghost: [
     "bg-transparent text-(--text-secondary)",
     "hover:bg-(--surface-hover) hover:text-(--text-primary)",
-    "focus:ring-slate-500/10",
+    "focus:ring-border",
   ].join(" "),
 
   danger: [
-    "bg-red-600 text-white",
-    "shadow-[0_12px_30px_rgba(239,68,68,0.25)]",
-    "hover:bg-red-700 hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(239,68,68,0.32)]",
-    "focus:ring-red-500/20",
+    "bg-primary text-white",
+    "shadow-[0_12px_30px_rgba(231,55,37,0.25)]",
+    "hover:bg-primary hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(231,55,37,0.32)]",
+    "focus:ring-primary/40",
     "disabled:shadow-none disabled:translate-y-0",
   ].join(" "),
 
   success: [
-    "bg-emerald-600 text-white",
-    "shadow-[0_12px_30px_rgba(16,185,129,0.25)]",
-    "hover:bg-emerald-700 hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(16,185,129,0.32)]",
-    "focus:ring-emerald-500/20",
+    "bg-muted-foreground text-white",
+    "shadow-[0_12px_30px_rgba(118,118,118,0.25)]",
+    "hover:bg-muted-foreground hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(118,118,118,0.32)]",
+    "focus:ring-border",
     "disabled:shadow-none disabled:translate-y-0",
   ].join(" "),
 };

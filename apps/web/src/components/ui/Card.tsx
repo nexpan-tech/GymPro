@@ -17,19 +17,19 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 
 const variantClasses: Record<CardVariant, string> = {
   default:
-    "border border-(--border) bg-(--glass-strong) shadow-(--shadow-md) backdrop-blur-xl",
+    "border border-border bg-(--glass-strong) shadow-(--shadow-md) backdrop-blur-xl",
   outlined:
-    "border border-(--border) bg-transparent",
+    "border border-border bg-transparent",
   ghost:
     "bg-transparent border-transparent",
   glass:
     "border border-(--glass-border) bg-(--glass) shadow-(--shadow-md) backdrop-blur-xl",
   solid:
-    "border border-(--border) bg-(--surface-solid) shadow-(--shadow-sm)",
+    "border border-border bg-(--surface-solid) shadow-(--shadow-sm)",
   premium:
-    "relative overflow-hidden border border-(--border) bg-[image:var(--gradient-surface)] shadow-(--shadow-lg) backdrop-blur-xl",
+    "relative overflow-hidden border border-border bg-(image:--gradient-surface) shadow-(--shadow-lg) backdrop-blur-xl",
   flat:
-    "border border-(--border) bg-(--surface-secondary) shadow-none",
+    "border border-border bg-(--surface-secondary) shadow-none",
 };
 
 const paddingClasses: Record<CardPadding, string> = {
@@ -60,7 +60,7 @@ export function Card({
     >
       {variant === "premium" && (
         <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-indigo-400/70 to-transparent"
+          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-primary to-transparent"
           aria-hidden="true"
         />
       )}
@@ -91,7 +91,7 @@ export function CardHeader({
     return (
       <div
         className={cn(
-          "flex items-start justify-between gap-4 border-b border-(--border) px-6 py-5",
+          "flex items-start justify-between gap-4 border-b border-border px-6 py-5",
           className
         )}
         {...props}
@@ -113,7 +113,7 @@ export function CardHeader({
 
   return (
     <div
-      className={cn("border-b border-(--border) px-6 py-5", className)}
+      className={cn("border-b border-border px-6 py-5", className)}
       {...props}
     >
       {children}
@@ -145,7 +145,7 @@ export function CardFooter({ children, className, ...props }: CardFooterProps) {
   return (
     <div
       className={cn(
-        "border-t border-(--border) px-6 py-4",
+        "border-t border-border px-6 py-4",
         className
       )}
       {...props}

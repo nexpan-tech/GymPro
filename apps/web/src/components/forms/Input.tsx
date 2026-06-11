@@ -15,7 +15,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="space-y-2">
         {label && (
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label className="text-sm font-medium text-foreground dark:text-muted-foreground">
             {label}
           </label>
         )}
@@ -24,19 +24,19 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         <input
           ref={ref}
           className={clsx(
-            "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm outline-none transition",
-            "placeholder:text-gray-400",
-            "focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10",
-            "dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-500",
+            "w-full rounded-xl border border-border bg-(--surface-solid) px-4 py-3 text-sm text-(--text-primary) shadow-sm outline-none transition",
+            "placeholder:text-muted-foreground",
+            "focus:border-primary/40 focus:ring-4 focus:ring-primary/40",
+            "dark:border-border dark:bg-muted dark:text-white dark:placeholder:text-muted-foreground",
             error &&
-              "border-red-500 focus:border-red-500 focus:ring-red-500/10",
+              "border-primary/40 focus:border-primary/40 focus:ring-primary/40",
             className
           )}
           {...props}
         />
 
         {error && (
-          <p className="text-sm text-red-600 dark:text-red-400">
+          <p className="text-sm text-primary">
             {error}
           </p>
         )}

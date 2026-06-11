@@ -26,7 +26,7 @@ const actions: ActionItem[] = [
     icon: UserPlus,
     path: "/gym-admin/members",
     color:
-      "bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400",
+      "bg-primary/10 text-primary dark:bg-primary/15 dark:text-primary",
   },
   {
     label: "Record Payment",
@@ -34,7 +34,7 @@ const actions: ActionItem[] = [
     icon: CreditCard,
     path: "/gym-admin/payments",
     color:
-      "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400",
+      "bg-muted text-muted-foreground dark:bg-muted dark:text-muted-foreground",
   },
   {
     label: "Mark Attendance",
@@ -42,7 +42,7 @@ const actions: ActionItem[] = [
     icon: CalendarCheck,
     path: "/gym-admin/attendance",
     color:
-      "bg-violet-100 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400",
+      "bg-primary/10 text-primary dark:bg-primary/15 dark:text-primary",
   },
   {
     label: "Workout Plans",
@@ -50,7 +50,7 @@ const actions: ActionItem[] = [
     icon: Dumbbell,
     path: "/gym-admin/workout-plans",
     color:
-      "bg-orange-100 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400",
+      "bg-muted text-muted-foreground dark:bg-muted dark:text-muted-foreground",
   },
   {
     label: "Diet Plans",
@@ -58,7 +58,7 @@ const actions: ActionItem[] = [
     icon: Utensils,
     path: "/gym-admin/diet-plans",
     color:
-      "bg-pink-100 text-pink-600 dark:bg-pink-500/10 dark:text-pink-400",
+      "bg-primary/10 text-primary dark:bg-primary/15 dark:text-primary",
   },
   {
     label: "Notifications",
@@ -66,18 +66,18 @@ const actions: ActionItem[] = [
     icon: Bell,
     path: "/gym-admin/notifications",
     color:
-      "bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400",
+      "bg-primary/10 text-primary dark:bg-primary/15 dark:text-primary",
   },
 ];
 
 export default function QuickActions() {
   return (
-    <Card className="rounded-3xl border border-slate-200/70 bg-white/95 p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900/95">
+    <Card className="rounded-3xl border border-border bg-white/95 p-6 shadow-xl dark:border-border dark:bg-muted">
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+        <h3 className="text-lg font-semibold text-foreground dark:text-white">
           Quick Actions
         </h3>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <p className="text-sm text-muted-foreground">
           Common tasks for gym management
         </p>
       </div>
@@ -90,7 +90,7 @@ export default function QuickActions() {
             <Link
               key={action.label}
               to={action.path}
-              className="group rounded-2xl border border-slate-200/60 bg-slate-50/80 p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-slate-800 dark:bg-slate-800/50"
+              className="group rounded-2xl border border-border bg-muted p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-border dark:bg-muted"
             >
               <div
                 className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${action.color}`}
@@ -98,11 +98,11 @@ export default function QuickActions() {
                 <Icon className="h-5 w-5" />
               </div>
 
-              <h4 className="font-semibold text-slate-900 dark:text-white">
+              <h4 className="font-semibold text-foreground dark:text-white">
                 {action.label}
               </h4>
 
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              <p className="mt-1 text-sm text-muted-foreground">
                 {action.description}
               </p>
             </Link>

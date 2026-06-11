@@ -54,7 +54,7 @@ export default function AppStatCard({
           {icon}
         </View>
       ) : null}
-      <AppText style={{ fontSize: 24, fontWeight: "900", color: toneColor[tone] }}>
+      <AppText style={{ fontSize: 28, fontWeight: "900", letterSpacing: -0.5, color: toneColor[tone] }}>
         {value}
       </AppText>
       <AppText variant="caption" color="textSecondary">

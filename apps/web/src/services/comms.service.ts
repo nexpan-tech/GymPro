@@ -98,4 +98,10 @@ export const chatService = {
   send: async (payload: { memberId: string; message: string }): Promise<ChatMessage> =>
     unwrap<ChatMessage>(await api.post("/communication/messages", payload)),
   markRead: async (memberId: string): Promise<unknown> => unwrap(await api.patch(`/communication/messages/member/${memberId}/read`, {})),
+
+  // Admin <-> Trainer staff DM
+  staffThread: async (trainerId: string): Promise<{ trainerId: string; name: string; messages: ChatMessage[] }> =>
+    unwrap(await api.get(`/communication/staff-messages/${trainerId}`)),
+  sendStaff: async (payload: { trainerId: string; message: string }): Promise<ChatMessage> =>
+    unwrap<ChatMessage>(await api.post("/communication/staff-messages", payload)),
 };

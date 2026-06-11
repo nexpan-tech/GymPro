@@ -12,7 +12,7 @@ export default function FilterBar({
   actions,
 }: FilterBarProps) {
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 md:flex-row md:items-center md:justify-between">
+    <div className="flex flex-col gap-4 rounded-2xl border border-border bg-white p-4 shadow-sm dark:border-border dark:bg-muted md:flex-row md:items-center md:justify-between">
       <div className="flex flex-1 flex-col gap-3 md:flex-row md:items-center">
         {search}
 

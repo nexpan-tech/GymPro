@@ -19,17 +19,17 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         <input
           ref={ref}
           className={clsx(
-            "w-full rounded-xl border border-(--border) bg-(--surface-solid) px-4 py-3 text-sm text-(--text-primary) shadow-(--shadow-sm) outline-none transition",
+            "w-full rounded-xl border border-border bg-(--surface-solid) px-4 py-3 text-sm text-(--text-primary) shadow-(--shadow-sm) outline-none transition",
             "placeholder:text-(--text-muted)",
-            "focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10",
+            "focus:border-primary focus:ring-4 focus:ring-(--brand-crimson)/15",
             "disabled:cursor-not-allowed disabled:opacity-60",
-            error && "border-red-500 focus:border-red-500 focus:ring-red-500/10",
+            error && "border-primary/40 focus:border-primary/40 focus:ring-primary/40",
             className
           )}
           {...props}
         />
 
-        {error && <p className="text-sm font-medium text-red-500">{error}</p>}
+        {error && <p className="text-sm font-medium text-primary">{error}</p>}
       </div>
     );
   }

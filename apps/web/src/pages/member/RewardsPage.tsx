@@ -43,12 +43,12 @@ export default function MemberRewardsPage() {
       <div className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2">
           <Card variant="solid" className="p-5">
-            <div className="flex items-center justify-between"><span className="text-sm text-(--text-secondary)">Your points balance</span><Coins className="h-5 w-5 text-indigo-500" /></div>
+            <div className="flex items-center justify-between"><span className="text-sm text-(--text-secondary)">Your points balance</span><Coins className="h-5 w-5 text-primary" /></div>
             <div className="mt-2 text-3xl font-bold text-(--text-primary)">{balance}</div>
           </Card>
           {code && (
             <Card variant="solid" className="p-5">
-              <div className="flex items-center justify-between"><span className="text-sm text-(--text-secondary)">Your referral code</span><Share2 className="h-5 w-5 text-emerald-500" /></div>
+              <div className="flex items-center justify-between"><span className="text-sm text-(--text-secondary)">Your referral code</span><Share2 className="h-5 w-5 text-muted-foreground" /></div>
               <div className="mt-2 flex items-center gap-3">
                 <code className="rounded bg-(--surface-elevated) px-2 py-1 text-lg font-bold">{code.code}</code>
                 <Button size="sm" variant="secondary" onClick={() => { navigator.clipboard?.writeText(code.shareText); toast.success("Invite copied"); }}>Copy invite</Button>
@@ -66,10 +66,10 @@ export default function MemberRewardsPage() {
               const affordable = balance >= cost && (rw.stock == null || rw.stock > 0);
               return (
                 <Card key={rw.id} variant="solid" className="p-5">
-                  <div className="flex items-center gap-2 font-semibold text-(--text-primary)"><Gift className="h-4 w-4 text-pink-500" />{rw.title}</div>
+                  <div className="flex items-center gap-2 font-semibold text-(--text-primary)"><Gift className="h-4 w-4 text-primary" />{rw.title}</div>
                   <p className="mt-1 text-sm text-(--text-secondary)">{rw.description || rw.type}</p>
                   <div className="mt-3 flex items-center justify-between">
-                    <span className="font-bold text-indigo-500">{cost} pts</span>
+                    <span className="font-bold text-primary">{cost} pts</span>
                     <Button size="sm" disabled={!affordable} onClick={() => redeem(rw)}>{affordable ? "Redeem" : "Not enough"}</Button>
                   </div>
                 </Card>
@@ -79,11 +79,11 @@ export default function MemberRewardsPage() {
         )}
 
         <Card variant="solid" className="overflow-hidden p-0">
-          <div className="border-b border-(--border) px-5 py-3 text-sm font-semibold text-(--text-primary)">My redemptions</div>
+          <div className="border-b border-border px-5 py-3 text-sm font-semibold text-(--text-primary)">My redemptions</div>
           {redemptions.length === 0 ? (
             <p className="px-5 py-6 text-sm text-(--text-secondary)">No redemptions yet.</p>
           ) : (
-            <div className="divide-y divide-(--border)">
+            <div className="divide-y divide-border">
               {redemptions.map((d) => (
                 <div key={d.id} className="flex items-center justify-between px-5 py-3 text-sm">
                   <span>{d.reward?.title ?? "Reward"}</span>

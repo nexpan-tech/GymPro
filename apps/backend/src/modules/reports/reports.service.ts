@@ -1,6 +1,6 @@
 import { prisma } from "../../config/db";
 import { AppError } from "../../utils/response";
-import { generateSimplePdfReport } from "./pdf.service";
+import { generateSimplePdfReport, generateMonthlySummaryPdf } from "./pdf.service";
 
 type AuthUser = {
   id: string;
@@ -242,6 +242,110 @@ export class ReportsService {
       total: rows.length,
       data: rows,
     };
+  }
+
+  /**
+   * Monthly gym report — aggregates every section from existing data for the
+   * given YYYY-MM. Returns structured JSON, or a PDF when format === "pdf".
+   */
+  static async monthlyReport(user: AuthUser, monthStr?: string, format: "json" | "pdf" = "json") {
+    if (!user.gymId) throw new AppError("Gym context missing", 403);
+    const gymId = user.gymId;
+
+    const now = new Date();
+    const [y, m] = (monthStr || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`)
+      .split("-").map(Number);
+    const start = new Date(y, (m || 1) - 1, 1);
+    const end = new Date(y, (m || 1), 1);
+    const inMonth = { gte: start, lt: end };
+
+    const [gym, members, memberships, payments, dues, attendance, workouts, diets, leads, trainerMsgs, redemptions, referrals, riskRows, challengeParts] =
+      await Promise.all([
+        prisma.gym.findUnique({ where: { id: gymId }, select: { name: true } }),
+        prisma.member.findMany({ where: { gymId }, select: { createdAt: true } }),
+        prisma.membership.findMany({ where: { gymId }, select: { endDate: true, createdAt: true, renewedFromId: true } }),
+        prisma.payment.findMany({ where: { gymId, status: "PAID", paidAt: inMonth }, select: { amount: true } }),
+        prisma.due.findMany({ where: { gymId }, select: { balance: true } }),
+        prisma.attendance.count({ where: { gymId, date: inMonth } }),
+        prisma.workoutCompletion.count({ where: { gymId, createdAt: inMonth } }),
+        prisma.dietCompletion.count({ where: { gymId, createdAt: inMonth } }),
+        prisma.lead.findMany({ where: { gymId }, select: { status: true, createdAt: true, convertedAt: true } }),
+        prisma.trainerMessage.count({ where: { gymId, createdAt: inMonth } }),
+        prisma.rewardRedemption.count({ where: { gymId, createdAt: inMonth } }),
+        prisma.referral.findMany({ where: { gymId }, select: { status: true, convertedAt: true } }),
+        prisma.member.findMany({ where: { gymId }, select: { riskLevel: true, retentionScore: true } }),
+        prisma.challengeParticipant.count({ where: { challenge: { gymId }, joinedAt: inMonth } }),
+      ]);
+
+    const activeMembers = memberships.filter((ms) => ms.endDate >= now).length;
+    const newMembers = members.filter((mm) => mm.createdAt >= start && mm.createdAt < end).length;
+    const expired = memberships.filter((ms) => ms.endDate >= start && ms.endDate < end).length;
+    const renewals = memberships.filter((ms) => ms.renewedFromId && ms.createdAt >= start && ms.createdAt < end).length;
+    const revenue = payments.reduce((s, p) => s + Number(p.amount), 0);
+    const outstanding = dues.reduce((s, d) => s + Number(d.balance ?? 0), 0);
+    const convertedLeads = leads.filter((l) => l.convertedAt && l.convertedAt >= start && l.convertedAt < end).length;
+    const leadConversion = leads.length ? Number(((convertedLeads / leads.length) * 100).toFixed(1)) : 0;
+    const atRisk = riskRows.filter((r) => r.riskLevel === "HIGH" || r.riskLevel === "CRITICAL").length;
+    const scored = riskRows.filter((r) => r.retentionScore != null);
+    const avgRetention = scored.length ? Math.round(scored.reduce((s, r) => s + (r.retentionScore ?? 0), 0) / scored.length) : 0;
+    const convertedReferrals = referrals.filter((r) => r.status === "CONVERTED" || r.status === "REWARDED").length;
+
+    const monthLabel = start.toLocaleString("en-US", { month: "long", year: "numeric" });
+    const report = {
+      gymName: gym?.name ?? "Gym",
+      month: monthLabel,
+      membership: { activeMembers, newMembers, expired, renewals },
+      revenue: { revenue, payments: payments.length, outstandingDues: outstanding },
+      attendance: { total: attendance },
+      trainerActivity: { messages: trainerMsgs },
+      training: { workoutCompletions: workouts, dietCompletions: diets },
+      retention: { avgRetentionScore: avgRetention, atRiskMembers: atRisk },
+      leads: { totalLeads: leads.length, converted: convertedLeads, conversionRate: leadConversion },
+      engagement: { challengeParticipations: challengeParts, rewardRedemptions: redemptions, referrals: referrals.length, referralConversions: convertedReferrals },
+    };
+
+    if (format === "pdf") {
+      const content = await generateMonthlySummaryPdf({
+        gymName: report.gymName,
+        month: report.month,
+        sections: [
+          { heading: "Membership", items: [
+            { label: "Active members", value: activeMembers },
+            { label: "New members", value: newMembers },
+            { label: "Expired", value: expired },
+            { label: "Renewals", value: renewals },
+          ]},
+          { heading: "Revenue", items: [
+            { label: "Revenue (paid)", value: `INR ${revenue.toLocaleString("en-IN")}` },
+            { label: "Payments", value: payments.length },
+            { label: "Outstanding dues", value: `INR ${outstanding.toLocaleString("en-IN")}` },
+          ]},
+          { heading: "Attendance", items: [{ label: "Total check-ins", value: attendance }] },
+          { heading: "Trainer activity", items: [{ label: "Messages sent", value: trainerMsgs }] },
+          { heading: "Training", items: [
+            { label: "Workout completions", value: workouts },
+            { label: "Diet completions", value: diets },
+          ]},
+          { heading: "Retention", items: [
+            { label: "Avg retention score", value: avgRetention },
+            { label: "At-risk members", value: atRisk },
+          ]},
+          { heading: "Lead conversion", items: [
+            { label: "Total leads", value: leads.length },
+            { label: "Converted", value: convertedLeads },
+            { label: "Conversion rate", value: `${leadConversion}%` },
+          ]},
+          { heading: "Engagement", items: [
+            { label: "Challenge participations", value: challengeParts },
+            { label: "Reward redemptions", value: redemptions },
+            { label: "Referrals (converted)", value: `${referrals.length} (${convertedReferrals})` },
+          ]},
+        ],
+      });
+      return { format: "pdf" as const, filename: `monthly-report-${monthStr || ""}.pdf`, content };
+    }
+
+    return { format: "json" as const, data: report };
   }
 }
 

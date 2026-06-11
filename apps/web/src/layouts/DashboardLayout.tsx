@@ -42,7 +42,7 @@ export default function DashboardLayout() {
   return (
     <div
       className="flex h-screen overflow-hidden"
-      style={{ backgroundColor: "var(--bg-page, #f8fafc)" }}
+      style={{ backgroundColor: "var(--bg-page, #ffffff)" }}
     >
       {/* ── Sidebar ─────────────────────────────────────────────────────── */}
       <Sidebar
@@ -64,7 +64,7 @@ export default function DashboardLayout() {
         {/* Scrollable content area */}
         <main
           className="relative flex-1 overflow-y-auto"
-          style={{ backgroundColor: "var(--bg-page, #f8fafc)" }}
+          style={{ backgroundColor: "var(--bg-page, #ffffff)" }}
         >
           <div className="mx-auto w-full max-w-screen-2xl px-4 py-6 md:px-8 lg:px-10">
             <Outlet />

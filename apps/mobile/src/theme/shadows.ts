@@ -12,7 +12,7 @@ export interface ThemeShadows {
 
 export function makeShadows(mode: ThemeMode): ThemeShadows {
   const opacity = mode === "dark" ? 0.35 : 0.12;
-  const color = mode === "dark" ? "#000000" : "#0F172A";
+  const color = "#010000";
 
   return {
     none: {},

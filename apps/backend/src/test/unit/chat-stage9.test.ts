@@ -5,7 +5,7 @@ const { prismaMock, socketMock } = vi.hoisted(() => ({
     member: { findFirst: vi.fn() },
     trainerMessage: { create: vi.fn(), findMany: vi.fn(), updateMany: vi.fn() },
   },
-  socketMock: { emitChatMessage: vi.fn(), emitToUser: vi.fn() },
+  socketMock: { emitChatMessage: vi.fn(), emitToUser: vi.fn(), emitToStaff: vi.fn() },
 }))
 
 vi.mock('../../config/db', () => ({ prisma: prismaMock }))

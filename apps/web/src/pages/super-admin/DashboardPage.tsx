@@ -36,12 +36,16 @@ import {
   RefreshCcw,
 } from "lucide-react";
 
-import KpiCard from "@/components/ui/KpiCard";
-import PageHeader from "@/components/ui/PageHeader";
-import EmptyState from "@/components/ui/EmptyState";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
-import Badge from "@/components/ui/Badge";
 import { Skeleton, SkeletonKpi } from "@/components/ui/Skeleton";
+import {
+  CommandHero,
+  Highlight,
+  MetricCard,
+  StatusPill,
+  type StatusTone,
+  EmptyMomentumState,
+} from "@/components/premium";
 import { analyticsService } from "@/services/analytics.service";
 import { cn } from "@/lib/cn";
 
@@ -127,9 +131,9 @@ const MOCK_DASHBOARD: SuperAdminDashboard = {
     { month: "May '25", revenue: 128_450, gyms: 247 },
   ],
   subscriptionsByPlan: [
-    { name: "Basic", value: 94, color: "#6366f1" },
-    { name: "Pro", value: 112, color: "#8b5cf6" },
-    { name: "Enterprise", value: 25, color: "#10b981" },
+    { name: "Basic", value: 94, color: "#e73725" },
+    { name: "Pro", value: 112, color: "#e73725" },
+    { name: "Enterprise", value: 25, color: "#767676" },
   ],
   recentGyms: [
     {
@@ -261,28 +265,28 @@ const activityIconMap: Record<
 > = {
   gym: {
     icon: <Building2 className="h-4 w-4" />,
-    bg: "bg-indigo-500/10",
-    text: "text-indigo-500",
+    bg: "bg-primary/10",
+    text: "text-primary",
   },
   payment: {
     icon: <Banknote className="h-4 w-4" />,
-    bg: "bg-emerald-500/10",
-    text: "text-emerald-500",
+    bg: "bg-muted",
+    text: "text-muted-foreground",
   },
   member: {
     icon: <UserPlus className="h-4 w-4" />,
-    bg: "bg-sky-500/10",
-    text: "text-sky-500",
+    bg: "bg-primary/10",
+    text: "text-primary",
   },
   system: {
     icon: <RefreshCcw className="h-4 w-4" />,
-    bg: "bg-violet-500/10",
-    text: "text-violet-500",
+    bg: "bg-primary/10",
+    text: "text-primary",
   },
   alert: {
     icon: <AlertCircle className="h-4 w-4" />,
-    bg: "bg-rose-500/10",
-    text: "text-rose-500",
+    bg: "bg-primary/10",
+    text: "text-primary",
   },
 };
 
@@ -298,22 +302,16 @@ const healthServiceIconMap: Record<string, ReactNode> = {
 
 // ─── Plan badge variant ───────────────────────────────────────────────────────
 
-const planVariant: Record<
-  GymRow["plan"],
-  "primary" | "success" | "info"
-> = {
-  Basic: "info",
-  Pro: "primary",
-  Enterprise: "success",
+const planVariant: Record<GymRow["plan"], StatusTone> = {
+  Basic: "neutral",
+  Pro: "active",
+  Enterprise: "completed",
 };
 
-const statusVariant: Record<
-  GymRow["status"],
-  "success" | "warning" | "danger"
-> = {
-  active: "success",
-  trial: "warning",
-  suspended: "danger",
+const statusVariant: Record<GymRow["status"], StatusTone> = {
+  active: "active",
+  trial: "pending",
+  suspended: "expired",
 };
 
 // ─── Custom Recharts Tooltip ──────────────────────────────────────────────────
@@ -327,7 +325,7 @@ interface RevenueTooltipProps {
 function RevenueTooltip({ active, payload, label }: RevenueTooltipProps) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-xl border border-(--border) bg-(--glass-strong) p-3 shadow-(--shadow-lg) backdrop-blur-xl">
+    <div className="rounded-xl border border-border bg-(--glass-strong) p-3 shadow-(--shadow-lg) backdrop-blur-xl">
       <p className="mb-1 text-xs font-semibold text-(--text-secondary)">{label}</p>
       <p className="text-sm font-black text-(--text-primary)">
         {formatCurrency(payload[0]?.value ?? 0)}
@@ -345,17 +343,17 @@ function RevenueTooltip({ active, payload, label }: RevenueTooltipProps) {
 
 function HealthStatusIcon({ status }: { status: HealthItem["status"] }) {
   if (status === "operational")
-    return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
+    return <CheckCircle2 className="h-4 w-4 text-muted-foreground" />;
   if (status === "degraded")
-    return <AlertCircle className="h-4 w-4 text-amber-500" />;
-  return <XCircle className="h-4 w-4 text-red-500" />;
+    return <AlertCircle className="h-4 w-4 text-muted-foreground" />;
+  return <XCircle className="h-4 w-4 text-primary" />;
 }
 
 function HealthStatusText({ status }: { status: HealthItem["status"] }) {
   const classes: Record<HealthItem["status"], string> = {
-    operational: "text-emerald-600 dark:text-emerald-400",
-    degraded: "text-amber-600 dark:text-amber-400",
-    down: "text-red-600 dark:text-red-400",
+    operational: "text-muted-foreground",
+    degraded: "text-muted-foreground",
+    down: "text-primary",
   };
   const labels: Record<HealthItem["status"], string> = {
     operational: "Operational",
@@ -375,7 +373,7 @@ function ChartSkeleton({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "animate-pulse rounded-2xl border border-(--border) bg-(--glass-strong) p-6",
+        "animate-pulse rounded-2xl border border-border bg-(--glass-strong) p-6",
         className
       )}
       aria-hidden="true"
@@ -432,32 +430,33 @@ export default function DashboardPage() {
   const health = data?.health ?? [];
   const activity = data?.activity ?? [];
 
+  // Momentum sparklines from the 12-month revenue series.
+  const revenueSpark = revenue.map((r) => r.revenue);
+  const gymsSpark = revenue.map((r) => r.gyms);
+
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-8">
-      {/* ── Page Header ─────────────────────────────────────────────────────── */}
-      <PageHeader
-        title="Platform Overview"
-        subtitle="Real-time SaaS analytics"
-        breadcrumbs={[
-          { label: "Super Admin", href: "/super-admin" },
-          { label: "Dashboard" },
+      {/* ── Command-center Hero ─────────────────────────────────────────────── */}
+      <CommandHero
+        eyebrow="Super Admin · Platform Command Center"
+        title={
+          <>
+            The whole network is <Highlight>moving as one.</Highlight>
+          </>
+        }
+        subtitle="Real-time SaaS analytics across every gym, subscription, and rupee on the platform."
+        stats={[
+          { label: "Active gyms", value: isLoading ? "—" : formatNumber(kpis?.totalGyms ?? 0) },
+          { label: "MRR", value: isLoading ? "—" : formatCurrency(kpis?.mrr ?? 0) },
         ]}
         actions={
           <button
             onClick={() => refetch()}
             disabled={isFetching}
-            className={cn(
-              "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold",
-              "border border-(--border) bg-(--glass-strong) text-(--text-primary)",
-              "shadow-(--shadow-sm) backdrop-blur-xl transition-all duration-200",
-              "hover:bg-(--surface-hover) hover:shadow-(--shadow-md)",
-              "disabled:cursor-not-allowed disabled:opacity-50"
-            )}
+            className="press inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/8 px-4 py-2 text-xs font-bold text-white/85 transition-colors hover:bg-white/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <RefreshCcw
-              className={cn("h-4 w-4", isFetching && "animate-spin")}
-            />
+            <RefreshCcw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
             Refresh
           </button>
         }
@@ -465,7 +464,7 @@ export default function DashboardPage() {
 
       {/* ── Error banner ────────────────────────────────────────────────────── */}
       {isError && (
-        <div className="flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+        <div className="flex items-center gap-3 rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-semibold text-primary">
           <AlertCircle className="h-4 w-4 shrink-0" />
           Failed to load dashboard data. Displaying last known values.
         </div>
@@ -475,46 +474,44 @@ export default function DashboardPage() {
           SECTION 1 — KPI Cards
          ═══════════════════════════════════════════════════════════════════════ */}
       <section aria-label="Key platform metrics">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-5 stagger sm:grid-cols-2 xl:grid-cols-4">
           {isLoading ? (
             Array.from({ length: 4 }).map((_, i) => <SkeletonKpi key={i} />)
           ) : (
             <>
-              <KpiCard
-                title="Total Gyms"
+              <MetricCard
+                label="Total Gyms"
                 value={formatNumber(kpis?.totalGyms ?? 0)}
                 change={kpis?.gymChange}
-                changeType="up"
                 changeLabel="vs last month"
                 icon={<Building2 />}
-                color="indigo"
+                spark={gymsSpark}
+                tone="energy"
               />
-              <KpiCard
-                title="Total Members"
+              <MetricCard
+                label="Total Members"
                 value={formatNumber(kpis?.totalMembers ?? 0)}
                 change={kpis?.memberChange}
-                changeType="up"
                 changeLabel="vs last month"
                 icon={<Users />}
-                color="sky"
+                tone="neutral"
               />
-              <KpiCard
-                title="Monthly Recurring Revenue"
+              <MetricCard
+                label="Monthly Recurring Revenue"
                 value={formatCurrency(kpis?.mrr ?? 0)}
                 change={kpis?.mrrChange}
-                changeType="up"
                 changeLabel="vs last month"
                 icon={<DollarSign />}
-                color="emerald"
+                spark={revenueSpark}
+                tone="energy"
               />
-              <KpiCard
-                title="Active Subscriptions"
+              <MetricCard
+                label="Active Subscriptions"
                 value={formatNumber(kpis?.activeSubscriptions ?? 0)}
                 change={kpis?.subChange}
-                changeType="up"
                 changeLabel="vs last month"
                 icon={<CreditCard />}
-                color="violet"
+                tone="neutral"
               />
             </>
           )}
@@ -538,9 +535,9 @@ export default function DashboardPage() {
               />
               <CardContent>
                 {revenue.length === 0 ? (
-                  <EmptyState
-                    title="No revenue data"
-                    description="Revenue data will appear here once gyms are active."
+                  <EmptyMomentumState
+                    title="Revenue starts the moment gyms go live"
+                    description="Onboard your first paying gym and watch MRR climb here."
                     icon={<BarChart3 />}
                     size="sm"
                   />
@@ -560,12 +557,12 @@ export default function DashboardPage() {
                         >
                           <stop
                             offset="5%"
-                            stopColor="#6366f1"
+                            stopColor="#e73725"
                             stopOpacity={0.25}
                           />
                           <stop
                             offset="95%"
-                            stopColor="#6366f1"
+                            stopColor="#e73725"
                             stopOpacity={0}
                           />
                         </linearGradient>
@@ -603,7 +600,7 @@ export default function DashboardPage() {
                         type="monotone"
                         dataKey="revenue"
                         name="Revenue"
-                        stroke="#6366f1"
+                        stroke="#e73725"
                         strokeWidth={2.5}
                         fill="url(#revenueGradient)"
                         dot={false}
@@ -613,7 +610,7 @@ export default function DashboardPage() {
                         type="monotone"
                         dataKey="gyms"
                         name="Gyms"
-                        stroke="#10b981"
+                        stroke="#767676"
                         strokeWidth={1.5}
                         fill="none"
                         dot={false}
@@ -627,11 +624,11 @@ export default function DashboardPage() {
                 {/* Chart legend */}
                 <div className="mt-4 flex flex-wrap items-center gap-4">
                   <div className="flex items-center gap-1.5">
-                    <span className="inline-block h-2.5 w-5 rounded-full bg-indigo-500" />
+                    <span className="inline-block h-2.5 w-5 rounded-full bg-primary" />
                     <span className="text-xs text-(--text-secondary)">Revenue (MRR)</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="inline-block h-0 w-5 border-b-2 border-dashed border-emerald-500" />
+                    <span className="inline-block h-0 w-5 border-b-2 border-dashed border-border" />
                     <span className="text-xs text-(--text-secondary)">Active gyms</span>
                   </div>
                 </div>
@@ -650,9 +647,9 @@ export default function DashboardPage() {
               />
               <CardContent>
                 {subscriptionsByPlan.length === 0 ? (
-                  <EmptyState
-                    title="No subscription data"
-                    description="Subscription plan distribution will appear here."
+                  <EmptyMomentumState
+                    title="Plan mix builds with every signup"
+                    description="As gyms choose Basic, Pro, or Enterprise, the split lights up here."
                     icon={<CreditCard />}
                     size="sm"
                   />
@@ -748,7 +745,7 @@ export default function DashboardPage() {
             />
             <CardContent className="p-0">
               {isLoading ? (
-                <div className="space-y-0 divide-y divide-(--border) px-6 py-2">
+                <div className="space-y-0 divide-y divide-border px-6 py-2">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <div
                       key={i}
@@ -761,9 +758,9 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : recentGyms.length === 0 ? (
-                <EmptyState
-                  title="No gym registrations yet"
-                  description="New gym registrations will appear here."
+                <EmptyMomentumState
+                  title="Grow the network"
+                  description="New gyms joining the platform will show up here in real time."
                   icon={<Building2 />}
                   size="sm"
                 />
@@ -771,7 +768,7 @@ export default function DashboardPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-140 text-sm">
                     <thead>
-                      <tr className="border-b border-(--border) bg-(--surface-secondary)">
+                      <tr className="border-b border-border bg-(--surface-secondary)">
                         {["Gym Name", "Owner", "Plan", "Joined", "Status"].map(
                           (col) => (
                             <th
@@ -784,7 +781,7 @@ export default function DashboardPage() {
                         )}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-(--border)">
+                    <tbody className="divide-y divide-border">
                       {recentGyms.map((gym) => (
                         <tr
                           key={gym.id}
@@ -797,25 +794,18 @@ export default function DashboardPage() {
                             {gym.owner}
                           </td>
                           <td className="px-6 py-3.5">
-                            <Badge
-                              variant={planVariant[gym.plan]}
-                              size="sm"
-                            >
+                            <StatusPill tone={planVariant[gym.plan]} size="sm">
                               {gym.plan}
-                            </Badge>
+                            </StatusPill>
                           </td>
                           <td className="px-6 py-3.5 text-(--text-secondary)">
                             {gym.joined}
                           </td>
                           <td className="px-6 py-3.5">
-                            <Badge
-                              variant={statusVariant[gym.status]}
-                              dot
-                              size="sm"
-                            >
+                            <StatusPill tone={statusVariant[gym.status]} size="sm">
                               {gym.status.charAt(0).toUpperCase() +
                                 gym.status.slice(1)}
-                            </Badge>
+                            </StatusPill>
                           </td>
                         </tr>
                       ))}
@@ -834,10 +824,10 @@ export default function DashboardPage() {
               action={
                 <div className="flex items-center gap-1.5">
                   <span className="relative flex h-2.5 w-2.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-muted-foreground opacity-75" />
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-muted-foreground" />
                   </span>
-                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                  <span className="text-xs font-semibold text-muted-foreground">
                     Live
                   </span>
                 </div>
@@ -857,9 +847,9 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : health.length === 0 ? (
-                <EmptyState
+                <EmptyMomentumState
                   title="Health data unavailable"
-                  description="Service health indicators will appear here."
+                  description="Service health indicators will appear here once monitoring is live."
                   icon={<ShieldCheck />}
                   size="sm"
                 />
@@ -868,7 +858,7 @@ export default function DashboardPage() {
                   {health.map((item) => (
                     <div
                       key={item.label}
-                      className="flex items-center justify-between rounded-xl border border-(--border) bg-(--surface-secondary) px-4 py-3 transition-colors hover:bg-(--surface-hover)"
+                      className="flex items-center justify-between rounded-xl border border-border bg-(--surface-secondary) px-4 py-3 transition-colors hover:bg-(--surface-hover)"
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-(--surface-hover) text-(--text-secondary)">
@@ -895,23 +885,23 @@ export default function DashboardPage() {
                   ))}
 
                   {/* Overall summary */}
-                  <div className="mt-4 rounded-xl border border-(--border) bg-(--glass) px-4 py-3">
+                  <div className="mt-4 rounded-xl border border-border bg-(--glass) px-4 py-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-semibold text-(--text-secondary)">
                         Overall status
                       </span>
                       {health.every((h) => h.status === "operational") ? (
-                        <Badge variant="success" dot>
+                        <StatusPill tone="completed">
                           All systems operational
-                        </Badge>
+                        </StatusPill>
                       ) : health.some((h) => h.status === "down") ? (
-                        <Badge variant="danger" dot>
+                        <StatusPill tone="expired">
                           Partial outage
-                        </Badge>
+                        </StatusPill>
                       ) : (
-                        <Badge variant="warning" dot>
+                        <StatusPill tone="pending">
                           Minor degradation
-                        </Badge>
+                        </StatusPill>
                       )}
                     </div>
                   </div>
@@ -945,9 +935,9 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : activity.length === 0 ? (
-              <EmptyState
-                title="No activity yet"
-                description="Platform events such as gym registrations and payments will appear here."
+              <EmptyMomentumState
+                title="The platform is warming up"
+                description="Gym registrations, payments, and system events will stream in here."
                 icon={<Activity />}
                 size="sm"
               />
@@ -961,7 +951,7 @@ export default function DashboardPage() {
                       {/* Vertical connector line */}
                       {!isLast && (
                         <span
-                          className="absolute left-4 top-8 bottom-0 w-px bg-(--border)"
+                          className="absolute left-4 top-8 bottom-0 w-px bg-border"
                           aria-hidden="true"
                         />
                       )}

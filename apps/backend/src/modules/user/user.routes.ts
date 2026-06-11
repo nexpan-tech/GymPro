@@ -36,6 +36,12 @@ router.put(
   controller.updateUser
 );
 
+router.post(
+  "/:id/reset-password",
+  roleMiddleware([ROLES.ADMIN]),
+  controller.resetUserPassword
+);
+
 router.delete(
   "/:id",
   roleMiddleware([ROLES.ADMIN]),

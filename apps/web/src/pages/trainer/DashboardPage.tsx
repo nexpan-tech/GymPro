@@ -135,14 +135,14 @@ function getInitials(name: string): string {
 
 function avatarColor(name: string): string {
   const colors = [
-    "bg-indigo-500",
-    "bg-emerald-500",
-    "bg-amber-500",
-    "bg-violet-500",
-    "bg-sky-500",
-    "bg-rose-500",
-    "bg-teal-500",
-    "bg-orange-500",
+    "bg-primary",
+    "bg-muted-foreground",
+    "bg-muted-foreground",
+    "bg-primary",
+    "bg-primary",
+    "bg-primary",
+    "bg-muted-foreground",
+    "bg-muted-foreground",
   ];
   const idx =
     name.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) %
@@ -215,7 +215,7 @@ function MemberAvatar({
       <img
         src={photoUrl}
         alt={name}
-        className={`${sizeClasses[size]} shrink-0 rounded-full object-cover ring-2 ring-(--border)`}
+        className={`${sizeClasses[size]} shrink-0 rounded-full object-cover ring-2 ring-border`}
       />
     );
   }
@@ -233,16 +233,16 @@ function MemberAvatar({
 
 function ProgressBar({
   value,
-  color = "indigo",
+  color = "energy",
 }: {
   value: number;
-  color?: "indigo" | "emerald" | "amber" | "rose";
+  color?: "energy" | "neutral" | "steel" | "rose";
 }) {
   const colorMap = {
-    indigo: "bg-indigo-500",
-    emerald: "bg-emerald-500",
-    amber: "bg-amber-500",
-    rose: "bg-rose-500",
+    energy: "bg-primary",
+    neutral: "bg-muted-foreground",
+    steel: "bg-muted-foreground",
+    rose: "bg-primary",
   };
   const clamped = Math.min(100, Math.max(0, value));
   return (
@@ -260,14 +260,14 @@ function ProgressBar({
 function NotificationIcon({ title }: { title: string }) {
   const lower = title.toLowerCase();
   if (lower.includes("feedback") || lower.includes("message"))
-    return <MessageSquare className="h-4 w-4 text-indigo-400" />;
+    return <MessageSquare className="h-4 w-4 text-primary" />;
   if (lower.includes("progress") || lower.includes("update"))
-    return <TrendingUp className="h-4 w-4 text-emerald-400" />;
+    return <TrendingUp className="h-4 w-4 text-muted-foreground" />;
   if (lower.includes("alert") || lower.includes("overdue"))
-    return <AlertCircle className="h-4 w-4 text-rose-400" />;
+    return <AlertCircle className="h-4 w-4 text-primary" />;
   if (lower.includes("session") || lower.includes("schedule"))
-    return <Calendar className="h-4 w-4 text-amber-400" />;
-  return <Bell className="h-4 w-4 text-sky-400" />;
+    return <Calendar className="h-4 w-4 text-muted-foreground" />;
+  return <Bell className="h-4 w-4 text-primary" />;
 }
 
 // ─── Mock data generators (fallback when API returns empty) ───────────────────
@@ -433,11 +433,11 @@ function MemberRow({ member }: { member: Member }) {
   const goalPct = member.xp ? Math.min(100, (member.xp.level / 10) * 100) : 0;
   const progressColor =
     goalPct >= 80
-      ? "emerald"
+      ? "neutral"
       : goalPct >= 50
-        ? "indigo"
+        ? "energy"
         : goalPct >= 25
-          ? "amber"
+          ? "steel"
           : "rose";
 
   return (
@@ -490,15 +490,15 @@ function SessionTimelineItem({ session }: { session: ScheduledSession }) {
         <div
           className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full border-2 ${
             isNow
-              ? "border-indigo-500 bg-indigo-500 shadow-[0_0_6px_2px_rgba(99,102,241,0.4)]"
+              ? "border-primary/40 bg-primary shadow-[0_0_6px_2px_rgba(231,55,37,0.4)]"
               : session.status === "COMPLETED"
-                ? "border-emerald-500 bg-emerald-500"
+                ? "border-border bg-muted-foreground"
                 : session.status === "CANCELLED"
-                  ? "border-rose-400 bg-rose-400"
-                  : "border-(--border) bg-(--surface-secondary)"
+                  ? "border-primary/40 bg-primary"
+                  : "border-border bg-(--surface-secondary)"
           }`}
         />
-        <div className="mt-1 w-px flex-1 bg-(--border)" />
+        <div className="mt-1 w-px flex-1 bg-border" />
       </div>
 
       {/* Content */}
@@ -539,8 +539,8 @@ function SessionTimelineItem({ session }: { session: ScheduledSession }) {
 function WorkoutCompletedRow({ item }: { item: WorkoutCompleted }) {
   return (
     <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-(--surface-hover)">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10">
-        <Dumbbell className="h-4 w-4 text-emerald-500" />
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-muted-foreground">
+        <Dumbbell className="h-4 w-4 text-muted-foreground" />
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-(--text-primary)">
@@ -567,10 +567,10 @@ function MemberProgressRow({ item }: { item: MemberProgress }) {
   const isLoss = (item.weightChange ?? 0) < 0;
   const progressColor =
     item.goalProgress >= 80
-      ? "emerald"
+      ? "neutral"
       : item.goalProgress >= 50
-        ? "indigo"
-        : "amber";
+        ? "energy"
+        : "steel";
 
   return (
     <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-(--surface-hover)">
@@ -590,9 +590,9 @@ function MemberProgressRow({ item }: { item: MemberProgress }) {
             <span
               className={`inline-flex items-center gap-0.5 text-xs font-medium ${
                 isLoss
-                  ? "text-emerald-500"
+                  ? "text-muted-foreground"
                   : isGain
-                    ? "text-amber-500"
+                    ? "text-muted-foreground"
                     : "text-(--text-muted)"
               }`}
             >
@@ -654,7 +654,7 @@ function NotificationRow({
         </p>
       </div>
       {!notification.isRead && (
-        <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-indigo-500" />
+        <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
       )}
     </div>
   );
@@ -812,14 +812,14 @@ export default function TrainerDashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-xl border border-(--border) bg-(--glass-strong) px-3 py-1.5 text-xs font-medium text-(--text-secondary) shadow-(--shadow-sm)">
-            <Activity className="h-3.5 w-3.5 text-emerald-500" />
+          <div className="flex items-center gap-1.5 rounded-xl border border-border bg-(--glass-strong) px-3 py-1.5 text-xs font-medium text-(--text-secondary) shadow-(--shadow-sm)">
+            <Activity className="h-3.5 w-3.5 text-muted-foreground" />
             {todaySessions.filter((s) => s.status === "IN_PROGRESS").length > 0
               ? "Session in progress"
               : `${todaySessions.filter((s) => s.status === "SCHEDULED").length} sessions today`}
           </div>
           {unreadCount > 0 && (
-            <div className="flex items-center gap-1.5 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+            <div className="flex items-center gap-1.5 rounded-xl border border-border bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground">
               <Bell className="h-3.5 w-3.5" />
               {unreadCount} unread
             </div>
@@ -833,7 +833,7 @@ export default function TrainerDashboardPage() {
           title="My Members"
           value={statsLoading || membersLoading ? "—" : totalMembers}
           icon={<Users className="h-full w-full" />}
-          color="indigo"
+          color="energy"
           loading={statsLoading && membersLoading}
           change={stats ? ((totalMembers - (stats.activeMembers ?? totalMembers)) / Math.max(1, totalMembers)) * 100 : undefined}
           changeType={totalMembers > 0 ? "up" : "neutral"}
@@ -843,7 +843,7 @@ export default function TrainerDashboardPage() {
           title="Attendance Today"
           value={attendanceLoading ? "—" : myMembersAttendedToday}
           icon={<CheckCircle className="h-full w-full" />}
-          color="emerald"
+          color="neutral"
           loading={attendanceLoading}
           change={
             totalMembers > 0
@@ -857,7 +857,7 @@ export default function TrainerDashboardPage() {
           title="Pending Feedback"
           value={membersLoading ? "—" : pendingFeedback}
           icon={<Bell className="h-full w-full" />}
-          color="amber"
+          color="steel"
           loading={membersLoading}
           changeType={pendingFeedback > 0 ? "down" : "neutral"}
           changeLabel="need progress update"
@@ -874,7 +874,7 @@ export default function TrainerDashboardPage() {
             action={
               <Link
                 to="/trainer/my-members"
-                className="inline-flex items-center gap-1 text-xs font-medium text-indigo-500 hover:text-indigo-400 transition-colors"
+                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary transition-colors"
               >
                 View all
                 <ChevronRight className="h-3.5 w-3.5" />
@@ -895,7 +895,7 @@ export default function TrainerDashboardPage() {
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-(--border)/40">
+              <div className="divide-y divide-border/40">
                 {members.slice(0, 8).map((member) => (
                   <MemberRow key={member.id} member={member} />
                 ))}
@@ -903,7 +903,7 @@ export default function TrainerDashboardPage() {
                   <div className="px-3 pt-3">
                     <Link
                       to="/trainer/my-members"
-                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-(--border) py-2.5 text-sm font-medium text-(--text-secondary) transition-colors hover:border-indigo-500/40 hover:bg-indigo-500/5 hover:text-indigo-500"
+                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border py-2.5 text-sm font-medium text-(--text-secondary) transition-colors hover:border-primary/40 hover:bg-primary hover:text-white"
                     >
                       <MoreHorizontal className="h-4 w-4" />
                       {members.length - 8} more members
@@ -921,8 +921,8 @@ export default function TrainerDashboardPage() {
             title="Today's Schedule"
             subtitle={fmtShortDate(new Date())}
             action={
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/10">
-                <Calendar className="h-4 w-4 text-indigo-500" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
+                <Calendar className="h-4 w-4 text-primary" />
               </div>
             }
           />
@@ -953,7 +953,7 @@ export default function TrainerDashboardPage() {
             title="Workouts Completed Today"
             subtitle="Members who finished their sessions"
             action={
-              <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+              <div className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
                 <Zap className="h-3 w-3" />
                 {recentCompletions.filter((c) =>
                   isDateToday(new Date(c.completedAt))
@@ -988,7 +988,7 @@ export default function TrainerDashboardPage() {
             action={
               <Link
                 to="/trainer/progress"
-                className="inline-flex items-center gap-1 text-xs font-medium text-indigo-500 hover:text-indigo-400 transition-colors"
+                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary transition-colors"
               >
                 Full report
                 <ChevronRight className="h-3.5 w-3.5" />
@@ -1022,13 +1022,13 @@ export default function TrainerDashboardPage() {
           action={
             <div className="flex items-center gap-3">
               {unreadCount > 0 && (
-                <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-400">
+                <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-bold text-muted-foreground">
                   {unreadCount} unread
                 </span>
               )}
               <Link
                 to="/notifications"
-                className="inline-flex items-center gap-1 text-xs font-medium text-indigo-500 hover:text-indigo-400 transition-colors"
+                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary transition-colors"
               >
                 View all
                 <ChevronRight className="h-3.5 w-3.5" />
@@ -1074,13 +1074,13 @@ export default function TrainerDashboardPage() {
             label: "My Members",
             icon: Users,
             to: "/trainer/my-members",
-            color: "indigo",
+            color: "energy",
           },
           {
             label: "Attendance",
             icon: CheckCircle,
             to: "/trainer/attendance",
-            color: "emerald",
+            color: "neutral",
           },
           {
             label: "Workout Plans",
@@ -1092,13 +1092,13 @@ export default function TrainerDashboardPage() {
             label: "Progress Reports",
             icon: TrendingUp,
             to: "/trainer/progress",
-            color: "amber",
+            color: "steel",
           },
         ].map(({ label, icon: Icon, to, color }) => (
           <Link
             key={to}
             to={to}
-            className={`group flex items-center gap-3 rounded-[18px] border border-(--border) bg-(--glass-strong) p-4 shadow-(--shadow-sm) backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:shadow-(--shadow-md)`}
+            className={`group flex items-center gap-3 rounded-[18px] border border-border bg-(--glass-strong) p-4 shadow-(--shadow-sm) backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:shadow-(--shadow-md)`}
           >
             <div
               className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-${color}-500/10`}

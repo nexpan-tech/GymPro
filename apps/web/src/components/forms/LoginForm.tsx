@@ -57,7 +57,7 @@ export default function LoginForm() {
       className="space-y-4"
     >
       {error && (
-        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
+        <div className="rounded-xl border border-primary/40 bg-primary/10 p-3 text-sm text-primary dark:border-primary/40 dark:bg-primary/15 dark:text-primary">
           {error}
         </div>
       )}
@@ -69,7 +69,7 @@ export default function LoginForm() {
         onChange={(e) =>
           setEmail(e.target.value)
         }
-        className="w-full rounded-lg border px-4 py-3"
+        className="w-full rounded-xl border border-border bg-(--surface-solid) px-4 py-3 text-sm text-(--text-primary) placeholder:text-(--text-muted) outline-none transition focus:border-primary focus:ring-4 focus:ring-(--brand-crimson)/15"
         required
       />
 
@@ -80,14 +80,14 @@ export default function LoginForm() {
         onChange={(e) =>
           setPassword(e.target.value)
         }
-        className="w-full rounded-lg border px-4 py-3"
+        className="w-full rounded-xl border border-border bg-(--surface-solid) px-4 py-3 text-sm text-(--text-primary) placeholder:text-(--text-muted) outline-none transition focus:border-primary focus:ring-4 focus:ring-(--brand-crimson)/15"
         required
       />
 
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full rounded-lg bg-black px-4 py-3 text-white disabled:opacity-50"
+        className="w-full rounded-xl bg-(image:--gradient-primary) px-4 py-3 font-semibold text-white shadow-[0_12px_30px_rgba(231,55,37,0.26)] transition disabled:opacity-50"
       >
         {isSubmitting ? "Signing in..." : "Login"}
       </button>

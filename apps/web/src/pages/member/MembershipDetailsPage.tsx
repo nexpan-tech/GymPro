@@ -102,7 +102,7 @@ function InfoCard({
 }) {
   return (
     <div className="rounded-2xl bg-(--surface-secondary) p-5">
-      <Icon className="h-6 w-6 text-indigo-500" />
+      <Icon className="h-6 w-6 text-primary" />
       <p className="mt-4 text-sm font-semibold text-(--text-secondary)">
         {label}
       </p>

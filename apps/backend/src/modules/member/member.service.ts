@@ -14,11 +14,29 @@ interface AuthUser {
   gymId: string | null;
 }
 
+// SECURITY: never include the raw `user` relation (it carries passwordHash).
+// Select only safe, non-sensitive identity fields.
+const safeUserSelect = {
+  id: true,
+  name: true,
+  email: true,
+  role: true,
+  isActive: true,
+} as const;
+
 const memberInclude = {
-  user: true,
-  trainer: true,
+  user: { select: safeUserSelect },
+  trainer: { select: safeUserSelect },
   branch: true,
 } as const;
+
+/** Generate a readable one-time temporary password. */
+export function generateTempPassword(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let p = "";
+  for (let i = 0; i < 8; i++) p += chars[Math.floor(Math.random() * chars.length)];
+  return `Gym-${p}`;
+}
 
 async function assertBranchInGym(gymId: string, branchId?: string | null) {
   if (!branchId) return;
@@ -116,8 +134,8 @@ export class MemberService {
     const member = await prisma.member.findFirst({
       where: { userId: user.id, gymId },
       include: {
-        user: true,
-        trainer: true,
+        user: { select: safeUserSelect },
+        trainer: { select: safeUserSelect },
         branch: true,
         memberships: {
           include: { planRef: true },
@@ -139,8 +157,8 @@ export class MemberService {
     const member = await prisma.member.findFirst({
       where: { id, gymId },
       include: {
-        user: true,
-        trainer: true,
+        user: { select: safeUserSelect },
+        trainer: { select: safeUserSelect },
         branch: true,
         memberships: {
           include: { planRef: true },
@@ -239,6 +257,57 @@ export class MemberService {
       });
 
       return { id, status: "INACTIVE" as const };
+    });
+  }
+
+  /**
+   * Reset a member's login password. Sets the supplied password or generates a
+   * one-time temporary password (returned ONCE — never stored in plaintext).
+   */
+  static async resetPassword(gymId: string, id: string, newPassword?: string) {
+    const member = await prisma.member.findFirst({ where: { id, gymId } });
+    if (!member) throw new AppError("Member not found", 404);
+
+    const temporaryPassword = newPassword?.trim() || generateTempPassword();
+    const passwordHash = await hashPassword(temporaryPassword);
+    await prisma.user.update({ where: { id: member.userId }, data: { passwordHash } });
+
+    // Returned once so the admin can hand it over; never persisted in clear text.
+    return { memberId: id, temporaryPassword, generated: !newPassword };
+  }
+
+  /**
+   * Hard delete — ONLY allowed when the member has no historical records that
+   * would be orphaned. Otherwise the caller must use the soft delete (delete()).
+   */
+  static async hardDelete(gymId: string, id: string) {
+    const member = await prisma.member.findFirst({ where: { id, gymId } });
+    if (!member) throw new AppError("Member not found", 404);
+
+    const [memberships, payments, attendance, invoices] = await Promise.all([
+      prisma.membership.count({ where: { memberId: id } }),
+      prisma.payment.count({ where: { memberId: id } }),
+      prisma.attendance.count({ where: { memberId: id } }),
+      prisma.invoice.count({ where: { memberId: id } }),
+    ]);
+    const total = memberships + payments + attendance + invoices;
+    if (total > 0) {
+      throw new AppError(
+        `Member has ${total} historical record(s) (memberships/payments/attendance/invoices). Deactivate instead of deleting.`,
+        409,
+      );
+    }
+
+    return prisma.$transaction(async (tx) => {
+      // Remove the member's lightweight dependents first, then the member + login.
+      await tx.goal.deleteMany({ where: { memberId: id } });
+      await tx.bodyMeasurement.deleteMany({ where: { memberId: id } });
+      await tx.notification.deleteMany({ where: { memberId: id } });
+      await tx.memberStreak.deleteMany({ where: { memberId: id } });
+      await tx.pointTransaction.deleteMany({ where: { memberId: id } });
+      await tx.member.delete({ where: { id } });
+      await tx.user.delete({ where: { id: member.userId } });
+      return { id, deleted: true };
     });
   }
 }

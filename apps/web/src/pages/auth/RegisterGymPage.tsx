@@ -80,10 +80,10 @@ function StepIndicator({ current }: { current: StepId }) {
                 className={[
                   "flex h-9 w-9 items-center justify-center rounded-full border-2 transition-colors duration-300",
                   done
-                    ? "border-indigo-600 bg-indigo-600 text-white"
+                    ? "border-primary bg-primary text-white"
                     : active
-                    ? "border-indigo-600 bg-white text-indigo-600 dark:bg-gray-900"
-                    : "border-gray-300 bg-white text-gray-400 dark:border-gray-600 dark:bg-gray-900",
+                    ? "border-primary bg-(--surface-solid) text-primary"
+                    : "border-(--border-strong) bg-(--surface-solid) text-(--text-muted)",
                 ].join(" ")}
               >
                 {done ? (
@@ -95,7 +95,7 @@ function StepIndicator({ current }: { current: StepId }) {
               <span
                 className={[
                   "text-xs font-medium",
-                  active ? "text-indigo-600" : done ? "text-indigo-500" : "text-gray-400",
+                  active ? "text-primary" : done ? "text-primary" : "text-(--text-muted)",
                 ].join(" ")}
               >
                 {step.label}
@@ -106,7 +106,7 @@ function StepIndicator({ current }: { current: StepId }) {
               <div
                 className={[
                   "mx-2 mb-4 h-0.5 w-12 transition-colors duration-300",
-                  current > step.id ? "bg-indigo-600" : "bg-gray-200 dark:bg-gray-700",
+                  current > step.id ? "bg-primary" : "bg-(--border-strong)",
                 ].join(" ")}
               />
             )}
@@ -217,7 +217,7 @@ export default function RegisterGymPage() {
     return (
       <AuthLayout title="You're all set!" subtitle="Your gym has been registered successfully.">
         <div className="flex flex-col items-center gap-4 py-6 text-center">
-          <CheckCircle2 className="h-16 w-16 text-green-500" />
+          <CheckCircle2 className="h-16 w-16 text-muted-foreground" />
           <p className="text-sm text-(--text-secondary)">
             Taking you to your dashboard…
           </p>
@@ -234,7 +234,7 @@ export default function RegisterGymPage() {
       <StepIndicator current={step} />
 
       {apiError && (
-        <div className="mb-5 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400">
+        <div className="mb-5 flex items-start gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm text-primary dark:border-primary/40 dark:bg-primary/15 dark:text-primary">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{apiError}</span>
         </div>
@@ -336,8 +336,8 @@ export default function RegisterGymPage() {
       {/* ── Step 3: Confirmation ── */}
       {step === 3 && (
         <div className="space-y-5">
-          <div className="rounded-xl border border-(--border) bg-(--surface-secondary) p-4 space-y-3 text-sm">
-            <p className="font-semibold text-(--text-primary) pb-1 border-b border-(--border)">
+          <div className="rounded-xl border border-border bg-(--surface-secondary) p-4 space-y-3 text-sm">
+            <p className="font-semibold text-(--text-primary) pb-1 border-b border-border">
               Gym Details
             </p>
             <Row label="Gym Name"  value={gymInfo.gymName} />
@@ -345,7 +345,7 @@ export default function RegisterGymPage() {
             {gymInfo.phone   && <Row label="Phone"   value={gymInfo.phone} />}
             {gymInfo.address && <Row label="Address" value={gymInfo.address} />}
 
-            <p className="font-semibold text-(--text-primary) pt-2 pb-1 border-b border-(--border)">
+            <p className="font-semibold text-(--text-primary) pt-2 pb-1 border-b border-border">
               Admin Account
             </p>
             <Row label="Owner"       value={admin.ownerName} />
@@ -375,7 +375,7 @@ export default function RegisterGymPage() {
         Already have an account?{" "}
         <Link
           to="/login"
-          className="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+          className="font-semibold text-primary transition-colors hover:opacity-80"
         >
           Sign in
         </Link>

@@ -26,19 +26,19 @@ export default function SuperAdminRetentionPage() {
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <Stat label="Retention Rate" value={`${data?.retentionRate ?? 0}%`} icon={<HeartPulse className="h-5 w-5" />} tone="emerald" />
+            <Stat label="Retention Rate" value={`${data?.retentionRate ?? 0}%`} icon={<HeartPulse className="h-5 w-5" />} tone="neutral" />
             <Stat label="Churn Rate" value={`${data?.churnRate ?? 0}%`} icon={<TrendingDown className="h-5 w-5" />} tone="rose" />
             <Stat label="Lead Conversion" value={`${data?.leadConversionRate ?? 0}%`} icon={<Percent className="h-5 w-5" />} />
-            <Stat label="Trial Conversion" value={`${data?.trialConversionRate ?? 0}%`} icon={<FlaskConical className="h-5 w-5" />} tone="amber" />
+            <Stat label="Trial Conversion" value={`${data?.trialConversionRate ?? 0}%`} icon={<FlaskConical className="h-5 w-5" />} tone="steel" />
           </div>
 
           <Card variant="solid" className="overflow-hidden p-0">
-            <div className="border-b border-(--border) px-5 py-3 text-sm font-semibold text-(--text-primary)">
+            <div className="border-b border-border px-5 py-3 text-sm font-semibold text-(--text-primary)">
               Gym conversion leaderboard
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-(--border) text-xs uppercase tracking-wide text-(--text-secondary)">
+                <thead className="border-b border-border text-xs uppercase tracking-wide text-(--text-secondary)">
                   <tr>
                     <th className="px-4 py-2 font-medium">Gym</th>
                     <th className="px-4 py-2 font-medium">Members</th>
@@ -47,7 +47,7 @@ export default function SuperAdminRetentionPage() {
                     <th className="px-4 py-2 font-medium">Lead conversion</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-(--border)">
+                <tbody className="divide-y divide-border">
                   {(data?.perGym ?? []).map((g) => (
                     <tr key={g.gymId}>
                       <td className="px-4 py-2 font-medium text-(--text-primary)">{g.name}</td>
@@ -70,8 +70,8 @@ export default function SuperAdminRetentionPage() {
   );
 }
 
-function Stat({ label, value, icon, tone }: { label: string; value: string; icon: ReactNode; tone?: "emerald" | "rose" | "amber" }) {
-  const color = tone === "emerald" ? "text-emerald-500" : tone === "rose" ? "text-rose-500" : tone === "amber" ? "text-amber-500" : "text-indigo-500";
+function Stat({ label, value, icon, tone }: { label: string; value: string; icon: ReactNode; tone?: "neutral" | "rose" | "steel" }) {
+  const color = tone === "neutral" ? "text-muted-foreground" : tone === "rose" ? "text-primary" : tone === "steel" ? "text-muted-foreground" : "text-primary";
   return (
     <Card variant="solid" className="p-5">
       <div className="flex items-center justify-between">

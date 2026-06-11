@@ -12,7 +12,7 @@ export default function RoleRoute({ allowedRoles }: RoleRouteProps) {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-(--background) text-(--text-primary)">
+      <div className="flex min-h-screen items-center justify-center bg-background text-(--text-primary)">
         Loading...
       </div>
     );

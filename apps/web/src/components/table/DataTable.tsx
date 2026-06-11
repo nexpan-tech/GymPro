@@ -28,7 +28,7 @@ export default function DataTable<T>({
 }: DataTableProps<T>) {
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-gray-200 bg-white p-10 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+      <div className="rounded-3xl border border-border bg-white p-10 shadow-sm dark:border-border dark:bg-muted">
         <LoadingSpinner text="Loading data..." />
       </div>
     );
@@ -44,15 +44,15 @@ export default function DataTable<T>({
   }
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+    <div className="overflow-hidden rounded-3xl border border-border bg-white shadow-sm dark:border-border dark:bg-muted">
       <div className="overflow-x-auto">
         <table className="min-w-full">
-          <thead className="border-b border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-800/50">
+          <thead className="border-b border-border bg-muted dark:border-border dark:bg-muted">
             <tr>
               {columns.map((column) => (
                 <th
                   key={column.key}
-                  className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 ${column.className ?? ""}`}
+                  className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground ${column.className ?? ""}`}
                 >
                   {column.header}
                 </th>
@@ -60,16 +60,16 @@ export default function DataTable<T>({
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+          <tbody className="divide-y divide-border dark:divide-border">
             {data.map((row, index) => (
               <tr
                 key={rowKey ? rowKey(row, index) : index}
-                className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/40"
+                className="transition-colors hover:bg-muted dark:hover:bg-muted"
               >
                 {columns.map((column) => (
                   <td
                     key={column.key}
-                    className={`px-6 py-4 text-sm text-gray-700 dark:text-gray-300 ${column.className ?? ""}`}
+                    className={`px-6 py-4 text-sm text-foreground dark:text-muted-foreground ${column.className ?? ""}`}
                   >
                     {column.render
                       ? column.render(row)

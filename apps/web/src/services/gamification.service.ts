@@ -119,8 +119,12 @@ export const gamificationService = {
     unwrap<PlatformEngagement>(await api.get("/gamification/platform")),
 
   // Rewards
-  rewards: async (): Promise<Reward[]> => unwrap<Reward[]>(await api.get("/gamification/rewards")) ?? [],
+  rewards: async (all = false): Promise<Reward[]> =>
+    unwrap<Reward[]>(await api.get(`/gamification/rewards${all ? "?all=true" : ""}`)) ?? [],
   createReward: async (data: Partial<Reward>): Promise<Reward> => unwrap<Reward>(await api.post("/gamification/rewards", data)),
+  updateReward: async (id: string, data: Partial<Reward>): Promise<Reward> => unwrap<Reward>(await api.patch(`/gamification/rewards/${id}`, data)),
+  deleteReward: async (id: string): Promise<{ softDeleted?: boolean; deleted?: boolean }> =>
+    unwrap(await api.delete(`/gamification/rewards/${id}`)),
   redeem: async (rewardId: string): Promise<unknown> => unwrap<unknown>(await api.post(`/gamification/rewards/${rewardId}/redeem`, {})),
   redemptions: async (): Promise<Redemption[]> => unwrap<Redemption[]>(await api.get("/gamification/redemptions")) ?? [],
   myRedemptions: async (): Promise<Redemption[]> => unwrap<Redemption[]>(await api.get("/gamification/me/redemptions")) ?? [],

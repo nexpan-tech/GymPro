@@ -58,13 +58,13 @@ export default function RegisterGymForm() {
       className="space-y-4"
     >
       {success && (
-        <div className="rounded-lg bg-green-50 p-3 text-sm text-green-600">
+        <div className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">
           {success}
         </div>
       )}
 
       {error && (
-        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
+        <div className="rounded-lg bg-primary/10 p-3 text-sm text-primary">
           {error}
         </div>
       )}

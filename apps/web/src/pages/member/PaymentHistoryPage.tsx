@@ -67,7 +67,7 @@ export default function PaymentHistoryPage() {
           <p className="text-sm font-semibold text-(--text-secondary)">
             Status
           </p>
-          <h2 className="mt-2 text-3xl font-black text-emerald-500">
+          <h2 className="mt-2 text-3xl font-black text-muted-foreground">
             Good
           </h2>
         </Card>
@@ -96,7 +96,7 @@ export default function PaymentHistoryPage() {
             <tbody>
               {payments.length > 0 ? (
                 payments.map((payment) => (
-                  <tr key={payment.id} className="border-t border-(--border)">
+                  <tr key={payment.id} className="border-t border-border">
                     <td className="px-5 py-4 font-bold text-(--text-primary)">
                       ₹{payment.amount}
                     </td>
@@ -104,7 +104,7 @@ export default function PaymentHistoryPage() {
                       {payment.method || "N/A"}
                     </td>
                     <td className="px-5 py-4">
-                      <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-600">
+                      <span className="rounded-full bg-muted px-3 py-1 text-xs font-bold text-muted-foreground">
                         {payment.status}
                       </span>
                     </td>

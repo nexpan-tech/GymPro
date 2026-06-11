@@ -61,6 +61,13 @@ router.put(
   MemberController.update
 );
 
+router.post(
+  "/:id/reset-password",
+  authMiddleware,
+  roleMiddleware([ROLES.ADMIN, ROLES.RECEPTIONIST]),
+  MemberController.resetPassword
+);
+
 router.delete(
   "/:id",
   authMiddleware,

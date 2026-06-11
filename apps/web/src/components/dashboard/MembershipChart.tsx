@@ -22,11 +22,11 @@ export default function MembershipChart({
   // Empty state
   if (safeData.length === 0) {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+      <div className="rounded-2xl border border-border bg-white p-6 shadow-sm dark:border-border dark:bg-muted">
+        <h3 className="mb-4 text-lg font-semibold text-foreground dark:text-white">
           Membership Distribution
         </h3>
-        <div className="flex h-64 items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+        <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
           No membership data available
         </div>
       </div>
@@ -40,8 +40,8 @@ export default function MembershipChart({
   );
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-      <h3 className="mb-6 text-lg font-semibold text-gray-900 dark:text-white">
+    <div className="rounded-2xl border border-border bg-white p-6 shadow-sm dark:border-border dark:bg-muted">
+      <h3 className="mb-6 text-lg font-semibold text-foreground dark:text-white">
         Membership Distribution
       </h3>
 
@@ -64,17 +64,17 @@ export default function MembershipChart({
           return (
             <div key={index}>
               <div className="mb-1 flex items-center justify-between text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-300">
+                <span className="font-medium text-foreground dark:text-muted-foreground">
                   {label}
                 </span>
-                <span className="text-gray-500 dark:text-gray-400">
+                <span className="text-muted-foreground">
                   {value}
                 </span>
               </div>
 
-              <div className="h-3 w-full rounded-full bg-gray-200 dark:bg-gray-800">
+              <div className="h-3 w-full rounded-full bg-muted dark:bg-muted">
                 <div
-                  className="h-3 rounded-full bg-emerald-500 transition-all"
+                  className="h-3 rounded-full bg-muted-foreground transition-all"
                   style={{
                     width: `${percentage}%`,
                   }}

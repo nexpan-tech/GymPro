@@ -67,16 +67,45 @@ export const createUser = async (
   });
 };
 
-export const getUsers = async (gymId: string) => {
+/** Roles considered "staff/admin" — shown on the Admins page. */
+export const STAFF_ROLES = ["ADMIN", "RECEPTIONIST", "BRANCH_MANAGER", "REGIONAL_MANAGER"] as const;
+
+export const getUsers = async (gymId: string, opts: { roles?: string[] } = {}) => {
   return prisma.user.findMany({
     where: {
       gymId,
+      ...(opts.roles && opts.roles.length ? { role: { in: opts.roles as never } } : {}),
     },
     select: safeUserSelect,
     orderBy: {
       createdAt: "desc",
     },
   });
+};
+
+/** Generate a readable one-time temporary password. */
+function generateTempPassword(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let p = "";
+  for (let i = 0; i < 8; i++) p += chars[Math.floor(Math.random() * chars.length)];
+  return `Gym-${p}`;
+}
+
+/**
+ * Reset a staff/trainer login password. Sets the supplied password or generates
+ * a one-time temporary one (returned ONCE). Gym-scoped — cannot touch other gyms
+ * or the SUPER_ADMIN.
+ */
+export const resetUserPassword = async (gymId: string, id: string, newPassword?: string) => {
+  const user = await prisma.user.findFirst({ where: { id, gymId } });
+  if (!user) throw new AppError("User not found", 404);
+  if (user.role === "SUPER_ADMIN") throw new AppError("Cannot reset a super admin password here", 403);
+
+  const temporaryPassword = newPassword?.trim() || generateTempPassword();
+  const passwordHash = await hashPassword(temporaryPassword);
+  await prisma.user.update({ where: { id }, data: { passwordHash } });
+
+  return { userId: id, temporaryPassword, generated: !newPassword };
 };
 
 export const getUserById = async (
@@ -166,6 +195,10 @@ export const deleteUser = async (
     throw new AppError("User not found", 404);
   }
 
+  if (user.role === "SUPER_ADMIN") {
+    throw new AppError("Cannot delete a super admin", 403);
+  }
+
   if (user.role === "ADMIN") {
     const adminCount = await prisma.user.count({
       where: {
@@ -178,6 +211,28 @@ export const deleteUser = async (
     if (adminCount <= 1) {
       throw new AppError("Cannot delete the last active gym admin", 400);
     }
+  }
+
+  // Unassign any members this user trains so the FK never blocks the delete.
+  await prisma.member.updateMany({ where: { trainerId: id }, data: { trainerId: null } });
+
+  // If the user has history that would be orphaned (chat, feedback, plans,
+  // sessions, audit) we soft-delete instead of hard-deleting.
+  const [messages, feedback, plans, sessions, audits] = await Promise.all([
+    prisma.trainerMessage.count({ where: { OR: [{ trainerId: id }, { senderId: id }] } }),
+    prisma.trainerFeedback.count({ where: { trainerId: id } }),
+    prisma.workoutPlan.count({ where: { trainerId: id } }),
+    prisma.session.count({ where: { userId: id } }),
+    prisma.auditLog.count({ where: { userId: id } }),
+  ]);
+
+  if (messages + feedback + plans + sessions + audits > 0) {
+    const soft = await prisma.user.update({
+      where: { id },
+      data: { isActive: false },
+      select: safeUserSelect,
+    });
+    return { ...soft, softDeleted: true };
   }
 
   return prisma.user.delete({

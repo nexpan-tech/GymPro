@@ -50,14 +50,14 @@ export default function MemberChallengesPage() {
             return (
               <Card key={c.id} variant="solid" className="p-5">
                 <div className="flex items-start justify-between">
-                  <span className="flex items-center gap-2 font-semibold text-(--text-primary)"><Trophy className="h-4 w-4 text-amber-500" />{c.title}</span>
+                  <span className="flex items-center gap-2 font-semibold text-(--text-primary)"><Trophy className="h-4 w-4 text-muted-foreground" />{c.title}</span>
                   <Badge variant={c.status === "ACTIVE" ? "success" : "info"}>{c.status}</Badge>
                 </div>
                 <p className="mt-1 text-sm text-(--text-secondary)">{c.description || c.type}</p>
                 {part ? (
                   <div className="mt-3">
                     <div className="mb-1 flex justify-between text-xs text-(--text-secondary)"><span>Progress</span><span>{part.progress}{c.targetValue ? ` / ${c.targetValue}` : ""}</span></div>
-                    <div className="h-2 overflow-hidden rounded-full bg-(--surface-elevated)"><div className="h-full rounded-full bg-indigo-500" style={{ width: `${pct}%` }} /></div>
+                    <div className="h-2 overflow-hidden rounded-full bg-(--surface-elevated)"><div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} /></div>
                     {part.isCompleted && <Badge variant="success" className="mt-2">Completed 🎉</Badge>}
                   </div>
                 ) : (

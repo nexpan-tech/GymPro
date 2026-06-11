@@ -55,11 +55,11 @@ export default function UserMenu() {
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         className={clsx(
-          "flex items-center gap-2 rounded-2xl border border-(--border) bg-(--surface) px-2 py-1.5 shadow-(--shadow-sm) transition-all duration-200",
+          "flex items-center gap-2 rounded-2xl border border-border bg-(--surface) px-2 py-1.5 shadow-(--shadow-sm) transition-all duration-200",
           "hover:bg-(--surface-hover) hover:shadow-(--shadow-md)"
         )}
       >
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[image:var(--gradient-primary)] text-sm font-black text-white shadow-[0_10px_24px_rgba(79,70,229,0.28)]">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-(image:--gradient-primary) text-sm font-black text-white shadow-[0_10px_24px_rgba(231,55,37,0.28)]">
           {getInitials(user?.name)}
         </div>
 
@@ -82,7 +82,7 @@ export default function UserMenu() {
 
       {open && (
         <div className="absolute right-0 top-full z-9999 mt-3 w-64 overflow-hidden rounded-2xl border border-(--glass-border) bg-(--glass) shadow-(--shadow-xl) backdrop-blur-xl">
-          <div className="border-b border-(--border) px-4 py-4">
+          <div className="border-b border-border px-4 py-4">
             <p className="text-sm font-black text-(--text-primary)">
               {user?.name || "User"}
             </p>
@@ -117,7 +117,7 @@ export default function UserMenu() {
             <button
               type="button"
               onClick={handleLogout}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-red-500 transition hover:bg-red-500/10"
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-primary transition hover:bg-primary"
             >
               <LogOut className="h-4 w-4" />
               Logout

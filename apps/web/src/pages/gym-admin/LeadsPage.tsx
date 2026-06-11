@@ -96,7 +96,7 @@ export default function LeadsPage() {
           {/* CRM dashboard stats */}
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <Stat label="Total Leads" value={String(funnel?.totalLeads ?? leads.length)} icon={<Funnel className="h-5 w-5" />} />
-            <Stat label="Conversion Rate" value={`${funnel?.conversionRate ?? 0}%`} icon={<Percent className="h-5 w-5" />} tone="emerald" />
+            <Stat label="Conversion Rate" value={`${funnel?.conversionRate ?? 0}%`} icon={<Percent className="h-5 w-5" />} tone="neutral" />
             <Stat label="Trials (converted)" value={`${trialStats?.active ?? 0} (${trialStats?.converted ?? 0})`} icon={<FlaskConical className="h-5 w-5" />} />
             <Stat label="Lost" value={String(funnel?.funnel?.LOST ?? 0)} icon={<XCircle className="h-5 w-5" />} tone="rose" />
           </div>
@@ -104,7 +104,7 @@ export default function LeadsPage() {
           {/* Pipeline board */}
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
             {COLUMNS.map((col) => (
-              <div key={col.key} className="rounded-lg border border-(--border) bg-(--surface) p-3">
+              <div key={col.key} className="rounded-lg border border-border bg-(--surface) p-3">
                 <div className="mb-2 flex items-center justify-between">
                   <span className="text-xs font-semibold uppercase tracking-wide text-(--text-secondary)">{col.label}</span>
                   <Badge variant={badgeFor(col.key)}>{byColumn[col.key]?.length ?? 0}</Badge>
@@ -114,7 +114,7 @@ export default function LeadsPage() {
                     <button
                       key={lead.id}
                       onClick={() => setSelected(lead)}
-                      className="w-full rounded-md border border-(--border) bg-(--surface-elevated) p-2 text-left transition hover:border-indigo-400"
+                      className="w-full rounded-md border border-border bg-(--surface-elevated) p-2 text-left transition hover:border-primary/40"
                     >
                       <div className="truncate text-sm font-medium text-(--text-primary)">{lead.name}</div>
                       <div className="truncate text-xs text-(--text-secondary)">{lead.phone}</div>
@@ -146,8 +146,8 @@ export default function LeadsPage() {
   );
 }
 
-function Stat({ label, value, icon, tone }: { label: string; value: string; icon: ReactNode; tone?: "emerald" | "rose" }) {
-  const color = tone === "emerald" ? "text-emerald-500" : tone === "rose" ? "text-rose-500" : "text-indigo-500";
+function Stat({ label, value, icon, tone }: { label: string; value: string; icon: ReactNode; tone?: "neutral" | "rose" }) {
+  const color = tone === "neutral" ? "text-muted-foreground" : tone === "rose" ? "text-primary" : "text-primary";
   return (
     <Card variant="solid" className="p-5">
       <div className="flex items-center justify-between">
@@ -190,7 +190,7 @@ function AddLeadModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
         <div>
           <label className="text-sm font-semibold text-(--text-secondary)">Source</label>
           <select
-            className="mt-1 w-full rounded-md border border-(--border) bg-(--surface) px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-md border border-border bg-(--surface) px-3 py-2 text-sm"
             value={form.source}
             onChange={(e) => setForm({ ...form, source: e.target.value })}
           >
@@ -259,7 +259,7 @@ function LeadDetailModal({ lead, onClose, onMove }: { lead: Lead; onClose: () =>
         <div>
           <label className="text-sm font-semibold text-(--text-secondary)">Log activity</label>
           <div className="mt-1 flex gap-2">
-            <select className="rounded-md border border-(--border) bg-(--surface) px-2 text-sm" value={type} onChange={(e) => setType(e.target.value)}>
+            <select className="rounded-md border border-border bg-(--surface) px-2 text-sm" value={type} onChange={(e) => setType(e.target.value)}>
               {["NOTE", "CALL", "WHATSAPP", "EMAIL", "MEETING", "FOLLOW_UP"].map((t) => <option key={t}>{t}</option>)}
             </select>
             <Input className="flex-1" placeholder="Add a note…" value={note} onChange={(e) => setNote(e.target.value)} />
@@ -272,7 +272,7 @@ function LeadDetailModal({ lead, onClose, onMove }: { lead: Lead; onClose: () =>
             <p className="py-3 text-center text-sm text-(--text-secondary)">No activity yet.</p>
           ) : (
             activities.map((a) => (
-              <div key={a.id} className="rounded-md border border-(--border) p-2 text-sm">
+              <div key={a.id} className="rounded-md border border-border p-2 text-sm">
                 <div className="flex items-center justify-between">
                   <Badge variant="info">{a.type}</Badge>
                   <span className="text-xs text-(--text-secondary)">{new Date(a.createdAt).toLocaleString()}</span>

@@ -7,6 +7,16 @@ export { default as AppHeader } from "./AppHeader";
 export { default as AppBadge } from "./AppBadge";
 export { default as AppAvatar } from "./AppAvatar";
 export { default as AppStatCard } from "./AppStatCard";
+export { default as ProgressRing } from "./ProgressRing";
+export { default as MissionCard } from "./MissionCard";
+export {
+  CelebrationCard,
+  StreakBadge,
+  MomentumBadge,
+  MilestoneCard,
+  ProgressBar,
+  ScorePill,
+} from "./Delight";
 export { default as AppEmptyState } from "./AppEmptyState";
 export { default as AppErrorState } from "./AppErrorState";
 export { default as AppLoadingState } from "./AppLoadingState";

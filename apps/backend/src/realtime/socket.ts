@@ -114,6 +114,11 @@ export function emitToRole(gymId: string, role: string, event: string, payload: 
   io?.to(`gym:${gymId}:role:${role.toUpperCase()}`).emit(event, payload);
 }
 
+/** Emit to a gym's admin/receptionist staff room (used by admin chat). */
+export function emitToStaff(gymId: string, event: string, payload: any) {
+  io?.to(`gym:${gymId}:staff`).emit(event, payload);
+}
+
 /** Realtime chat delivery to both participants' user rooms. */
 export function emitChatMessage(userIds: string[], payload: any) {
   for (const id of userIds) emitToUser(id, SOCKET_EVENTS.CHAT_MESSAGE, payload);

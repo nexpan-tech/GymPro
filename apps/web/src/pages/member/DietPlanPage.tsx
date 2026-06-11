@@ -62,7 +62,7 @@ export default function DietPlanPage() {
       <Card variant="premium">
         <CardContent>
           <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 text-white">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-muted to-muted text-white">
               <Salad className="h-7 w-7" />
             </div>
             <div>
@@ -105,8 +105,8 @@ export default function DietPlanPage() {
                 <CardContent>
                   <div className="space-y-3">
                     {dayMeals.map((m) => (
-                      <div key={m.id} className="border-b border-(--border) pb-2 last:border-0">
-                        <p className="text-xs font-semibold uppercase text-emerald-500">
+                      <div key={m.id} className="border-b border-border pb-2 last:border-0">
+                        <p className="text-xs font-semibold uppercase text-muted-foreground">
                           {mealTypeLabel(m.mealType)}
                         </p>
                         <p className="text-sm font-medium text-(--text-primary)">

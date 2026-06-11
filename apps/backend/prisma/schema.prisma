@@ -1200,8 +1200,10 @@ model TrainerMessage {
   trainerId String
   trainer   User   @relation("TrainerMessages", fields: [trainerId], references: [id], onDelete: Cascade)
 
-  memberId String
-  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  // Nullable so the SAME table can hold admin<->trainer "staff" DM threads
+  // (memberId = null). Trainer<->member threads always set memberId.
+  memberId String?
+  member   Member? @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   senderId String
   sender   User   @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)

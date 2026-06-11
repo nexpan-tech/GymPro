@@ -104,4 +104,20 @@ export class CommunicationController {
     const data = await CommunicationService.markThreadRead(user, req.params.memberId as string);
     return res.json({ success: true, message: "Thread marked read", data });
   }
+
+  // ── Admin <-> Trainer staff DM ──
+  static async sendStaffMessage(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const data = await CommunicationService.sendStaffMessage(user, req.body);
+    return res.status(201).json({ success: true, message: "Message sent", data });
+  }
+
+  static async getStaffThread(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const trainerId = (req.params.trainerId as string) === "me" ? user.id : (req.params.trainerId as string);
+    const data = await CommunicationService.getStaffThread(user, trainerId);
+    return res.json({ success: true, data });
+  }
 }

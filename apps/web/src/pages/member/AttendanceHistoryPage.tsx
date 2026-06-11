@@ -71,7 +71,7 @@ export default function AttendanceHistoryPage() {
           <p className="text-sm font-semibold text-(--text-secondary)">
             Status
           </p>
-          <h2 className="mt-2 text-3xl font-black text-emerald-500">
+          <h2 className="mt-2 text-3xl font-black text-muted-foreground">
             Active
           </h2>
         </Card>
@@ -100,7 +100,7 @@ export default function AttendanceHistoryPage() {
                   records.map((record) => (
                     <tr
                       key={record.id}
-                      className="border-t border-(--border)"
+                      className="border-t border-border"
                     >
                       <td className="px-5 py-4 font-semibold text-(--text-primary)">
                         {new Date(record.date).toLocaleDateString()}
@@ -111,7 +111,7 @@ export default function AttendanceHistoryPage() {
                           : "N/A"}
                       </td>
                       <td className="px-5 py-4">
-                        <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-600">
+                        <span className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-xs font-bold text-muted-foreground">
                           <CalendarCheck className="h-3.5 w-3.5" />
                           Present
                         </span>

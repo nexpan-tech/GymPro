@@ -3,6 +3,33 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ── Semantic utility bridge ──
+   Expose the theme-flipping CSS variables (defined in variables.css for both
+   :root and .dark) as Tailwind color utilities. `inline` means utilities like
+   bg-card / text-foreground / text-muted-foreground resolve the live variable,
+   so they flip automatically between light and dark. */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+}
+
 html,
 body,
 #root {
@@ -28,7 +55,7 @@ body {
 }
 
 ::selection {
-  background: rgba(79, 70, 229, 0.22);
+  background: rgba(231,55,37, 0.22);
 }
 
 ::-webkit-scrollbar {
@@ -53,4 +80,360 @@ body {
   border: 1px solid var(--border);
   box-shadow: var(--shadow-md);
   backdrop-filter: blur(18px);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   GymPro PREMIUM EXPERIENCE LAYER
+   Energetic, performance-driven, modern-luxury utilities — strictly built from
+   the 4-color palette (red / black / white / soft-gray) via opacity, gradients,
+   layering and elevation. No new hues, no heavy animation libs.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Powerful display typography ──────────────────────────────────────────── */
+.text-display {
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+}
+.text-balance { text-wrap: balance; }
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* Big metric numbers feel like a scoreboard. */
+.metric-number {
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* Red energy text — used sparingly for accents / numbers. */
+.text-gradient-red {
+  background: linear-gradient(120deg, var(--brand-red) 0%, #ff5c4a 55%, var(--brand-red-strong) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Eyebrow / overline label. */
+.eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--text-muted);
+}
+
+/* ── Premium surfaces & depth ─────────────────────────────────────────────── */
+/* Elevated card with layered gradient + hairline ring; the workhorse panel. */
+.surface-card {
+  background: var(--gradient-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+}
+
+/* Jet-black "power" panel — luxury hero blocks, command bars. */
+.surface-power {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(231, 55, 37, 0.20), transparent 42%),
+    radial-gradient(120% 160% at 100% 0%, rgba(231, 55, 37, 0.08), transparent 46%),
+    linear-gradient(135deg, #050505 0%, #010000 60%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+/* Faint diagonal sheen across power panels for depth/motion. */
+.surface-power::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.05) 50%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Hairline divider that reads in both themes. */
+.hairline { border-color: var(--border); }
+
+/* ── Interaction — tasteful, expensive-feeling micro-motion ───────────────── */
+.lift {
+  transition: transform var(--transition-base), box-shadow var(--transition-base),
+    border-color var(--transition-base);
+  will-change: transform;
+}
+.lift:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-strong);
+}
+
+.press { transition: transform 120ms ease; }
+.press:active { transform: scale(0.97); }
+
+/* Red glow used on primary moments (CTAs, active states, achievements). */
+.glow-red { box-shadow: 0 14px 38px rgba(231, 55, 37, 0.32); }
+.glow-red-sm { box-shadow: 0 8px 22px rgba(231, 55, 37, 0.26); }
+
+/* ── Reveal / entrance animations (no library) ────────────────────────────── */
+@keyframes gp-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes gp-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes gp-pop {
+  0%   { transform: scale(0.92); opacity: 0; }
+  60%  { transform: scale(1.02); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes gp-ring {
+  from { stroke-dashoffset: var(--ring-circumference, 264); }
+}
+.reveal { animation: gp-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.reveal-fade { animation: gp-fade 0.6s ease both; }
+.reveal-pop { animation: gp-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+/* Stagger helpers for lists/grids. */
+.stagger > * { animation: gp-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.stagger > *:nth-child(3) { animation-delay: 0.10s; }
+.stagger > *:nth-child(4) { animation-delay: 0.14s; }
+.stagger > *:nth-child(5) { animation-delay: 0.18s; }
+.stagger > *:nth-child(6) { animation-delay: 0.22s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .reveal-fade, .reveal-pop, .stagger > * { animation: none; }
+  .lift { transition: none; }
+}
+
+/* ── Progress ring (SVG) — momentum / completion / goals ──────────────────── */
+.progress-ring__track { stroke: var(--border-strong); }
+.progress-ring__value {
+  stroke: var(--brand-red);
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Streak / achievement pill ────────────────────────────────────────────── */
+.pill-streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.75rem;
+  color: var(--brand-red);
+  background: rgba(231, 55, 37, 0.10);
+  border: 1px solid rgba(231, 55, 37, 0.28);
+}
+
+/* ── Skeleton shimmer ─────────────────────────────────────────────────────── */
+@keyframes gp-shimmer {
+  100% { transform: translateX(100%); }
+}
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.10), transparent);
+  animation: gp-shimmer 1.6s infinite;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   GymPro PREMIUM v2 — command-center upgrades
+   New shared utilities that lift every screen into "fitness OS" territory.
+   Strictly red / black / white / soft-gray (opacity + gradient derivatives).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Thin, refined scrollbars (used by horizontal action rails) ───────────── */
+.scrollbar-thin { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+.scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* ── Command surface — the hero/power block used on every dashboard ────────── */
+.command-surface {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-2xl);
+  color: #ffffff;
+  background:
+    radial-gradient(130% 150% at 0% 0%, rgba(231, 55, 37, 0.30), transparent 45%),
+    radial-gradient(120% 160% at 100% 0%, rgba(231, 55, 37, 0.10), transparent 48%),
+    linear-gradient(135deg, #0a0a0a 0%, #010000 62%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: var(--shadow-lg);
+}
+/* Subtle athletic grid texture + diagonal sheen layered over the command block. */
+.command-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 46px 46px;
+  -webkit-mask-image: radial-gradient(120% 120% at 100% 0%, #000 0%, transparent 70%);
+  mask-image: radial-gradient(120% 120% at 100% 0%, #000 0%, transparent 70%);
+  pointer-events: none;
+}
+.command-surface::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 32%, rgba(255, 255, 255, 0.05) 50%, transparent 68%);
+  pointer-events: none;
+}
+.command-surface > * { position: relative; z-index: 1; }
+
+/* Glass stat pill living on a dark command surface. */
+.stat-pill {
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(8px);
+  transition: background var(--transition-base), border-color var(--transition-base), transform var(--transition-base);
+}
+.stat-pill:hover { background: rgba(255, 255, 255, 0.11); border-color: rgba(255, 255, 255, 0.20); }
+
+/* ── Spotlight hover — a soft red light that follows-feel on premium tiles ── */
+.spotlight { position: relative; overflow: hidden; }
+.spotlight::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: radial-gradient(220px 180px at var(--mx, 80%) var(--my, 0%), rgba(231, 55, 37, 0.16), transparent 70%);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+  pointer-events: none;
+}
+.spotlight:hover::before { opacity: 1; }
+
+/* ── Energy accent strip — momentum marker on cards/sections ──────────────── */
+.energy-strip {
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--brand-red), #ff5c4a 60%, transparent);
+}
+.energy-rail {
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--brand-red), var(--brand-red-strong));
+}
+
+/* ── Neutral chip / data tag (palette-safe status & meta) ─────────────────── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
+}
+
+/* ── Live "pulse" dot ─────────────────────────────────────────────────────── */
+.pulse-dot { position: relative; display: inline-flex; height: 0.5rem; width: 0.5rem; }
+.pulse-dot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--brand-red);
+  animation: gp-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+.pulse-dot::after {
+  content: "";
+  position: relative;
+  height: 0.5rem;
+  width: 0.5rem;
+  border-radius: 999px;
+  background: var(--brand-red);
+}
+@keyframes gp-ping { 75%, 100% { transform: scale(2.2); opacity: 0; } }
+
+/* ── Animated count-in for big metrics ────────────────────────────────────── */
+@keyframes gp-count { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.count-in { animation: gp-count 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* ── Refined focus ring (keyboard only) ───────────────────────────────────── */
+:where(a, button, [role="button"], input, select, textarea):focus-visible {
+  outline: 2px solid var(--brand-red);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Section eyebrow rule — small red tick before section labels ──────────── */
+.section-tick {
+  display: inline-block;
+  height: 0.9rem;
+  width: 0.2rem;
+  border-radius: 999px;
+  background: var(--brand-red);
+  box-shadow: 0 0 12px rgba(231, 55, 37, 0.45);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DELIGHT SYSTEM — celebration & momentum micro-moments (CSS only).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Celebratory entrance — a bigger, springier pop for achievement moments. */
+@keyframes gp-celebrate {
+  0%   { opacity: 0; transform: translateY(10px) scale(0.96); }
+  60%  { transform: translateY(0) scale(1.015); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.celebrate { animation: gp-celebrate 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* Sweeping sheen used across celebration surfaces. */
+@keyframes gp-sheen { from { transform: translateX(-120%); } to { transform: translateX(220%); } }
+.sheen { position: relative; overflow: hidden; }
+.sheen::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 45%;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+  transform: translateX(-120%);
+  animation: gp-sheen 2.4s ease-in-out 0.3s infinite;
+  pointer-events: none;
+}
+
+/* Achievement toast slide-in from the bottom-right. */
+@keyframes gp-toast-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.toast-in { animation: gp-toast-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* Progress reveal — the value width animates from 0 on mount (set inline). */
+.progress-reveal { transition: width 1s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* Trophy / icon gentle float for celebration headers. */
+@keyframes gp-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.float-soft { animation: gp-float 2.6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .count-in, .celebrate, .toast-in, .float-soft { animation: none; }
+  .sheen::after { animation: none; opacity: 0; }
+  .progress-reveal { transition: none; }
+  .pulse-dot::before { animation: none; }
+  .spotlight::before { transition: none; }
 }

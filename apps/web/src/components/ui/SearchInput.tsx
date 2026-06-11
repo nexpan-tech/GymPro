@@ -84,12 +84,12 @@ export default function SearchInput({
         aria-label={placeholder}
         className={cn(
           "h-10 w-full rounded-xl",
-          "border border-(--border) bg-(--surface-solid)",
+          "border border-border bg-(--surface-solid)",
           "pl-10 pr-10 text-sm text-(--text-primary)",
           "shadow-(--shadow-sm) outline-none",
           "placeholder:text-(--text-muted)",
           "transition-all duration-200",
-          "focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10",
+          "focus:border-primary/40 focus:ring-4 focus:ring-primary/40",
           "disabled:cursor-not-allowed disabled:opacity-60",
           // hide browser's native clear button (overlaps our custom one)
           "[&::-webkit-search-cancel-button]:hidden"
@@ -106,8 +106,8 @@ export default function SearchInput({
           className={cn(
             "absolute right-3 flex h-5 w-5 items-center justify-center rounded-full",
             "bg-(--surface-hover) text-(--text-muted)",
-            "transition-colors hover:bg-(--border) hover:text-(--text-primary)",
-            "focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+            "transition-colors hover:bg-border hover:text-(--text-primary)",
+            "focus:outline-none focus:ring-2 focus:ring-primary/40"
           )}
         >
           <X className="h-3 w-3" aria-hidden="true" />

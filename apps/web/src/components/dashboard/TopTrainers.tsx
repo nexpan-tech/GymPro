@@ -43,17 +43,17 @@ export default function TopTrainers({
   data = defaultData,
 }: TopTrainersProps) {
   return (
-    <Card className="rounded-3xl border border-slate-200/70 bg-white/95 p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900/95">
+    <Card className="rounded-3xl border border-border bg-white/95 p-6 shadow-xl dark:border-border dark:bg-muted">
       <div className="mb-6 flex items-center gap-3">
-        <div className="rounded-2xl bg-amber-100 p-3 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
+        <div className="rounded-2xl bg-muted p-3 text-muted-foreground dark:bg-muted dark:text-muted-foreground">
           <Award className="h-5 w-5" />
         </div>
 
         <div>
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+          <h3 className="text-lg font-semibold text-foreground dark:text-white">
             Top Trainers
           </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-muted-foreground">
             Best performing trainers this month
           </p>
         </div>
@@ -63,32 +63,32 @@ export default function TopTrainers({
         {data.map((trainer, index) => (
           <div
             key={trainer.id}
-            className="flex items-center justify-between rounded-2xl border border-slate-200/60 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-800/50"
+            className="flex items-center justify-between rounded-2xl border border-border bg-muted p-4 dark:border-border dark:bg-muted"
           >
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-indigo-500 to-purple-600 text-sm font-bold text-white shadow-lg">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-primary text-sm font-bold text-white shadow-lg">
                 #{index + 1}
               </div>
 
               <div>
-                <h4 className="font-semibold text-slate-900 dark:text-white">
+                <h4 className="font-semibold text-foreground dark:text-white">
                   {trainer.name}
                 </h4>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
+                <p className="text-sm text-muted-foreground">
                   {trainer.specialization}
                 </p>
               </div>
             </div>
 
             <div className="text-right">
-              <div className="flex items-center justify-end gap-1 text-amber-500">
+              <div className="flex items-center justify-end gap-1 text-muted-foreground">
                 <Star className="h-4 w-4 fill-current" />
                 <span className="text-sm font-semibold">
                   {trainer.rating}
                 </span>
               </div>
 
-              <div className="mt-1 flex items-center justify-end gap-1 text-xs text-slate-500 dark:text-slate-400">
+              <div className="mt-1 flex items-center justify-end gap-1 text-xs text-muted-foreground">
                 <Users className="h-3 w-3" />
                 {trainer.members} members
               </div>

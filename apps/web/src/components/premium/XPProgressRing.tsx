@@ -20,7 +20,7 @@ export function XPProgressRing({ xp, level }: XPProgressRingProps) {
           stroke="currentColor"
           strokeWidth="10"
           fill="transparent"
-          className="text-slate-800"
+          className="text-foreground"
         />
 
         <motion.circle
@@ -31,7 +31,7 @@ export function XPProgressRing({ xp, level }: XPProgressRingProps) {
           strokeWidth="10"
           fill="transparent"
           strokeLinecap="round"
-          className="text-emerald-400"
+          className="text-muted-foreground"
           strokeDasharray={circumference}
           initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset: offset }}
@@ -41,7 +41,7 @@ export function XPProgressRing({ xp, level }: XPProgressRingProps) {
 
       <div className="absolute text-center">
         <p className="text-3xl font-bold">{level}</p>
-        <p className="text-xs text-slate-400">{progress}/100 XP</p>
+        <p className="text-xs text-muted-foreground">{progress}/100 XP</p>
       </div>
     </div>
   );

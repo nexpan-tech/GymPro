@@ -24,10 +24,10 @@ import {
 } from "@/services/retention.service";
 
 const RISK_COLOR: Record<RiskLevel, string> = {
-  LOW: "#10b981",
-  MEDIUM: "#f59e0b",
-  HIGH: "#f97316",
-  CRITICAL: "#ef4444",
+  LOW: "#767676",
+  MEDIUM: "#767676",
+  HIGH: "#767676",
+  CRITICAL: "#e73725",
 };
 const riskBadge = (l: RiskLevel | null) =>
   l === "CRITICAL" || l === "HIGH" ? "danger" : l === "MEDIUM" ? "warning" : "success";
@@ -91,9 +91,9 @@ export default function RetentionPage() {
         <div className="space-y-6">
           {/* Headline metrics */}
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <Stat label="Retention Rate" value={`${overview?.retentionRate ?? 0}%`} icon={<HeartPulse className="h-5 w-5" />} tone="emerald" />
+            <Stat label="Retention Rate" value={`${overview?.retentionRate ?? 0}%`} icon={<HeartPulse className="h-5 w-5" />} tone="neutral" />
             <Stat label="Churn Rate" value={`${overview?.churnRate ?? 0}%`} icon={<TrendingDown className="h-5 w-5" />} tone="rose" />
-            <Stat label="At-Risk Members" value={String(overview?.atRiskMembers ?? 0)} icon={<ShieldAlert className="h-5 w-5" />} tone="amber" />
+            <Stat label="At-Risk Members" value={String(overview?.atRiskMembers ?? 0)} icon={<ShieldAlert className="h-5 w-5" />} tone="steel" />
             <Stat label="Avg Retention Score" value={String(overview?.avgRetentionScore ?? 0)} icon={<HeartPulse className="h-5 w-5" />} />
           </div>
 
@@ -118,12 +118,12 @@ export default function RetentionPage() {
 
           {/* At-risk member table with churn + renewal prediction */}
           <Card variant="solid" className="overflow-hidden p-0">
-            <div className="border-b border-(--border) px-5 py-3 text-sm font-semibold text-(--text-primary)">
+            <div className="border-b border-border px-5 py-3 text-sm font-semibold text-(--text-primary)">
               Members by churn risk
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-(--border) text-xs uppercase tracking-wide text-(--text-secondary)">
+                <thead className="border-b border-border text-xs uppercase tracking-wide text-(--text-secondary)">
                   <tr>
                     <th className="px-4 py-2 font-medium">Member</th>
                     <th className="px-4 py-2 font-medium">Risk</th>
@@ -134,7 +134,7 @@ export default function RetentionPage() {
                     <th className="px-4 py-2 font-medium">Signals</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-(--border)">
+                <tbody className="divide-y divide-border">
                   {churn.slice(0, 50).map((m) => {
                     const pred = predByMember.get(m.memberId);
                     return (
@@ -162,8 +162,8 @@ export default function RetentionPage() {
   );
 }
 
-function Stat({ label, value, icon, tone }: { label: string; value: string; icon: ReactNode; tone?: "emerald" | "rose" | "amber" }) {
-  const color = tone === "emerald" ? "text-emerald-500" : tone === "rose" ? "text-rose-500" : tone === "amber" ? "text-amber-500" : "text-indigo-500";
+function Stat({ label, value, icon, tone }: { label: string; value: string; icon: ReactNode; tone?: "neutral" | "rose" | "steel" }) {
+  const color = tone === "neutral" ? "text-muted-foreground" : tone === "rose" ? "text-primary" : tone === "steel" ? "text-muted-foreground" : "text-primary";
   return (
     <Card variant="solid" className="p-5">
       <div className="flex items-center justify-between">

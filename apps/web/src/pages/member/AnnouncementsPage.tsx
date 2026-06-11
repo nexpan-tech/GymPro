@@ -33,10 +33,10 @@ export default function MemberAnnouncementsPage() {
       ) : (
         <div className="space-y-3">
           {items.map((a) => (
-            <Card key={a.id} variant="solid" className={`cursor-pointer p-4 ${!a.isRead ? "border-l-4 border-l-indigo-500" : ""}`} onClick={() => open(a.id, a.isRead)}>
+            <Card key={a.id} variant="solid" className={`cursor-pointer p-4 ${!a.isRead ? "border-l-4 border-l-primary/40" : ""}`} onClick={() => open(a.id, a.isRead)}>
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2 font-semibold text-(--text-primary)">
-                  <Megaphone className="h-4 w-4 text-indigo-500" />{a.title}
+                  <Megaphone className="h-4 w-4 text-primary" />{a.title}
                   {!a.isRead && <Badge variant="danger">New</Badge>}
                 </span>
                 <Badge variant={prioTone(a.priority)}>{a.priority}</Badge>

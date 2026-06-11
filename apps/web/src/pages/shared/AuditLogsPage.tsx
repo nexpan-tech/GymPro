@@ -177,7 +177,7 @@ export default function AuditLogsPage() {
           <Card variant="solid" className="overflow-hidden p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-(--border) text-xs uppercase tracking-wide text-(--text-secondary)">
+                <thead className="border-b border-border text-xs uppercase tracking-wide text-(--text-secondary)">
                   <tr>
                     <th className="px-5 py-3 font-medium">Time</th>
                     <th className="px-5 py-3 font-medium">Action</th>
@@ -187,7 +187,7 @@ export default function AuditLogsPage() {
                     <th className="px-5 py-3 font-medium">Actor</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-(--border)">
+                <tbody className="divide-y divide-border">
                   {filtered.map((log) => (
                     <tr key={log.id} className="hover:bg-(--surface-hover)">
                       <td className="px-5 py-3 whitespace-nowrap text-(--text-secondary)">

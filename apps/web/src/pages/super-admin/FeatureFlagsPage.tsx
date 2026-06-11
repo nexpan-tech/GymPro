@@ -43,7 +43,7 @@ export default function FeatureFlagsPage() {
       <div className="space-y-4">
         <Card variant="solid" className="p-4">
           <label className="text-sm font-semibold text-(--text-secondary)">Gym</label>
-          <select className="mt-1 w-full max-w-sm rounded-md border border-(--border) bg-(--surface) px-3 py-2 text-sm" value={gymId} onChange={(e) => setGymId(e.target.value)}>
+          <select className="mt-1 w-full max-w-sm rounded-md border border-border bg-(--surface) px-3 py-2 text-sm" value={gymId} onChange={(e) => setGymId(e.target.value)}>
             {gyms.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>
         </Card>
@@ -54,7 +54,7 @@ export default function FeatureFlagsPage() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <Flag className="h-4 w-4 text-indigo-500" />
+                    <Flag className="h-4 w-4 text-primary" />
                     <span className="font-semibold text-(--text-primary)">{f.label}</span>
                     <Badge variant="default">{f.category}</Badge>
                     {f.overridden && <Badge variant="info">override</Badge>}
@@ -63,7 +63,7 @@ export default function FeatureFlagsPage() {
                 </div>
                 <button
                   onClick={() => toggle(f)}
-                  className={`relative h-6 w-11 shrink-0 rounded-full transition ${f.enabled ? "bg-emerald-500" : "bg-(--surface-elevated) border border-(--border)"}`}
+                  className={`relative h-6 w-11 shrink-0 rounded-full transition ${f.enabled ? "bg-muted-foreground" : "bg-(--surface-elevated) border border-border"}`}
                   aria-label={`Toggle ${f.label}`}
                 >
                   <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${f.enabled ? "left-[22px]" : "left-0.5"}`} />

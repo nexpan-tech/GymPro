@@ -12,7 +12,7 @@ export interface Column<T> {
   /** Optional custom cell renderer */
   render?: (value: unknown, row: T) => ReactNode;
   sortable?: boolean;
-  /** Min column width, e.g. "min-w-[120px]" */
+  /** Min column width, e.g. "min-w-30" */
   minWidth?: string;
   /** Alignment */
   align?: "left" | "center" | "right";
@@ -115,9 +115,9 @@ export default function DataTable<T extends object>({
       return <ArrowUpDown className="h-3.5 w-3.5 opacity-40" aria-hidden="true" />;
     }
     return sort.direction === "asc" ? (
-      <ArrowUp className="h-3.5 w-3.5 text-indigo-500" aria-hidden="true" />
+      <ArrowUp className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
     ) : (
-      <ArrowDown className="h-3.5 w-3.5 text-indigo-500" aria-hidden="true" />
+      <ArrowDown className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
     );
   }
 
@@ -126,7 +126,7 @@ export default function DataTable<T extends object>({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-[22px] border border-(--border)",
+        "overflow-hidden rounded-[22px] border border-border",
         "bg-(--glass-strong) shadow-(--shadow-md) backdrop-blur-xl",
         className
       )}
@@ -135,7 +135,7 @@ export default function DataTable<T extends object>({
         <table className="min-w-full text-sm">
           {/* Head */}
           <thead>
-            <tr className="border-b border-(--border) bg-(--surface-secondary)">
+            <tr className="border-b border-border bg-(--surface-secondary)">
               {columns.map((col) => {
                 const key = String(col.key);
                 const isSorted = sort?.key === key;
@@ -173,7 +173,7 @@ export default function DataTable<T extends object>({
           </thead>
 
           {/* Body */}
-          <tbody className="divide-y divide-(--border)">
+          <tbody className="divide-y divide-border">
             {sortedData.length === 0 ? (
               <tr>
                 <td colSpan={columns.length}>

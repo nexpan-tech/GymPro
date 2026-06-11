@@ -14,33 +14,31 @@ const CONFIG: Record<
   ToastType,
   { icon: React.ReactNode; bar: string; container: string; title: string }
 > = {
+  // Strict GymPro palette: type conveyed by icon + accent bar, never by hue.
+  // Neutral states (success/warning) read gray; alerts (error/info) read red.
   success: {
-    icon: <CheckCircle2 className="h-5 w-5 shrink-0 text-green-500" />,
-    bar: "bg-green-500",
-    container:
-      "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/60",
-    title: "text-green-800 dark:text-green-300",
+    icon: <CheckCircle2 className="h-5 w-5 shrink-0 text-muted-foreground" />,
+    bar: "bg-muted-foreground",
+    container: "border-border bg-card",
+    title: "text-foreground",
   },
   error: {
-    icon: <XCircle className="h-5 w-5 shrink-0 text-red-500" />,
-    bar: "bg-red-500",
-    container:
-      "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/60",
-    title: "text-red-800 dark:text-red-300",
+    icon: <XCircle className="h-5 w-5 shrink-0 text-primary" />,
+    bar: "bg-primary",
+    container: "border-primary/40 bg-card",
+    title: "text-foreground",
   },
   warning: {
-    icon: <AlertTriangle className="h-5 w-5 shrink-0 text-amber-500" />,
-    bar: "bg-amber-500",
-    container:
-      "border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/60",
-    title: "text-amber-800 dark:text-amber-300",
+    icon: <AlertTriangle className="h-5 w-5 shrink-0 text-muted-foreground" />,
+    bar: "bg-muted-foreground",
+    container: "border-border bg-card",
+    title: "text-foreground",
   },
   info: {
-    icon: <Info className="h-5 w-5 shrink-0 text-blue-500" />,
-    bar: "bg-blue-500",
-    container:
-      "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/60",
-    title: "text-blue-800 dark:text-blue-300",
+    icon: <Info className="h-5 w-5 shrink-0 text-primary" />,
+    bar: "bg-primary",
+    container: "border-primary/40 bg-card",
+    title: "text-foreground",
   },
 };
 
@@ -95,7 +93,7 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
       role="alert"
       aria-live="assertive"
       className={[
-        "relative w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border shadow-lg transition-all duration-300",
+        "relative w-90 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border shadow-lg transition-all duration-300",
         cfg.container,
         visible
           ? "translate-x-0 opacity-100"
@@ -121,7 +119,7 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
         </p>
         <button
           onClick={handleDismiss}
-          className="ml-1 shrink-0 rounded-md p-0.5 text-gray-400 transition-colors hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:hover:text-gray-200"
+          className="ml-1 shrink-0 rounded-md p-0.5 text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
           aria-label="Dismiss notification"
         >
           <X className="h-4 w-4" />
@@ -149,7 +147,7 @@ export function ToastContainer() {
 
       <div
         aria-label="Notifications"
-        className="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2"
+        className="fixed bottom-4 right-4 z-9999 flex flex-col gap-2"
       >
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} onDismiss={dismissToast} />

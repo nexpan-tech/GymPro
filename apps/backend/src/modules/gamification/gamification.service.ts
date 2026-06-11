@@ -149,18 +149,54 @@ export class GamificationService {
     });
   }
 
-  static async getRewards(user: AuthUser) {
+  static async getRewards(user: AuthUser, opts: { all?: boolean } = {}) {
     if (!user.gymId) throw new AppError("Gym context missing", 403);
 
     return prisma.reward.findMany({
       where: {
         gymId: user.gymId,
-        isActive: true,
+        ...(opts.all ? {} : { isActive: true }),
       },
       orderBy: {
         createdAt: "desc",
       },
     });
+  }
+
+  /** Edit a reward (gym-scoped). */
+  static async updateReward(user: AuthUser, id: string, data: any) {
+    if (!user.gymId) throw new AppError("Gym context missing", 403);
+    const reward = await prisma.reward.findFirst({ where: { id, gymId: user.gymId } });
+    if (!reward) throw new AppError("Reward not found", 404);
+    return prisma.reward.update({
+      where: { id },
+      data: {
+        title: data.title,
+        description: data.description,
+        type: data.type,
+        pointsCost: data.pointsCost !== undefined ? Number(data.pointsCost) : undefined,
+        stock: data.stock === undefined ? undefined : data.stock === null || data.stock === "" ? null : Number(data.stock),
+        isActive: data.isActive,
+      },
+    });
+  }
+
+  /**
+   * Delete a reward. If it has redemptions, soft-delete (isActive=false) to keep
+   * history intact; otherwise hard delete.
+   */
+  static async deleteReward(user: AuthUser, id: string) {
+    if (!user.gymId) throw new AppError("Gym context missing", 403);
+    const reward = await prisma.reward.findFirst({ where: { id, gymId: user.gymId } });
+    if (!reward) throw new AppError("Reward not found", 404);
+
+    const redemptions = await prisma.rewardRedemption.count({ where: { rewardId: id } });
+    if (redemptions > 0) {
+      await prisma.reward.update({ where: { id }, data: { isActive: false } });
+      return { id, softDeleted: true, redemptions };
+    }
+    await prisma.reward.delete({ where: { id } });
+    return { id, deleted: true };
   }
 
   static async updateStreak(user: AuthUser, memberId: string) {

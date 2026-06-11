@@ -151,7 +151,13 @@ export class MemberController {
     const memberId = req.params.id as string;
     const oldMember = await MemberService.getById(user, memberId);
 
-    await MemberService.delete(gymId, memberId);
+    // ?hard=true performs a permanent delete when the member has no history.
+    const hard = req.query.hard === "true";
+    if (hard) {
+      await MemberService.hardDelete(gymId, memberId);
+    } else {
+      await MemberService.delete(gymId, memberId);
+    }
 
     await createAuditLog({
       gymId,
@@ -165,7 +171,33 @@ export class MemberController {
 
     return res.json({
       success: true,
-      message: "Member deleted successfully",
+      message: hard ? "Member permanently deleted" : "Member deactivated",
+    });
+  }
+
+  static async resetPassword(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const gymId = requireGym(req, res);
+    if (!gymId) return;
+
+    const memberId = req.params.id as string;
+    const data = await MemberService.resetPassword(gymId, memberId, req.body?.password);
+
+    await createAuditLog({
+      gymId,
+      userId: user.id,
+      action: AuditAction.UPDATE,
+      entity: "Member",
+      entityId: memberId,
+      newData: { passwordReset: true },
+      ...getRequestMeta(req),
+    });
+
+    return res.json({
+      success: true,
+      message: "Password reset successfully",
+      data, // includes temporaryPassword — shown once to the admin
     });
   }
 }

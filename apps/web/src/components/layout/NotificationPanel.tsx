@@ -33,26 +33,26 @@ function NotificationIcon({ type }: { type?: string }) {
   switch (type) {
     case "PAYMENT_REMINDER":
     case "payment:received":
-      return <CreditCard className={cls} style={{ color: "var(--color-success, #22c55e)" }} />;
+      return <CreditCard className={cls} style={{ color: "var(--color-success, #767676)" }} />;
     case "MEMBERSHIP_RENEWAL":
-      return <Star className={cls} style={{ color: "var(--primary-500, #6366f1)" }} />;
+      return <Star className={cls} style={{ color: "var(--primary-500, #e73725)" }} />;
     case "ATTENDANCE_REMINDER":
     case "attendance:update":
-      return <Dumbbell className={cls} style={{ color: "var(--primary-400, #818cf8)" }} />;
+      return <Dumbbell className={cls} style={{ color: "var(--primary-400, #ec5848)" }} />;
     case "GOAL_ACHIEVED":
     case "BADGE_EARNED":
     case "CHALLENGE_COMPLETED":
-      return <Trophy className={cls} style={{ color: "#f59e0b" }} />;
+      return <Trophy className={cls} style={{ color: "#767676" }} />;
     case "CHALLENGE_STARTED":
     case "dashboard:refresh":
-      return <Zap className={cls} style={{ color: "#f59e0b" }} />;
+      return <Zap className={cls} style={{ color: "#767676" }} />;
     case "WORKOUT_PLAN_UPDATED":
     case "DIET_PLAN_UPDATED":
-      return <Dumbbell className={cls} style={{ color: "var(--primary-500, #6366f1)" }} />;
+      return <Dumbbell className={cls} style={{ color: "var(--primary-500, #e73725)" }} />;
     case "LEAD_ASSIGNED":
-      return <UserPlus className={cls} style={{ color: "var(--primary-500, #6366f1)" }} />;
+      return <UserPlus className={cls} style={{ color: "var(--primary-500, #e73725)" }} />;
     case "SYSTEM_ALERT":
-      return <ShieldAlert className={cls} style={{ color: "#ef4444" }} />;
+      return <ShieldAlert className={cls} style={{ color: "#e73725" }} />;
     case "SESSION_REMINDER":
     case "SESSION_CANCELLED":
       return <Clock className={cls} style={{ color: "var(--text-muted)" }} />;
@@ -83,7 +83,7 @@ function EmptyState() {
     <div className="flex flex-col items-center justify-center gap-3 py-14">
       <div
         className="flex h-14 w-14 items-center justify-center rounded-2xl"
-        style={{ background: "var(--surface-hover, #eef2f7)" }}
+        style={{ background: "var(--surface-hover, #f4f4f4)" }}
       >
         <Bell className="h-6 w-6" style={{ color: "var(--text-muted)" }} />
       </div>
@@ -120,25 +120,25 @@ function NotificationRow({
       style={{
         background: notification.isRead
           ? "transparent"
-          : "var(--primary-50, rgba(99,102,241,0.04))",
+          : "var(--primary-50, rgba(231,55,37,0.04))",
       }}
       onClick={() => {
         if (!notification.isRead) onMarkRead(notification.id);
       }}
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLDivElement).style.backgroundColor =
-          "var(--surface-hover, #eef2f7)";
+          "var(--surface-hover, #f4f4f4)";
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLDivElement).style.backgroundColor = notification.isRead
           ? "transparent"
-          : "var(--primary-50, rgba(99,102,241,0.04))";
+          : "var(--primary-50, rgba(231,55,37,0.04))";
       }}
     >
       {/* Type icon */}
       <div
         className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl"
-        style={{ background: "var(--surface-hover, #eef2f7)" }}
+        style={{ background: "var(--surface-hover, #f4f4f4)" }}
       >
         <NotificationIcon type={notification.type} />
       </div>
@@ -156,7 +156,7 @@ function NotificationRow({
           {!notification.isRead && (
             <span
               className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
-              style={{ background: "var(--primary-500, #6366f1)" }}
+              style={{ background: "var(--primary-500, #e73725)" }}
             />
           )}
         </div>
@@ -228,7 +228,7 @@ export default function NotificationPanel({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
-            className="fixed inset-0 z-[99] bg-black/20 backdrop-blur-sm md:hidden"
+            className="fixed inset-0 z-99 bg-black/20 backdrop-blur-sm md:hidden"
             onClick={onClose}
           />
 
@@ -240,17 +240,17 @@ export default function NotificationPanel({
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: "100%", opacity: 0 }}
             transition={{ type: "spring", damping: 28, stiffness: 320 }}
-            className="fixed right-0 top-0 z-[100] flex h-full w-full flex-col overflow-hidden border-l shadow-2xl sm:w-[420px]"
+            className="fixed right-0 top-0 z-100 flex h-full w-full flex-col overflow-hidden border-l shadow-2xl sm:w-105"
             style={{
               background: "var(--glass, rgba(255,255,255,0.97))",
-              borderColor: "var(--border, rgba(15,23,42,0.10))",
+              borderColor: "var(--border, rgba(1,0,0,0.10))",
               backdropFilter: "blur(20px)",
             }}
           >
             {/* ── Header ────────────────────────────────────────────────────── */}
             <div
               className="flex shrink-0 items-center justify-between border-b px-5 py-4"
-              style={{ borderColor: "var(--border, rgba(15,23,42,0.10))" }}
+              style={{ borderColor: "var(--border, rgba(1,0,0,0.10))" }}
             >
               <div>
                 <h2
@@ -279,16 +279,16 @@ export default function NotificationPanel({
                     onClick={markAllRead}
                     className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors"
                     style={{
-                      background: "var(--surface-hover, #eef2f7)",
-                      color: "var(--primary-600, #4f46e5)",
+                      background: "var(--surface-hover, #f4f4f4)",
+                      color: "var(--primary-600, #e73725)",
                     }}
                     onMouseEnter={(e) => {
                       (e.currentTarget as HTMLButtonElement).style.background =
-                        "var(--primary-50, rgba(99,102,241,0.08))";
+                        "var(--primary-50, rgba(231,55,37,0.08))";
                     }}
                     onMouseLeave={(e) => {
                       (e.currentTarget as HTMLButtonElement).style.background =
-                        "var(--surface-hover, #eef2f7)";
+                        "var(--surface-hover, #f4f4f4)";
                     }}
                   >
                     <CheckCheck className="h-3.5 w-3.5" />
@@ -304,7 +304,7 @@ export default function NotificationPanel({
                   style={{ color: "var(--text-muted)" }}
                   onMouseEnter={(e) => {
                     (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                      "var(--surface-hover, #eef2f7)";
+                      "var(--surface-hover, #f4f4f4)";
                   }}
                   onMouseLeave={(e) => {
                     (e.currentTarget as HTMLButtonElement).style.backgroundColor =
@@ -328,20 +328,20 @@ export default function NotificationPanel({
                     >
                       <div
                         className="h-8 w-8 shrink-0 rounded-xl"
-                        style={{ background: "var(--surface-hover, #eef2f7)" }}
+                        style={{ background: "var(--surface-hover, #f4f4f4)" }}
                       />
                       <div className="flex-1 space-y-2">
                         <div
                           className="h-3 w-3/4 rounded"
-                          style={{ background: "var(--surface-hover, #eef2f7)" }}
+                          style={{ background: "var(--surface-hover, #f4f4f4)" }}
                         />
                         <div
                           className="h-2.5 w-full rounded"
-                          style={{ background: "var(--surface-hover, #eef2f7)" }}
+                          style={{ background: "var(--surface-hover, #f4f4f4)" }}
                         />
                         <div
                           className="h-2 w-1/4 rounded"
-                          style={{ background: "var(--surface-hover, #eef2f7)" }}
+                          style={{ background: "var(--surface-hover, #f4f4f4)" }}
                         />
                       </div>
                     </div>
@@ -366,7 +366,7 @@ export default function NotificationPanel({
             {!isLoading && notifications.length > 0 && (
               <div
                 className="shrink-0 border-t px-4 py-3"
-                style={{ borderColor: "var(--border, rgba(15,23,42,0.10))" }}
+                style={{ borderColor: "var(--border, rgba(1,0,0,0.10))" }}
               >
                 <p
                   className="text-center text-xs"

@@ -50,7 +50,7 @@ export default function Modal({
 
   // Keep the latest onClose in a ref so the open/close effect can stay
   // dependency-stable. Without this, a new `onClose` identity on every parent
-  // render would re-run the effect below and steal focus on every keystroke.
+  // render would re-run the effect below and grab focus on every keystroke.
   const onCloseRef = useRef(onClose);
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -92,7 +92,7 @@ export default function Modal({
     <div
       className={cn(
         "fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center",
-        "bg-slate-950/60 backdrop-blur-sm"
+        "bg-muted backdrop-blur-sm"
       )}
       aria-modal="true"
       role="dialog"
@@ -121,7 +121,7 @@ export default function Modal({
         />
 
         {/* Header */}
-        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-(--border) px-6 py-4">
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-border px-6 py-4">
           <div className="min-w-0">
             {title && (
               <h2
@@ -149,7 +149,7 @@ export default function Modal({
               "shrink-0 rounded-xl p-2",
               "text-(--text-secondary) transition-colors",
               "hover:bg-(--surface-hover) hover:text-(--text-primary)",
-              "focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+              "focus:outline-none focus:ring-2 focus:ring-primary/40"
             )}
           >
             <X className="h-5 w-5" aria-hidden="true" />
@@ -161,7 +161,7 @@ export default function Modal({
 
         {/* Footer stays pinned and reachable below the scroll area */}
         {footer && (
-          <div className="shrink-0 border-t border-(--border) px-6 py-4">{footer}</div>
+          <div className="shrink-0 border-t border-border px-6 py-4">{footer}</div>
         )}
       </div>
     </div>

@@ -6,6 +6,7 @@ const router = Router();
 
 router.use(authMiddleware);
 
+router.get("/monthly", ReportsController.monthly);
 router.get("/revenue", ReportsController.revenue);
 router.get("/attendance", ReportsController.attendance);
 router.get("/members", ReportsController.members);

@@ -36,13 +36,13 @@ export default function MyMembersPage() {
         {members.map((member) => (
           <div
             key={member.id}
-            className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow"
+            className="bg-white dark:bg-muted p-4 rounded-lg shadow"
           >
             <h3 className="font-semibold text-lg">
               {member.user?.name || "Unnamed Member"}
             </h3>
 
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               {member.user?.email || "No email"}
             </p>
 
@@ -57,7 +57,7 @@ export default function MyMembersPage() {
         ))}
 
         {members.length === 0 && (
-          <div className="text-gray-500">
+          <div className="text-muted-foreground">
             No members assigned.
           </div>
         )}

@@ -13,7 +13,7 @@ const METRIC_LABEL: Record<string, string> = {
   leadConversionForecast: "Lead conversion",
   churnForecast: "Churn (next 30d)",
 };
-const TrendIcon = ({ d }: { d: string }) => d === "up" ? <TrendingUp className="h-4 w-4 text-emerald-500" /> : d === "down" ? <TrendingDown className="h-4 w-4 text-rose-500" /> : <Minus className="h-4 w-4 text-(--text-secondary)" />;
+const TrendIcon = ({ d }: { d: string }) => d === "up" ? <TrendingUp className="h-4 w-4 text-muted-foreground" /> : d === "down" ? <TrendingDown className="h-4 w-4 text-primary" /> : <Minus className="h-4 w-4 text-(--text-secondary)" />;
 const sevTone = (s: string) => (s === "warning" ? "warning" : s === "positive" ? "success" : "info");
 
 export default function AIInsightsPage() {
@@ -33,7 +33,7 @@ export default function AIInsightsPage() {
     <Page title="AI Insights" description="Rule-based forecasts and predictive insights from your gym's own data — no external AI.">
       <div className="space-y-6">
         <div>
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-(--text-primary)"><Brain className="h-4 w-4 text-indigo-500" /> Forecasts</h3>
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-(--text-primary)"><Brain className="h-4 w-4 text-primary" /> Forecasts</h3>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
             {forecasts.map((f) => (
               <Card key={f.metric} variant="solid" className="p-5">

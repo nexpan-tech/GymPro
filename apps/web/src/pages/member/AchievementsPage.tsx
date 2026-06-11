@@ -29,17 +29,17 @@ export default function AchievementsPage() {
     <Page title="Achievements" description="Your points, level, streaks, and earned badges.">
       <div className="space-y-6">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <Stat label="Level" value={String(summary?.level ?? 1)} icon={<Star className="h-5 w-5" />} tone="amber" />
+          <Stat label="Level" value={String(summary?.level ?? 1)} icon={<Star className="h-5 w-5" />} tone="steel" />
           <Stat label="Points balance" value={String(summary?.balance ?? 0)} icon={<Trophy className="h-5 w-5" />} />
           <Stat label="Lifetime points" value={String(summary?.lifetimePoints ?? 0)} icon={<Trophy className="h-5 w-5" />} />
-          <Stat label="Badges" value={String(summary?.badgeCount ?? badges.length)} icon={<Award className="h-5 w-5" />} tone="emerald" />
+          <Stat label="Badges" value={String(summary?.badgeCount ?? badges.length)} icon={<Award className="h-5 w-5" />} tone="neutral" />
         </div>
 
         {/* Streaks */}
         <div className="grid grid-cols-3 gap-4">
           {(["ATTENDANCE", "WORKOUT", "DIET"] as const).map((t) => (
             <Card key={t} variant="solid" className="p-5 text-center">
-              <Flame className="mx-auto h-6 w-6 text-orange-500" />
+              <Flame className="mx-auto h-6 w-6 text-muted-foreground" />
               <div className="mt-2 text-2xl font-bold text-(--text-primary)">{streakBy(t)?.current ?? 0}</div>
               <div className="text-xs uppercase tracking-wide text-(--text-secondary)">{t} streak</div>
               <div className="mt-1 text-xs text-(--text-secondary)">Best: {streakBy(t)?.longest ?? 0}</div>
@@ -55,7 +55,7 @@ export default function AchievementsPage() {
           ) : (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               {badges.map((b) => (
-                <div key={b.id} className="rounded-lg border border-(--border) p-3 text-center">
+                <div key={b.id} className="rounded-lg border border-border p-3 text-center">
                   <div className="text-2xl">{b.badge.icon || "🏅"}</div>
                   <div className="mt-1 text-sm font-medium text-(--text-primary)">{b.badge.name}</div>
                   <Badge variant="info">{b.badge.type}</Badge>
@@ -69,8 +69,8 @@ export default function AchievementsPage() {
   );
 }
 
-function Stat({ label, value, icon, tone }: { label: string; value: string; icon: ReactNode; tone?: "amber" | "emerald" }) {
-  const color = tone === "amber" ? "text-amber-500" : tone === "emerald" ? "text-emerald-500" : "text-indigo-500";
+function Stat({ label, value, icon, tone }: { label: string; value: string; icon: ReactNode; tone?: "steel" | "neutral" }) {
+  const color = tone === "steel" ? "text-muted-foreground" : tone === "neutral" ? "text-muted-foreground" : "text-primary";
   return (
     <Card variant="solid" className="p-5">
       <div className="flex items-center justify-between"><span className="text-sm text-(--text-secondary)">{label}</span><span className={color}>{icon}</span></div>

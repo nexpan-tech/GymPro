@@ -24,18 +24,18 @@ const defaultData: PaymentStatusData[] = [
   { name: "Overdue", value: 4 },
 ];
 
-const COLORS = ["#10b981", "#f59e0b", "#ef4444"];
+const COLORS = ["#767676", "#767676", "#e73725"];
 
 export default function PaymentStatusChart({
   data = defaultData,
 }: PaymentStatusChartProps) {
   return (
-    <Card className="rounded-3xl border border-slate-200/70 bg-white/95 p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900/95">
+    <Card className="rounded-3xl border border-border bg-white/95 p-6 shadow-xl dark:border-border dark:bg-muted">
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+        <h3 className="text-lg font-semibold text-foreground dark:text-white">
           Payment Status
         </h3>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <p className="text-sm text-muted-foreground">
           Collection breakdown
         </p>
       </div>
@@ -59,8 +59,8 @@ export default function PaymentStatusChart({
           <Tooltip
             contentStyle={{
               borderRadius: "16px",
-              border: "1px solid rgba(148,163,184,0.15)",
-              backgroundColor: "rgba(15,23,42,0.95)",
+              border: "1px solid rgba(143,143,143,0.15)",
+              backgroundColor: "rgba(1,0,0,0.95)",
               color: "#fff",
             }}
           />
@@ -71,19 +71,19 @@ export default function PaymentStatusChart({
         {data.map((item, index) => (
           <div
             key={item.name}
-            className="rounded-xl bg-slate-50 p-3 text-center dark:bg-slate-800/50"
+            className="rounded-xl bg-muted p-3 text-center dark:bg-muted"
           >
             <div className="mb-2 flex items-center justify-center gap-2">
               <span
                 className="h-2.5 w-2.5 rounded-full"
                 style={{ backgroundColor: COLORS[index] }}
               />
-              <span className="text-xs text-slate-500 dark:text-slate-400">
+              <span className="text-xs text-muted-foreground">
                 {item.name}
               </span>
             </div>
 
-            <p className="text-lg font-bold text-slate-900 dark:text-white">
+            <p className="text-lg font-bold text-foreground dark:text-white">
               {item.value}%
             </p>
           </div>

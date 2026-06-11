@@ -5,7 +5,6 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   Bell,
   ChevronDown,
-  ChevronRight,
   LogOut,
   Menu,
   Settings,
@@ -61,14 +60,14 @@ function UserDropdown({
       className="absolute right-0 top-full z-9999 mt-3 w-64 overflow-hidden rounded-2xl border shadow-xl backdrop-blur-xl"
       style={{
         background: "var(--glass, rgba(255,255,255,0.94))",
-        borderColor: "var(--border, rgba(15,23,42,0.10))",
-        boxShadow: "var(--shadow-xl, 0 32px 90px rgba(15,23,42,0.14))",
+        borderColor: "var(--border, rgba(1,0,0,0.10))",
+        boxShadow: "var(--shadow-xl, 0 32px 90px rgba(1,0,0,0.14))",
       }}
     >
       {/* Identity */}
       <div
         className="border-b px-4 py-4"
-        style={{ borderColor: "var(--border, rgba(15,23,42,0.10))" }}
+        style={{ borderColor: "var(--border, rgba(1,0,0,0.10))" }}
       >
         <p className="text-sm font-black" style={{ color: "var(--text-primary)" }}>
           {user?.name ?? "User"}
@@ -92,7 +91,7 @@ function UserDropdown({
             style={{ color: "var(--text-secondary)" }}
             onMouseEnter={(e) => {
               (e.currentTarget as HTMLAnchorElement).style.backgroundColor =
-                "var(--surface-hover, #eef2f7)";
+                "var(--surface-hover, #f4f4f4)";
               (e.currentTarget as HTMLAnchorElement).style.color =
                 "var(--text-primary)";
             }}
@@ -110,17 +109,17 @@ function UserDropdown({
         {/* Divider */}
         <div
           className="my-1 h-px"
-          style={{ backgroundColor: "var(--border, rgba(15,23,42,0.10))" }}
+          style={{ backgroundColor: "var(--border, rgba(1,0,0,0.10))" }}
         />
 
         {/* Logout */}
         <button
           type="button"
           onClick={onLogout}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-red-500 transition-colors"
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-primary transition-colors"
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-              "rgba(239,68,68,0.08)";
+              "rgba(231,55,37,0.08)";
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLButtonElement).style.backgroundColor = "";
@@ -188,8 +187,7 @@ export default function TopBar({ onMenuToggle, title = "Dashboard", user: userPr
     navigate("/login");
   }
 
-  // Build breadcrumb from title (simple single-level)
-  const breadcrumbs = [{ label: "Home", path: "#" }, { label: title }];
+  const roleLabel = user?.role?.replace(/_/g, " ") ?? "Member";
 
   return (
     <header
@@ -197,11 +195,18 @@ export default function TopBar({ onMenuToggle, title = "Dashboard", user: userPr
       style={{
         height: "var(--topbar-height, 64px)",
         background: "var(--header-bg, rgba(255,255,255,0.78))",
-        borderColor: "var(--border, rgba(15,23,42,0.10))",
-        boxShadow: "var(--shadow-sm, 0 1px 3px rgba(15,23,42,0.04))",
+        borderColor: "var(--border, rgba(1,0,0,0.10))",
+        boxShadow: "var(--shadow-sm, 0 1px 3px rgba(1,0,0,0.04))",
       }}
     >
-      {/* ── Left: hamburger + breadcrumb ─────────────────────────────────── */}
+      {/* Hairline red energy accent along the bottom edge — control-bar feel. */}
+      <span
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-px"
+        style={{ background: "linear-gradient(90deg, transparent, rgba(231,55,37,0.45), transparent)" }}
+        aria-hidden="true"
+      />
+
+      {/* ── Left: hamburger + page title ─────────────────────────────────── */}
       <div className="flex items-center gap-3">
         {/* Hamburger (mobile) */}
         <button
@@ -210,7 +215,7 @@ export default function TopBar({ onMenuToggle, title = "Dashboard", user: userPr
           aria-label="Toggle menu"
           className="rounded-xl border p-2 transition-colors md:hidden"
           style={{
-            borderColor: "var(--border, rgba(15,23,42,0.10))",
+            borderColor: "var(--border, rgba(1,0,0,0.10))",
             background: "var(--surface, rgba(255,255,255,0.96))",
             color: "var(--text-secondary)",
           }}
@@ -225,13 +230,13 @@ export default function TopBar({ onMenuToggle, title = "Dashboard", user: userPr
           aria-label="Toggle sidebar"
           className="hidden rounded-xl border p-2 transition-colors md:flex"
           style={{
-            borderColor: "var(--border, rgba(15,23,42,0.10))",
+            borderColor: "var(--border, rgba(1,0,0,0.10))",
             background: "var(--surface, rgba(255,255,255,0.96))",
             color: "var(--text-secondary)",
           }}
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-              "var(--surface-hover, #eef2f7)";
+              "var(--surface-hover, #f4f4f4)";
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLButtonElement).style.backgroundColor =
@@ -241,37 +246,21 @@ export default function TopBar({ onMenuToggle, title = "Dashboard", user: userPr
           <Menu className="h-5 w-5" />
         </button>
 
-        {/* Breadcrumb */}
-        <nav aria-label="Breadcrumb">
-          <ol className="flex items-center gap-1.5">
-            {breadcrumbs.map((crumb, i) => (
-              <li key={i} className="flex items-center gap-1.5">
-                {i > 0 && (
-                  <ChevronRight
-                    className="h-3.5 w-3.5 shrink-0"
-                    style={{ color: "var(--text-muted)" }}
-                  />
-                )}
-                {i === breadcrumbs.length - 1 ? (
-                  <span
-                    className="text-sm font-black tracking-tight"
-                    style={{ color: "var(--text-primary)" }}
-                  >
-                    {crumb.label}
-                  </span>
-                ) : (
-                  <Link
-                    to={crumb.path ?? "#"}
-                    className="text-sm font-medium transition-colors"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    {crumb.label}
-                  </Link>
-                )}
-              </li>
-            ))}
-          </ol>
-        </nav>
+        {/* Page title block — bold title + role eyebrow */}
+        <div className="min-w-0 leading-tight">
+          <p
+            className="hidden text-[10px] font-extrabold uppercase tracking-[0.18em] sm:block"
+            style={{ color: "var(--text-muted)" }}
+          >
+            {roleLabel}
+          </p>
+          <h1
+            className="truncate text-base font-black tracking-tight md:text-lg"
+            style={{ color: "var(--text-primary)" }}
+          >
+            {title}
+          </h1>
+        </div>
       </div>
 
       {/* ── Right: theme toggle, notifications, user menu ─────────────────── */}
@@ -290,14 +279,14 @@ export default function TopBar({ onMenuToggle, title = "Dashboard", user: userPr
             aria-label="Notifications"
             className="relative rounded-xl border p-2.5 transition-all"
             style={{
-              borderColor: "var(--border, rgba(15,23,42,0.10))",
+              borderColor: "var(--border, rgba(1,0,0,0.10))",
               background: "var(--surface, rgba(255,255,255,0.96))",
               color: "var(--text-secondary)",
               boxShadow: "var(--shadow-sm)",
             }}
             onMouseEnter={(e) => {
               (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                "var(--surface-hover, #eef2f7)";
+                "var(--surface-hover, #f4f4f4)";
             }}
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLButtonElement).style.backgroundColor =
@@ -306,7 +295,7 @@ export default function TopBar({ onMenuToggle, title = "Dashboard", user: userPr
           >
             <Bell className="h-5 w-5" />
             {unreadCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white shadow">
+              <span className="absolute -right-1 -top-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-black text-white shadow">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
@@ -325,13 +314,13 @@ export default function TopBar({ onMenuToggle, title = "Dashboard", user: userPr
             }}
             className="flex items-center gap-2 rounded-xl border px-2 py-1.5 transition-all"
             style={{
-              borderColor: "var(--border, rgba(15,23,42,0.10))",
+              borderColor: "var(--border, rgba(1,0,0,0.10))",
               background: "var(--surface, rgba(255,255,255,0.96))",
               boxShadow: "var(--shadow-sm)",
             }}
             onMouseEnter={(e) => {
               (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                "var(--surface-hover, #eef2f7)";
+                "var(--surface-hover, #f4f4f4)";
             }}
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLButtonElement).style.backgroundColor =
@@ -343,8 +332,8 @@ export default function TopBar({ onMenuToggle, title = "Dashboard", user: userPr
               className="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black text-white"
               style={{
                 background:
-                  "var(--gradient-primary, linear-gradient(135deg,#4f46e5,#7c3aed))",
-                boxShadow: "0 6px 16px rgba(79,70,229,0.28)",
+                  "var(--gradient-primary, linear-gradient(135deg,#e73725,#e73725))",
+                boxShadow: "0 6px 16px rgba(231,55,37,0.28)",
               }}
             >
               {getInitials(user?.name)}

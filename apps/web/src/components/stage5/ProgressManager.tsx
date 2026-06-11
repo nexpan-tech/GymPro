@@ -35,15 +35,15 @@ const ENTRY_FIELDS: { key: string; label: string; unit: string }[] = [
 ];
 
 const CHART_METRICS = [
-  { metric: "weight", label: "Weight (kg)", color: "#6366f1" },
-  { metric: "bmi", label: "BMI", color: "#0ea5e9" },
-  { metric: "bodyFatPercentage", label: "Body Fat (%)", color: "#f59e0b" },
-  { metric: "waist", label: "Waist (cm)", color: "#10b981" },
+  { metric: "weight", label: "Weight (kg)", color: "#e73725" },
+  { metric: "bmi", label: "BMI", color: "#e73725" },
+  { metric: "bodyFatPercentage", label: "Body Fat (%)", color: "#767676" },
+  { metric: "waist", label: "Waist (cm)", color: "#767676" },
 ];
 
 function TrendIcon({ trend }: { trend: Trend }) {
-  if (trend === "UP") return <TrendingUp className="h-4 w-4 text-amber-500" />;
-  if (trend === "DOWN") return <TrendingDown className="h-4 w-4 text-emerald-500" />;
+  if (trend === "UP") return <TrendingUp className="h-4 w-4 text-muted-foreground" />;
+  if (trend === "DOWN") return <TrendingDown className="h-4 w-4 text-muted-foreground" />;
   return <Minus className="h-4 w-4 text-(--text-muted)" />;
 }
 
@@ -204,10 +204,10 @@ export default function ProgressManager({ scope, canEdit = true }: Props) {
                   </div>
                   <ResponsiveContainer width="100%" height={200}>
                     <LineChart data={series.points}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.12)" />
-                      <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} domain={["auto", "auto"]} />
-                      <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid rgba(148,163,184,0.15)", backgroundColor: "rgba(15,23,42,0.95)", color: "#fff" }} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(143,143,143,0.12)" />
+                      <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#767676" }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: "#767676" }} axisLine={false} tickLine={false} domain={["auto", "auto"]} />
+                      <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid rgba(143,143,143,0.15)", backgroundColor: "rgba(1,0,0,0.95)", color: "#fff" }} />
                       <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2.5} dot={{ r: 2 }} />
                     </LineChart>
                   </ResponsiveContainer>
@@ -237,7 +237,7 @@ export default function ProgressManager({ scope, canEdit = true }: Props) {
                         {g.currentValue ?? "—"}{g.unit} → {g.targetValue}{g.unit}
                       </div>
                       <div className="mt-2 h-2 overflow-hidden rounded-full bg-(--surface-secondary)">
-                        <div className="h-full rounded-full bg-[image:var(--gradient-primary)]" style={{ width: `${g.progressPercent}%` }} />
+                        <div className="h-full rounded-full bg-(image:--gradient-primary)" style={{ width: `${g.progressPercent}%` }} />
                       </div>
                     </div>
                   ))}
@@ -247,7 +247,7 @@ export default function ProgressManager({ scope, canEdit = true }: Props) {
 
             <Card variant="solid" className="p-5">
               <div className="mb-3 flex items-center gap-2">
-                <CalendarRange className="h-4 w-4 text-indigo-500" />
+                <CalendarRange className="h-4 w-4 text-primary" />
                 <h3 className="text-sm font-semibold text-(--text-primary)">Monthly Report — {report?.month}</h3>
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
@@ -266,10 +266,10 @@ export default function ProgressManager({ scope, canEdit = true }: Props) {
 
           {/* Timeline */}
           <Card variant="solid" className="overflow-hidden p-0">
-            <div className="border-b border-(--border) px-5 py-3 text-sm font-semibold text-(--text-primary)">Timeline</div>
+            <div className="border-b border-border px-5 py-3 text-sm font-semibold text-(--text-primary)">Timeline</div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-(--border) text-xs uppercase tracking-wide text-(--text-secondary)">
+                <thead className="border-b border-border text-xs uppercase tracking-wide text-(--text-secondary)">
                   <tr>
                     <th className="px-4 py-2 font-medium">Date</th>
                     <th className="px-4 py-2 font-medium">Weight</th>
@@ -279,7 +279,7 @@ export default function ProgressManager({ scope, canEdit = true }: Props) {
                     <th className="px-4 py-2 font-medium">Notes</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-(--border)">
+                <tbody className="divide-y divide-border">
                   {timeline.map((e) => (
                     <tr key={e.id}>
                       <td className="px-4 py-2 text-(--text-secondary)">{new Date(e.recordedAt).toLocaleDateString()}</td>
@@ -343,9 +343,9 @@ export default function ProgressManager({ scope, canEdit = true }: Props) {
         <div className="space-y-3">
           <Input label="Title" placeholder="e.g. Reach 75kg" value={goalForm.title} onChange={(e) => setGoalForm((p) => ({ ...p, title: e.target.value }))} />
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Metric</label>
+            <label className="text-sm font-medium text-foreground dark:text-muted-foreground">Metric</label>
             <select
-              className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+              className="mt-2 w-full rounded-xl border border-border bg-white px-4 py-3 text-sm dark:border-border dark:bg-muted dark:text-white"
               value={goalForm.metric}
               onChange={(e) => setGoalForm((p) => ({ ...p, metric: e.target.value }))}
             >

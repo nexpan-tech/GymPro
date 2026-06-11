@@ -54,22 +54,22 @@ const fallbackPayments: PaymentItem[] = [
 function getStatusIcon(status: PaymentItem["status"]) {
   switch (status) {
     case "PAID":
-      return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
+      return <CheckCircle2 className="h-4 w-4 text-muted-foreground" />;
     case "PENDING":
-      return <Clock className="h-4 w-4 text-amber-500" />;
+      return <Clock className="h-4 w-4 text-muted-foreground" />;
     case "FAILED":
-      return <AlertCircle className="h-4 w-4 text-red-500" />;
+      return <AlertCircle className="h-4 w-4 text-primary" />;
   }
 }
 
 function getStatusBadge(status: PaymentItem["status"]) {
   switch (status) {
     case "PAID":
-      return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
+      return "bg-muted text-muted-foreground";
     case "PENDING":
-      return "bg-amber-500/10 text-amber-600 dark:text-amber-400";
+      return "bg-muted text-muted-foreground";
     case "FAILED":
-      return "bg-red-500/10 text-red-600 dark:text-red-400";
+      return "bg-primary text-white dark:text-primary";
   }
 }
 
@@ -80,16 +80,16 @@ export default function RecentPayments({
     <Card className="p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-lg font-semibold text-foreground dark:text-white">
             Recent Payments
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-muted-foreground">
             Latest transactions received
           </p>
         </div>
 
-        <div className="rounded-xl bg-emerald-500/10 p-2">
-          <CreditCard className="h-5 w-5 text-emerald-500" />
+        <div className="rounded-xl bg-muted-foreground p-2">
+          <CreditCard className="h-5 w-5 text-muted-foreground" />
         </div>
       </div>
 
@@ -97,21 +97,21 @@ export default function RecentPayments({
         {data.map((payment) => (
           <div
             key={payment.id}
-            className="rounded-2xl border border-gray-200 p-4 transition hover:shadow-md dark:border-gray-800"
+            className="rounded-2xl border border-border p-4 transition hover:shadow-md dark:border-border"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h4 className="font-medium text-gray-900 dark:text-white">
+                <h4 className="font-medium text-foreground dark:text-white">
                   {payment.memberName}
                 </h4>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-muted-foreground">
                   {payment.planName}
                 </p>
-                <p className="mt-1 text-xs text-gray-400">{payment.date}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{payment.date}</p>
               </div>
 
               <div className="text-right">
-                <p className="font-semibold text-gray-900 dark:text-white">
+                <p className="font-semibold text-foreground dark:text-white">
                   ₹{payment.amount.toLocaleString()}
                 </p>
 

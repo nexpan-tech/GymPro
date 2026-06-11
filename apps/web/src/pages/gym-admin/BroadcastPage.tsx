@@ -47,11 +47,11 @@ export default function BroadcastPage() {
           <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Gym closed on Sunday" />
           <div>
             <label className="text-sm font-semibold text-(--text-secondary)">Message</label>
-            <textarea className="mt-1 w-full rounded-md border border-(--border) bg-(--surface) px-3 py-2 text-sm" rows={4} value={message} onChange={(e) => setMessage(e.target.value)} />
+            <textarea className="mt-1 w-full rounded-md border border-border bg-(--surface) px-3 py-2 text-sm" rows={4} value={message} onChange={(e) => setMessage(e.target.value)} />
           </div>
           <div>
             <label className="text-sm font-semibold text-(--text-secondary)">Audience</label>
-            <select className="mt-1 w-full rounded-md border border-(--border) bg-(--surface) px-3 py-2 text-sm" value={audience} onChange={(e) => setAudience(e.target.value as AnnouncementAudience)}>
+            <select className="mt-1 w-full rounded-md border border-border bg-(--surface) px-3 py-2 text-sm" value={audience} onChange={(e) => setAudience(e.target.value as AnnouncementAudience)}>
               {AUDIENCES.map((a) => <option key={a}>{a}</option>)}
             </select>
           </div>
@@ -69,9 +69,9 @@ export default function BroadcastPage() {
                     disabled={!available}
                     onClick={() => toggle(ch)}
                     className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-                      !available ? "cursor-not-allowed border-(--border) text-(--text-secondary) opacity-50"
-                      : active ? "border-indigo-500 bg-indigo-500/15 text-indigo-400"
-                      : "border-(--border) text-(--text-secondary) hover:border-indigo-400"
+                      !available ? "cursor-not-allowed border-border text-(--text-secondary) opacity-50"
+                      : active ? "border-primary/40 bg-primary text-white"
+                      : "border-border text-(--text-secondary) hover:border-primary/40"
                     }`}
                   >
                     {ch}{!available && " (off)"}
@@ -84,8 +84,8 @@ export default function BroadcastPage() {
         </Card>
 
         <Card variant="solid" className="p-5">
-          <div className="flex items-center gap-2"><Megaphone className="h-4 w-4 text-indigo-500" /><h3 className="text-sm font-semibold text-(--text-primary)">Preview</h3></div>
-          <div className="mt-3 rounded-lg border border-(--border) p-4">
+          <div className="flex items-center gap-2"><Megaphone className="h-4 w-4 text-primary" /><h3 className="text-sm font-semibold text-(--text-primary)">Preview</h3></div>
+          <div className="mt-3 rounded-lg border border-border p-4">
             <div className="text-sm font-bold text-(--text-primary)">{title || "Your title"}</div>
             <p className="mt-1 text-sm text-(--text-secondary)">{message || "Your message preview appears here."}</p>
             <div className="mt-3 flex flex-wrap gap-1">
@@ -96,7 +96,7 @@ export default function BroadcastPage() {
             </div>
           </div>
           {result && (
-            <div className="mt-4 rounded-lg border border-(--border) p-4 text-sm">
+            <div className="mt-4 rounded-lg border border-border p-4 text-sm">
               <div className="font-semibold text-(--text-primary)">Last broadcast</div>
               <div className="mt-1 text-(--text-secondary)">Recipients: {result.recipients} · Sent: {result.delivery.sent} · Skipped: {result.delivery.skipped} · Failed: {result.delivery.failed}</div>
             </div>

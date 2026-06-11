@@ -251,7 +251,7 @@ export default function MemberProfilePage() {
               </div>
             )}
             {current && (
-              <div className="mt-4 border-t border-(--border) pt-4">
+              <div className="mt-4 border-t border-border pt-4">
                 <Button size="sm" variant="ghost" iconLeft={<CalendarPlus className="h-4 w-4" />} onClick={() => setAssignOpen(true)}>Assign New Plan</Button>
               </div>
             )}
@@ -272,7 +272,7 @@ export default function MemberProfilePage() {
 
         {/* Membership history */}
         <Card variant="solid" className="overflow-hidden p-0">
-          <div className="border-b border-(--border) px-6 py-4">
+          <div className="border-b border-border px-6 py-4">
             <h3 className="text-base font-semibold text-(--text-primary)">Membership History</h3>
           </div>
           {history.length === 0 ? (
@@ -280,7 +280,7 @@ export default function MemberProfilePage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-(--border) text-xs uppercase tracking-wide text-(--text-secondary)">
+                <thead className="border-b border-border text-xs uppercase tracking-wide text-(--text-secondary)">
                   <tr>
                     <th className="px-6 py-3 font-medium">Plan</th>
                     <th className="px-6 py-3 font-medium">Start</th>
@@ -289,7 +289,7 @@ export default function MemberProfilePage() {
                     <th className="px-6 py-3 font-medium">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-(--border)">
+                <tbody className="divide-y divide-border">
                   {history.map((m) => (
                     <tr key={m.id} className="hover:bg-(--surface-hover)">
                       <td className="px-6 py-3 text-(--text-primary)">{planLabel(m)}</td>

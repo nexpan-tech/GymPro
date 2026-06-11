@@ -117,7 +117,7 @@ export default function InsightsScreen() {
       {/* Momentum stats */}
       <View style={{ flexDirection: "row", gap: 12 }}>
         <AppCard style={{ flex: 1, alignItems: "center", gap: 4 }}>
-          <Flame color="#f97316" size={22} />
+          <Flame color="#767676" size={22} />
           <AppText style={{ fontSize: 22, fontWeight: "900" }}>{streak}d</AppText>
           <AppText variant="caption" color="textMuted">Streak</AppText>
         </AppCard>

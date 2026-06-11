@@ -257,14 +257,14 @@ export default function AttendanceScreen() {
           </View>
         )}
         {scanStatus === "success" && (
-          <View style={[styles.overlay, { backgroundColor: "rgba(5,46,22,0.9)" }]}>
+          <View style={[styles.overlay, { backgroundColor: "rgba(26,26,26,0.9)" }]}>
             <Text style={styles.overlayEmoji}>✓</Text>
             <Text style={styles.overlayTitle}>Attendance Marked!</Text>
             <Text style={styles.overlayText}>Check-in recorded successfully</Text>
           </View>
         )}
         {scanStatus === "already" && (
-          <View style={[styles.overlay, { backgroundColor: "rgba(3,27,78,0.9)" }]}>
+          <View style={[styles.overlay, { backgroundColor: "rgba(10,10,10,0.9)" }]}>
             <Text style={styles.overlayEmoji}>ℹ</Text>
             <Text style={styles.overlayTitle}>Already Checked In</Text>
             <Text style={styles.overlayText}>
@@ -273,7 +273,7 @@ export default function AttendanceScreen() {
           </View>
         )}
         {scanStatus === "error" && (
-          <View style={[styles.overlay, { backgroundColor: "rgba(69,10,10,0.9)" }]}>
+          <View style={[styles.overlay, { backgroundColor: "rgba(161,31,19,0.9)" }]}>
             <Text style={styles.overlayEmoji}>✕</Text>
             <Text style={styles.overlayTitle}>Scan Failed</Text>
             <Text style={styles.overlayText}>{errorMessage || "Unable to process QR code"}</Text>
@@ -391,16 +391,16 @@ function makeStyles(theme: Theme) {
     },
     overlay: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: "rgba(2,6,23,0.88)",
+      backgroundColor: "rgba(1,0,0,0.88)",
       alignItems: "center",
       justifyContent: "center",
       gap: 8,
       padding: 24,
     },
     overlayEmoji: { fontSize: 48, color: "#fff", fontWeight: "900" },
-    overlayTitle: { color: "#f8fafc", fontSize: 20, fontWeight: "900", textAlign: "center" },
-    overlayText: { color: "#cbd5e1", fontSize: 14, textAlign: "center", lineHeight: 22 },
-    overlayHint: { color: "#94a3b8", fontSize: 12, marginTop: 4 },
+    overlayTitle: { color: "#ffffff", fontSize: 20, fontWeight: "900", textAlign: "center" },
+    overlayText: { color: "#c9c9c9", fontSize: 14, textAlign: "center", lineHeight: 22 },
+    overlayHint: { color: "#767676", fontSize: 12, marginTop: 4 },
     recordIcon: {
       height: 46,
       width: 46,

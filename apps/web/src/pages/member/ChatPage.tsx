@@ -55,13 +55,13 @@ export default function MemberChatPage() {
             const mine = m.senderId === user?.id;
             return (
               <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${mine ? "bg-indigo-500 text-white" : "bg-(--surface-elevated) text-(--text-primary)"}`}>{m.message}</div>
+                <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${mine ? "bg-primary text-white" : "bg-(--surface-elevated) text-(--text-primary)"}`}>{m.message}</div>
               </div>
             );
           })}
           <div ref={endRef} />
         </div>
-        <div className="flex gap-2 border-t border-(--border) p-3">
+        <div className="flex gap-2 border-t border-border p-3">
           <Input className="flex-1" placeholder="Type a message…" value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} disabled={!memberId} />
           <Button iconLeft={<Send className="h-4 w-4" />} onClick={send} disabled={!memberId}>Send</Button>
         </div>

@@ -101,6 +101,24 @@ export const trainerService = {
     return res.data
   },
 
+  /** Toggle active state. PUT /users/:id { isActive } */
+  setActive: async (id: string, isActive: boolean): Promise<ApiResponse<Trainer>> => {
+    const res = await api.put<ApiResponse<Trainer>>(`/users/${id}`, { isActive })
+    return res.data
+  },
+
+  /** POST /users/:id/reset-password — sets/generates a temp password (returned once). */
+  resetPassword: async (
+    id: string,
+    password?: string,
+  ): Promise<ApiResponse<{ temporaryPassword: string; generated: boolean }>> => {
+    const res = await api.post<ApiResponse<{ temporaryPassword: string; generated: boolean }>>(
+      `/users/${id}/reset-password`,
+      password ? { password } : {},
+    )
+    return res.data
+  },
+
   /**
    * Fetch performance stats for a specific trainer.
    * There is no `/trainers/:id/stats` endpoint — derive from the trainer

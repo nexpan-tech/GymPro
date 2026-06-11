@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { Plus, TrendingDown, TrendingUp, Minus, Target } from "lucide-react-native";
+import { Plus, TrendingDown, TrendingUp, Minus, Target, Flame } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 
@@ -10,7 +10,7 @@ import {
 import { useTheme } from "../../src/theme";
 import {
   AppButton, AppCard, AppEmptyState, AppHeader, AppInput,
-  AppLoadingState, AppScreen, AppText,
+  AppLoadingState, AppScreen, AppText, ProgressBar, ScorePill,
 } from "../../src/components/ui";
 
 const FIELDS: { key: string; label: string; unit: string }[] = [
@@ -33,8 +33,8 @@ const CARDS = [
 ];
 
 function TrendIcon({ trend, color }: { trend: Trend; color: string }) {
-  if (trend === "UP") return <TrendingUp size={16} color="#f59e0b" />;
-  if (trend === "DOWN") return <TrendingDown size={16} color="#10b981" />;
+  if (trend === "UP") return <TrendingUp size={16} color={color} />;
+  if (trend === "DOWN") return <TrendingDown size={16} color={color} />;
   return <Minus size={16} color={color} />;
 }
 
@@ -90,7 +90,7 @@ export default function ProgressScreen() {
   if (loading) {
     return (
       <AppScreen>
-        <AppHeader title="My Progress" onBack={() => router.back()} />
+        <AppHeader title="Transformation" onBack={() => router.back()} />
         <AppLoadingState rows={4} />
       </AppScreen>
     );
@@ -98,12 +98,19 @@ export default function ProgressScreen() {
 
   const m = summary?.metrics ?? {};
   const hasData = (summary?.entryCount ?? 0) > 0;
+  const consistency = summary?.consistencyScore ?? 0;
+  const consistencyMsg =
+    consistency >= 80
+      ? "Elite consistency. Your body is responding to the work."
+      : consistency >= 50
+        ? "Solid rhythm. Keep logging to reveal the full picture."
+        : "Every entry tells your story. Keep showing up.";
 
   return (
     <AppScreen>
       <AppHeader
-        title="My Progress"
-        subtitle="Measurable fitness progress"
+        title="Transformation"
+        subtitle="Your measurable journey"
         onBack={() => router.back()}
         right={
           <AppButton size="sm" icon={<Plus size={16} color={c.onPrimary} />} onPress={() => setShowForm((s) => !s)}>
@@ -135,7 +142,36 @@ export default function ProgressScreen() {
         </AppCard>
       ) : null}
 
-      {/* Metric cards */}
+      {/* ── Transformation hero ─────────────────────────────────────────────── */}
+      {hasData ? (
+        <AppCard variant="elevated">
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Flame color={c.primary} size={16} />
+                <AppText variant="overline" color="primary">Consistency</AppText>
+              </View>
+              <AppText style={{ fontSize: 38, fontWeight: "900", color: c.textPrimary, letterSpacing: -1, marginTop: 4 }}>
+                {consistency}%
+              </AppText>
+            </View>
+            <View style={{ alignItems: "flex-end" }}>
+              <AppText style={{ fontSize: 22, fontWeight: "900", color: c.primary }}>
+                {summary?.entryCount ?? 0}
+              </AppText>
+              <AppText variant="caption" color="textMuted">entries logged</AppText>
+            </View>
+          </View>
+          <View style={{ marginTop: 14 }}>
+            <ProgressBar progress={consistency / 100} />
+          </View>
+          <AppText variant="caption" color="textSecondary" style={{ marginTop: 10, lineHeight: 18 }}>
+            {consistencyMsg}
+          </AppText>
+        </AppCard>
+      ) : null}
+
+      {/* Metric cards — your changes since day one */}
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
         {CARDS.map((card) => {
           const data = m[card.key];
@@ -149,9 +185,20 @@ export default function ProgressScreen() {
                 {data ? `${data.latest}${card.unit}` : "—"}
               </AppText>
               {data?.changeSinceFirst != null ? (
-                <AppText variant="caption" color="textMuted" style={{ marginTop: 2 }}>
-                  {data.changeSinceFirst > 0 ? "+" : ""}{data.changeSinceFirst}{card.unit} total
-                </AppText>
+                <View
+                  style={{
+                    alignSelf: "flex-start",
+                    marginTop: 8,
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                    borderRadius: theme.radius.sm,
+                    backgroundColor: data.changeSinceFirst !== 0 ? c.primarySoft : c.muted,
+                  }}
+                >
+                  <AppText variant="caption" style={{ color: data.changeSinceFirst !== 0 ? c.primary : c.textMuted, fontWeight: "800" }}>
+                    {data.changeSinceFirst > 0 ? "+" : ""}{data.changeSinceFirst}{card.unit} since start
+                  </AppText>
+                </View>
               ) : null}
             </AppCard>
           );
@@ -159,66 +206,71 @@ export default function ProgressScreen() {
       </View>
 
       {!hasData ? (
-        <AppEmptyState emoji="📈" title="No progress yet" description="Tap Add to record your first measurements." />
+        <AppEmptyState
+          emoji="📈"
+          title="Your transformation starts here"
+          description="Log your first measurements and watch the story of your progress unfold — one honest number at a time."
+        />
       ) : (
         <>
-          {/* Summary */}
-          <AppCard>
-            <AppText variant="label" color="textSecondary">Summary</AppText>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 8 }}>
-              <View>
-                <AppText variant="title">{summary?.entryCount ?? 0}</AppText>
-                <AppText variant="caption" color="textMuted">entries</AppText>
-              </View>
-              <View>
-                <AppText variant="title">{summary?.consistencyScore ?? 0}%</AppText>
-                <AppText variant="caption" color="textMuted">consistency</AppText>
-              </View>
-            </View>
-          </AppCard>
-
           {/* Goals */}
           {goals.length > 0 ? (
             <AppCard>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
                 <Target size={16} color={c.primary} />
                 <AppText variant="label" color="textSecondary">Goals</AppText>
               </View>
               {goals.map((g) => (
-                <View key={g.id} style={{ marginBottom: 12 }}>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                <View key={g.id} style={{ marginBottom: 14 }}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
                     <AppText variant="bodyStrong">{g.title}</AppText>
-                    <AppText variant="caption" color="primary">{g.progressPercent}%</AppText>
+                    <AppText variant="caption" color="primary" style={{ fontWeight: "800" }}>{g.progressPercent}%</AppText>
                   </View>
-                  <View style={{ height: 6, borderRadius: 3, backgroundColor: c.muted, marginTop: 6, overflow: "hidden" }}>
-                    <View style={{ height: "100%", width: `${g.progressPercent}%`, backgroundColor: c.primary, borderRadius: 3 }} />
-                  </View>
+                  <ProgressBar progress={(g.progressPercent ?? 0) / 100} height={6} />
                 </View>
               ))}
             </AppCard>
           ) : null}
 
           {/* Timeline */}
-          <AppText variant="label" color="textSecondary" style={{ marginTop: 4 }}>Timeline</AppText>
+          <AppText variant="heading" style={{ marginTop: 4 }}>Your timeline</AppText>
           <View style={{ gap: 8 }}>
-            {timeline.map((e) => (
-              <AppCard key={e.id}>
-                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                  <AppText variant="bodyStrong">{new Date(e.recordedAt).toLocaleDateString()}</AppText>
-                  {e.weight != null ? <AppText variant="body">{e.weight} kg</AppText> : null}
-                </View>
-                <AppText variant="caption" color="textMuted" style={{ marginTop: 4 }}>
-                  {[
-                    e.bmi != null ? `BMI ${e.bmi}` : null,
-                    e.bodyFatPercentage != null ? `BF ${e.bodyFatPercentage}%` : null,
-                    e.waist != null ? `Waist ${e.waist}cm` : null,
-                  ].filter(Boolean).join("  ·  ") || "—"}
-                </AppText>
-                {e.notes ? (
-                  <AppText variant="caption" color="textSecondary" style={{ marginTop: 4 }}>{e.notes}</AppText>
-                ) : null}
-              </AppCard>
-            ))}
+            {timeline.map((e, idx) => {
+              const isFirst = idx === timeline.length - 1;
+              return (
+                <AppCard key={e.id} style={{ borderColor: isFirst ? c.primary : c.border }}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                      <View
+                        style={{
+                          height: 10,
+                          width: 10,
+                          borderRadius: 5,
+                          backgroundColor: c.primary,
+                        }}
+                      />
+                      <AppText variant="bodyStrong">{new Date(e.recordedAt).toLocaleDateString()}</AppText>
+                    </View>
+                    {e.weight != null ? <AppText variant="body" color="primary" style={{ fontWeight: "800" }}>{e.weight} kg</AppText> : null}
+                  </View>
+                  <AppText variant="caption" color="textMuted" style={{ marginTop: 6, marginLeft: 20 }}>
+                    {[
+                      e.bmi != null ? `BMI ${e.bmi}` : null,
+                      e.bodyFatPercentage != null ? `BF ${e.bodyFatPercentage}%` : null,
+                      e.waist != null ? `Waist ${e.waist}cm` : null,
+                    ].filter(Boolean).join("  ·  ") || "—"}
+                  </AppText>
+                  {isFirst ? (
+                    <AppText variant="caption" color="primary" style={{ marginTop: 6, marginLeft: 20, fontWeight: "700" }}>
+                      ⭐ Where it all began
+                    </AppText>
+                  ) : null}
+                  {e.notes ? (
+                    <AppText variant="caption" color="textSecondary" style={{ marginTop: 4, marginLeft: 20 }}>{e.notes}</AppText>
+                  ) : null}
+                </AppCard>
+              );
+            })}
           </View>
         </>
       )}

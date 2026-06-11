@@ -14,8 +14,8 @@ export type TypographyVariant =
   | "overline";
 
 export const typography: Record<TypographyVariant, TextStyle> = {
-  display: { fontSize: 32, fontWeight: "900", letterSpacing: -0.5 },
-  title: { fontSize: 26, fontWeight: "900", letterSpacing: -0.3 },
+  display: { fontSize: 36, fontWeight: "900", letterSpacing: -1, lineHeight: 38 },
+  title: { fontSize: 27, fontWeight: "900", letterSpacing: -0.5 },
   heading: { fontSize: 20, fontWeight: "800" },
   subtitle: { fontSize: 16, fontWeight: "700" },
   body: { fontSize: 15, fontWeight: "500", lineHeight: 22 },

@@ -79,14 +79,21 @@ export default function PageHeader({
           </nav>
         )}
 
-        {/* Title */}
-        <h1 className="truncate text-2xl font-black tracking-tight text-(--text-primary) sm:text-3xl">
-          {title}
-        </h1>
+        {/* Title — with a red energy tick for that "fitness OS" signature */}
+        <div className="flex items-center gap-3">
+          <span
+            className="h-7 w-1.5 shrink-0 rounded-full bg-(image:--gradient-primary)"
+            style={{ boxShadow: "0 0 14px rgba(231,55,37,0.4)" }}
+            aria-hidden="true"
+          />
+          <h1 className="truncate text-2xl font-black tracking-tight text-(--text-primary) sm:text-3xl">
+            {title}
+          </h1>
+        </div>
 
         {/* Subtitle */}
         {subtitle && (
-          <p className="mt-1 text-sm text-(--text-secondary)">{subtitle}</p>
+          <p className="mt-1.5 pl-4.5 text-sm text-(--text-secondary)">{subtitle}</p>
         )}
       </div>
 

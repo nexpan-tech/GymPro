@@ -1,6 +1,7 @@
 import {
   createBrowserRouter,
   RouterProvider,
+  Navigate,
 } from "react-router-dom";
 import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/auth/LoginPage";
@@ -53,13 +54,14 @@ import GymAdminTrainersPage from "@/pages/gym-admin/TrainersPage";
 import GymAdminWorkoutsPage from "@/pages/gym-admin/WorkoutPlansPage";
 import GymAdminDietsPage from "@/pages/gym-admin/DietPlansPage";
 import GymAdminNotificationsPage from "@/pages/gym-admin/NotificationsPage";
-import GymAdminSettingsPage from "@/pages/gym-admin/SettingsPage";
 import GymAdminBroadcastPage from "@/pages/gym-admin/BroadcastPage";
 import GymAdminAnnouncementsPage from "@/pages/gym-admin/AnnouncementsPage";
 import GymAdminCommunicationAnalyticsPage from "@/pages/gym-admin/CommunicationAnalyticsPage";
 import ChatThreadsPage from "@/pages/shared/ChatThreadsPage";
 import GymAdminAIInsightsPage from "@/pages/gym-admin/AIInsightsPage";
 import GymAdminWhiteLabelPage from "@/pages/gym-admin/WhiteLabelPage";
+import GymAdminChatPage from "@/pages/gym-admin/AdminChatPage";
+import GymAdminReportsPage from "@/pages/gym-admin/ReportsPage";
 
 // Trainer
 import TrainerDashboardPage from "@/pages/trainer/DashboardPage";
@@ -140,7 +142,8 @@ const router = createBrowserRouter([
           { index: true, element: <GymAdminDashboardPage /> },
           { path: "dashboard", element: <GymAdminDashboardPage /> },
           { path: "analytics", element: <GymAdminAnalyticsPage /> },
-          { path: "users", element: <GymAdminUsersPage /> },
+          { path: "admins", element: <GymAdminUsersPage /> },
+          { path: "users", element: <Navigate to="/gym-admin/admins" replace /> },
           { path: "branches", element: <GymAdminBranchesPage /> },
           { path: "members", element: <GymAdminMembersPage /> },
           { path: "members/:id", element: <GymAdminMemberProfilePage /> },
@@ -158,15 +161,17 @@ const router = createBrowserRouter([
           { path: "broadcast", element: <GymAdminBroadcastPage /> },
           { path: "announcements", element: <GymAdminAnnouncementsPage /> },
           { path: "communication-analytics", element: <GymAdminCommunicationAnalyticsPage /> },
-          { path: "chat", element: <ChatThreadsPage /> },
+          { path: "chat", element: <GymAdminChatPage /> },
           { path: "ai-insights", element: <GymAdminAIInsightsPage /> },
+          { path: "reports", element: <GymAdminReportsPage /> },
           { path: "white-label", element: <GymAdminWhiteLabelPage /> },
           { path: "trainers", element: <GymAdminTrainersPage /> },
           { path: "workout-plans", element: <GymAdminWorkoutsPage /> },
           { path: "diet-plans", element: <GymAdminDietsPage /> },
-          { path: "audit", element: <AuditLogsPage /> },
           { path: "notifications", element: <GymAdminNotificationsPage /> },
-          { path: "settings", element: <GymAdminSettingsPage /> },
+          // P2: Audit log + Settings are SUPER_ADMIN-only now — hidden from gym admin.
+          { path: "audit", element: <Navigate to="/gym-admin/dashboard" replace /> },
+          { path: "settings", element: <Navigate to="/gym-admin/dashboard" replace /> },
         ],
       },
     ],

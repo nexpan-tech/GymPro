@@ -15,9 +15,9 @@ export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps = {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-(--background)">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3 text-(--text-secondary)">
-          <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <span className="text-sm font-medium">Loading…</span>
         </div>
       </div>

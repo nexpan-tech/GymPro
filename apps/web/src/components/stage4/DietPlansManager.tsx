@@ -258,7 +258,7 @@ export default function DietPlansManager() {
           />
 
           {/* Meal builder */}
-          <div className="rounded-2xl border border-(--border) p-4">
+          <div className="rounded-2xl border border-border p-4">
             <h3 className="mb-3 text-sm font-semibold">Add meals</h3>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <Select

@@ -17,30 +17,33 @@ interface BadgeProps {
 
 // ─── Variant styles ───────────────────────────────────────────────────────────
 
+// GymPro strict palette: differentiate by treatment, not by hue.
+//   primary/info → soft red outline · success → white + red border (e.g. Paid)
+//   warning      → neutral gray (e.g. Pending) · danger → solid red (e.g. Overdue)
 const variantClasses: Record<BadgeVariant, { badge: string; dot: string }> = {
   default: {
-    badge: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-    dot: "bg-gray-500",
+    badge: "bg-muted text-muted-foreground border border-border",
+    dot: "bg-muted-foreground",
   },
   primary: {
-    badge: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
-    dot: "bg-indigo-500",
+    badge: "bg-primary/10 text-primary border border-primary/30",
+    dot: "bg-primary",
   },
   success: {
-    badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-    dot: "bg-emerald-500",
+    badge: "bg-card text-foreground border border-primary/60",
+    dot: "bg-primary",
   },
   warning: {
-    badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-    dot: "bg-amber-500",
+    badge: "bg-muted text-muted-foreground border border-border",
+    dot: "bg-muted-foreground",
   },
   danger: {
-    badge: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-    dot: "bg-red-500",
+    badge: "bg-primary text-white border border-primary",
+    dot: "bg-white",
   },
   info: {
-    badge: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
-    dot: "bg-sky-500",
+    badge: "bg-primary/10 text-primary border border-primary/30",
+    dot: "bg-primary",
   },
 };
 

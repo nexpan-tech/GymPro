@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { Salad } from "lucide-react-native";
+import { Droplets, Flame, Salad, Sparkles } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { TouchableOpacity, View } from "react-native";
 
@@ -12,6 +12,9 @@ import {
   AppLoadingState,
   AppScreen,
   AppText,
+  CelebrationCard,
+  ProgressBar,
+  ScorePill,
 } from "../../src/components/ui";
 
 // ─── day config ──────────────────────────────────────────────────────────────
@@ -54,6 +57,8 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "tomorrow", label: "Tomorrow" },
 ];
 
+const WATER_GOAL = 8;
+
 export default function DietScreen() {
   const { theme } = useTheme();
   const c = theme.colors;
@@ -63,6 +68,8 @@ export default function DietScreen() {
   const [activeTab, setActiveTab] = useState<TabId>("today");
   const [completedDays, setCompletedDays] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
+  // Session-local hydration tracker (UI engagement only — no backend).
+  const [water, setWater] = useState(0);
 
   const loadPlan = useCallback(async () => {
     try {
@@ -96,6 +103,26 @@ export default function DietScreen() {
   );
   const dayDone = !!completedDays[activeDay];
 
+  // Derived daily nutrition overview from the meal plan (display-only).
+  const totals = useMemo(() => {
+    return meals.reduce(
+      (acc, m) => ({
+        kcal: acc.kcal + (m.calories ?? 0),
+        protein: acc.protein + (m.protein ?? 0),
+        carbs: acc.carbs + (m.carbs ?? 0),
+        fats: acc.fats + (m.fats ?? 0),
+      }),
+      { kcal: 0, protein: 0, carbs: 0, fats: 0 },
+    );
+  }, [meals]);
+
+  const coachTip = useMemo(() => {
+    if (totals.protein >= 120) return "Strong protein target today — perfect for muscle repair and recovery.";
+    if (totals.kcal > 0 && totals.kcal < 1500) return "Lighter calorie day. Stay hydrated and listen to your energy.";
+    if (meals.length >= 4) return "Balanced meal spacing keeps energy steady. Eat on schedule for best results.";
+    return "Fuel with intention. Every meal you log is a vote for the body you're building.";
+  }, [totals, meals.length]);
+
   async function markDayComplete() {
     if (!plan || dayDone || saving) return;
     setSaving(true);
@@ -109,19 +136,10 @@ export default function DietScreen() {
     }
   }
 
-  const mealTypeColors: Record<string, string> = {
-    Breakfast: "#f59e0b",
-    "Pre Workout": c.primary,
-    Lunch: "#059669",
-    "Post Workout": "#8b5cf6",
-    Dinner: "#0ea5e9",
-    Snack: "#f97316",
-  };
-
   if (loading) {
     return (
       <AppScreen>
-        <AppHeader title="Diet Plan" onBack={() => router.back()} />
+        <AppHeader title="Nutrition Coach" onBack={() => router.back()} />
         <AppLoadingState rows={4} />
       </AppScreen>
     );
@@ -130,8 +148,8 @@ export default function DietScreen() {
   return (
     <AppScreen>
       <AppHeader
-        title="Diet Plan"
-        subtitle={plan?.goal || "Your weekly nutrition schedule"}
+        title="Nutrition Coach"
+        subtitle={plan?.goal || "Your daily fuel plan"}
         onBack={() => router.back()}
       />
 
@@ -172,11 +190,105 @@ export default function DietScreen() {
         })}
       </View>
 
+      {/* ── Today's Nutrition hero ─────────────────────────────────────────── */}
+      {meals.length > 0 ? (
+        dayDone ? (
+          <CelebrationCard
+            emoji="🥗"
+            title="Nutrition locked in"
+            message="You fuelled your body right today. Consistency like this is how transformations are made."
+          />
+        ) : (
+          <AppCard variant="elevated">
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Salad color={c.primary} size={18} />
+              <AppText variant="overline" color="primary">
+                Today's Nutrition
+              </AppText>
+            </View>
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
+              <ScorePill value={`${totals.kcal}`} label="Calories" emphasis />
+              <ScorePill value={`${totals.protein}g`} label="Protein" />
+              <ScorePill value={`${meals.length}`} label="Meals" />
+            </View>
+            <AppText variant="caption" color="textMuted" style={{ marginTop: 10 }}>
+              {totals.carbs}g carbs · {totals.fats}g fats planned today
+            </AppText>
+          </AppCard>
+        )
+      ) : null}
+
+      {/* ── Hydration tracker (session-local) ──────────────────────────────── */}
+      <AppCard>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Droplets color={c.primary} size={18} />
+            <AppText variant="bodyStrong">Hydration</AppText>
+          </View>
+          <AppText variant="caption" color="textMuted">
+            {water} / {WATER_GOAL} glasses
+          </AppText>
+        </View>
+        <View style={{ flexDirection: "row", gap: 6, marginTop: 12 }}>
+          {Array.from({ length: WATER_GOAL }).map((_, i) => {
+            const filled = i < water;
+            return (
+              <TouchableOpacity
+                key={i}
+                activeOpacity={0.8}
+                onPress={() => setWater(filled && i === water - 1 ? i : i + 1)}
+                style={{
+                  flex: 1,
+                  height: 30,
+                  borderRadius: theme.radius.sm,
+                  backgroundColor: filled ? c.primarySoft : c.muted,
+                  borderWidth: 1,
+                  borderColor: filled ? c.primary : c.border,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Droplets color={filled ? c.primary : c.textMuted} size={13} />
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        {water >= WATER_GOAL ? (
+          <AppText variant="caption" color="primary" style={{ marginTop: 8 }}>
+            💧 Goal hit — hydration on point!
+          </AppText>
+        ) : null}
+      </AppCard>
+
+      {/* ── Coach insight ──────────────────────────────────────────────────── */}
+      <AppCard>
+        <View style={{ flexDirection: "row", gap: 12 }}>
+          <View
+            style={{
+              height: 40,
+              width: 40,
+              borderRadius: theme.radius.md,
+              backgroundColor: c.primarySoft,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Sparkles color={c.primary} size={18} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <AppText variant="label" color="primary">Coach insight</AppText>
+            <AppText variant="body" color="textSecondary" style={{ marginTop: 3, lineHeight: 20 }}>
+              {coachTip}
+            </AppText>
+          </View>
+        </View>
+      </AppCard>
+
       {/* Trainer note */}
       {plan?.notes ? (
         <AppCard>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <Salad color={c.success} size={18} />
+            <Salad color={c.textSecondary} size={18} />
             <AppText variant="label" color="textSecondary">
               Trainer Note
             </AppText>
@@ -191,14 +303,14 @@ export default function DietScreen() {
       {meals.length === 0 ? (
         <AppEmptyState
           emoji="🍽️"
-          title="No meals"
-          description="No meals assigned for this day."
+          title="A clean plate, ready for you"
+          description="No meals are scheduled for this day. Rest, refuel, and check back for tomorrow's plan."
         />
       ) : (
         <View style={{ gap: 12 }}>
-          {meals.map((meal) => {
+          <AppText variant="heading">{meals.length} meal{meals.length === 1 ? "" : "s"} today</AppText>
+          {meals.map((meal, idx) => {
             const label = mealTypeLabel(meal.mealType);
-            const accentColor = mealTypeColors[label] ?? c.textSecondary;
             const macros = [
               meal.protein != null ? `P ${meal.protein}g` : null,
               meal.carbs != null ? `C ${meal.carbs}g` : null,
@@ -216,15 +328,36 @@ export default function DietScreen() {
                 >
                   <View
                     style={{
-                      height: 8,
-                      width: 8,
-                      borderRadius: 4,
-                      backgroundColor: accentColor,
+                      height: 24,
+                      width: 24,
+                      borderRadius: theme.radius.sm,
+                      backgroundColor: c.primarySoft,
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
-                  />
-                  <AppText variant="overline" style={{ color: accentColor }}>
+                  >
+                    <AppText style={{ fontSize: 11, fontWeight: "900", color: c.primary }}>
+                      {idx + 1}
+                    </AppText>
+                  </View>
+                  <AppText variant="overline" color="primary">
                     {label}
                   </AppText>
+                  {meal.calories != null ? (
+                    <View
+                      style={{
+                        marginLeft: "auto",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <Flame color={c.textMuted} size={12} />
+                      <AppText variant="caption" color="textMuted">
+                        {meal.calories} kcal
+                      </AppText>
+                    </View>
+                  ) : null}
                 </View>
 
                 <AppText variant="bodyStrong" style={{ lineHeight: 22 }}>
@@ -236,19 +369,26 @@ export default function DietScreen() {
                   </AppText>
                 ) : null}
 
-                {meal.calories != null ? (
-                  <AppText
-                    variant="label"
-                    style={{ color: "#f59e0b", marginTop: 8 }}
-                  >
-                    {meal.calories} kcal
-                  </AppText>
-                ) : null}
-
                 {macros.length > 0 ? (
-                  <AppText variant="caption" color="textMuted" style={{ marginTop: 4 }}>
-                    {macros.join("  ·  ")}
-                  </AppText>
+                  <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+                    {macros.map((m) => (
+                      <View
+                        key={m}
+                        style={{
+                          paddingHorizontal: 8,
+                          paddingVertical: 3,
+                          borderRadius: theme.radius.sm,
+                          backgroundColor: c.muted,
+                          borderWidth: 1,
+                          borderColor: c.border,
+                        }}
+                      >
+                        <AppText variant="caption" color="textSecondary" style={{ fontWeight: "700" }}>
+                          {m}
+                        </AppText>
+                      </View>
+                    ))}
+                  </View>
                 ) : null}
               </AppCard>
             );
@@ -257,32 +397,30 @@ export default function DietScreen() {
       )}
 
       {/* Mark day complete */}
-      {meals.length > 0 ? (
+      {meals.length > 0 && !dayDone ? (
         <TouchableOpacity
           onPress={markDayComplete}
           activeOpacity={0.85}
-          disabled={dayDone || saving}
+          disabled={saving}
           style={{
-            marginTop: 16,
+            marginTop: 4,
             paddingVertical: 14,
             borderRadius: theme.radius.md,
             alignItems: "center",
-            backgroundColor: dayDone ? c.successSoft : c.primary,
-            borderWidth: 1,
-            borderColor: dayDone ? c.success : c.primary,
+            backgroundColor: c.primary,
           }}
         >
-          <AppText
-            variant="label"
-            style={{ color: dayDone ? c.success : c.onPrimary }}
-          >
-            {dayDone
-              ? "Day marked complete ✓"
-              : saving
-                ? "Saving…"
-                : "Mark this day complete"}
+          <AppText variant="label" style={{ color: c.onPrimary }}>
+            {saving ? "Saving…" : "Mark today's nutrition complete"}
           </AppText>
         </TouchableOpacity>
+      ) : null}
+
+      {/* Day completion progress */}
+      {meals.length > 0 ? (
+        <View style={{ marginTop: 4 }}>
+          <ProgressBar progress={dayDone ? 1 : 0} />
+        </View>
       ) : null}
     </AppScreen>
   );

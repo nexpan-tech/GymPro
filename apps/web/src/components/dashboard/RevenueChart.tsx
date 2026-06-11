@@ -21,7 +21,7 @@ export default function RevenueChart({
       </h3>
 
       {safeData.length === 0 ? (
-        <div className="py-10 text-center text-gray-500">
+        <div className="py-10 text-center text-muted-foreground">
           No revenue data available
         </div>
       ) : (
@@ -29,7 +29,7 @@ export default function RevenueChart({
           {safeData.map((item, index) => (
             <div
               key={index}
-              className="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3 dark:bg-gray-800"
+              className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 dark:bg-muted"
             >
               <span>{item.month}</span>
               <span className="font-semibold">

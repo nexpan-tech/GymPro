@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { authService } from "@/services/auth.service";
+import AuthLayout from "@/layouts/AuthLayout";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 
@@ -39,48 +40,37 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
-      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
-        <h1 className="text-2xl font-bold mb-2 text-center">
-          Forgot Password
-        </h1>
-
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 text-center">
-          Enter your email address and we’ll send you a password reset link.
-        </p>
-
+    <AuthLayout
+      title="Forgot Password"
+      subtitle="Enter your email address and we’ll send you a password reset link."
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
         {success && (
-          <div className="mb-4 rounded-lg bg-green-100 text-green-700 p-3 text-sm">
+          <div className="rounded-xl border border-border bg-muted px-4 py-3 text-sm text-muted-foreground dark:border-border dark:bg-muted dark:text-muted-foreground">
             {success}
           </div>
         )}
 
         {error && (
-          <div className="mb-4 rounded-lg bg-red-100 text-red-700 p-3 text-sm">
+          <div className="rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm text-primary dark:border-primary/40 dark:bg-primary/15 dark:text-primary">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label="Email Address"
-            type="email"
-            value={email}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setEmail(e.target.value)
-            }
-            required
-          />
+        <Input
+          label="Email Address"
+          type="email"
+          value={email}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setEmail(e.target.value)
+          }
+          required
+        />
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={loading}
-          >
-            {loading ? "Sending..." : "Send Reset Link"}
-          </Button>
-        </form>
-      </div>
-    </div>
+        <Button type="submit" fullWidth size="lg" disabled={loading} loading={loading}>
+          {loading ? "Sending..." : "Send Reset Link"}
+        </Button>
+      </form>
+    </AuthLayout>
   );
 }

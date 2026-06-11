@@ -6,7 +6,7 @@ import { SkeletonKpi } from "./Skeleton";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type ChangeType = "up" | "down" | "neutral";
-type KpiColor = "indigo" | "emerald" | "amber" | "sky" | "rose" | "violet";
+type KpiColor = "energy" | "neutral" | "steel" | "focus" | "rose" | "violet";
 
 interface KpiCardProps {
   title: string;
@@ -23,19 +23,26 @@ interface KpiCardProps {
 }
 
 // ─── Color maps ───────────────────────────────────────────────────────────────
+// Strict palette: an energetic soft-red accent tile, or a calm neutral tile.
+// (We keep variety controlled so the board reads premium, not "all red".)
 
 const iconBgClasses: Record<KpiColor, string> = {
-  indigo: "bg-indigo-500/10 text-indigo-500",
-  emerald: "bg-emerald-500/10 text-emerald-500",
-  amber: "bg-amber-500/10 text-amber-500",
-  sky: "bg-sky-500/10 text-sky-500",
-  rose: "bg-rose-500/10 text-rose-500",
-  violet: "bg-violet-500/10 text-violet-500",
+  energy: "bg-primary/10 text-primary ring-1 ring-primary/20",
+  neutral: "bg-muted text-foreground ring-1 ring-border",
+  steel: "bg-muted text-foreground ring-1 ring-border",
+  focus: "bg-primary/10 text-primary ring-1 ring-primary/20",
+  rose: "bg-primary/10 text-primary ring-1 ring-primary/20",
+  violet: "bg-primary/10 text-primary ring-1 ring-primary/20",
+};
+
+// Whether this KPI carries the red "energy" accent strip.
+const accentColors: Record<KpiColor, boolean> = {
+  energy: true, focus: true, rose: true, violet: true, neutral: false, steel: false,
 };
 
 const changeClasses: Record<ChangeType, { text: string; bg: string }> = {
-  up: { text: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10" },
-  down: { text: "text-red-600 dark:text-red-400", bg: "bg-red-500/10" },
+  up: { text: "text-muted-foreground", bg: "bg-muted" },
+  down: { text: "text-primary", bg: "bg-primary/10" },
   neutral: { text: "text-(--text-secondary)", bg: "bg-(--surface-hover)" },
 };
 
@@ -54,7 +61,7 @@ export default function KpiCard({
   changeType = "neutral",
   changeLabel,
   icon,
-  color = "indigo",
+  color = "energy",
   loading = false,
   className,
 }: KpiCardProps) {
@@ -65,30 +72,35 @@ export default function KpiCard({
   const IconComponent = ChangeIcon[changeType];
   const changeStyle = changeClasses[changeType];
   const hasChange = change !== undefined;
+  const accent = accentColors[color];
 
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-[22px]",
-        "border border-(--border) bg-(--glass-strong)",
-        "p-6 shadow-(--shadow-md) backdrop-blur-xl",
-        "transition-all duration-300 hover:-translate-y-1 hover:shadow-(--shadow-xl)",
+        "group surface-card lift press relative overflow-hidden p-6",
         className
       )}
     >
-      {/* Subtle top shimmer line */}
+      {/* Energy accent — a short red strip top-left on "active" KPIs. */}
+      {accent && (
+        <span
+          className="pointer-events-none absolute left-0 top-0 h-1 w-14 rounded-br-xl bg-(image:--gradient-primary)"
+          aria-hidden="true"
+        />
+      )}
+      {/* Corner glow on hover for depth. */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent"
+        className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-primary/10 opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100"
         aria-hidden="true"
       />
 
       {/* Header row: title + icon */}
       <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-semibold text-(--text-secondary)">{title}</p>
+        <p className="eyebrow">{title}</p>
         {icon && (
           <div
             className={cn(
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+              "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-110",
               iconBgClasses[color]
             )}
             aria-hidden="true"
@@ -98,8 +110,8 @@ export default function KpiCard({
         )}
       </div>
 
-      {/* Value */}
-      <p className="mt-3 text-3xl font-black tracking-tight text-(--text-primary)">
+      {/* Value — scoreboard scale */}
+      <p className="metric-number mt-4 text-[2.5rem] text-(--text-primary)">
         {value}
       </p>
 
@@ -108,7 +120,7 @@ export default function KpiCard({
         <div className="mt-3 flex items-center gap-2">
           <span
             className={cn(
-              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold",
+              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold tabular-nums",
               changeStyle.bg,
               changeStyle.text
             )}
@@ -117,7 +129,7 @@ export default function KpiCard({
             {Math.abs(change).toFixed(1)}%
           </span>
           {changeLabel && (
-            <span className="text-xs text-(--text-muted)">{changeLabel}</span>
+            <span className="text-xs font-medium text-(--text-muted)">{changeLabel}</span>
           )}
         </div>
       )}

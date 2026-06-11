@@ -29,11 +29,11 @@ const defaultData: HeatmapDay[] = [
 
 function getIntensityClass(value: number) {
   const classes = [
-    "bg-slate-200 dark:bg-slate-800",
-    "bg-emerald-100 dark:bg-emerald-950",
-    "bg-emerald-200 dark:bg-emerald-900",
-    "bg-emerald-400 dark:bg-emerald-700",
-    "bg-emerald-500 dark:bg-emerald-500",
+    "bg-muted dark:bg-muted",
+    "bg-muted dark:bg-muted-foreground",
+    "bg-muted dark:bg-muted-foreground",
+    "bg-muted-foreground dark:bg-muted-foreground",
+    "bg-muted-foreground dark:bg-muted-foreground",
   ];
 
   return classes[Math.max(0, Math.min(value, 4))];
@@ -69,12 +69,12 @@ export default function AttendanceHeatmap({
     : defaultData;
 
   return (
-    <Card className="rounded-3xl border border-slate-200/70 bg-white/95 p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900/95">
+    <Card className="rounded-3xl border border-border bg-white/95 p-6 shadow-xl dark:border-border dark:bg-muted">
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+        <h3 className="text-lg font-semibold text-foreground dark:text-white">
           Attendance Heatmap
         </h3>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <p className="text-sm text-muted-foreground">
           Weekly attendance intensity
         </p>
       </div>
@@ -87,14 +87,14 @@ export default function AttendanceHeatmap({
                 item.value
               )}`}
             />
-            <p className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+            <p className="mt-2 text-xs font-medium text-muted-foreground">
               {item.day}
             </p>
           </div>
         ))}
       </div>
 
-      <div className="mt-6 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+      <div className="mt-6 flex items-center justify-between text-xs text-muted-foreground">
         <span>Low</span>
         <div className="flex gap-1">
           {[0, 1, 2, 3, 4].map((level) => (

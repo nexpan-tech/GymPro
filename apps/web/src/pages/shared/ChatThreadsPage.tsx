@@ -55,11 +55,11 @@ export default function ChatThreadsPage() {
       <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
         {/* Threads */}
         <Card variant="solid" className="overflow-hidden p-0">
-          <div className="border-b border-(--border) px-4 py-3 text-sm font-semibold text-(--text-primary)">Conversations</div>
+          <div className="border-b border-border px-4 py-3 text-sm font-semibold text-(--text-primary)">Conversations</div>
           {threads.length === 0 ? (
             <p className="px-4 py-6 text-sm text-(--text-secondary)">No conversations yet.</p>
           ) : (
-            <div className="max-h-[60vh] divide-y divide-(--border) overflow-y-auto">
+            <div className="max-h-[60vh] divide-y divide-border overflow-y-auto">
               {threads.map((t) => (
                 <button key={t.memberId} onClick={() => openThread(t)} className={`flex w-full items-center justify-between px-4 py-3 text-left transition hover:bg-(--surface-elevated) ${active?.memberId === t.memberId ? "bg-(--surface-elevated)" : ""}`}>
                   <div className="min-w-0">
@@ -81,13 +81,13 @@ export default function ChatThreadsPage() {
             </div>
           ) : (
             <>
-              <div className="border-b border-(--border) px-4 py-3 text-sm font-semibold text-(--text-primary)">{active.name}</div>
+              <div className="border-b border-border px-4 py-3 text-sm font-semibold text-(--text-primary)">{active.name}</div>
               <div className="flex-1 space-y-2 overflow-y-auto p-4">
                 {messages.map((m) => {
                   const mine = m.sender?.role !== "MEMBER";
                   return (
                     <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[70%] rounded-2xl px-3 py-2 text-sm ${mine ? "bg-indigo-500 text-white" : "bg-(--surface-elevated) text-(--text-primary)"}`}>
+                      <div className={`max-w-[70%] rounded-2xl px-3 py-2 text-sm ${mine ? "bg-primary text-white" : "bg-(--surface-elevated) text-(--text-primary)"}`}>
                         {m.message}
                       </div>
                     </div>
@@ -95,7 +95,7 @@ export default function ChatThreadsPage() {
                 })}
                 <div ref={endRef} />
               </div>
-              <div className="flex gap-2 border-t border-(--border) p-3">
+              <div className="flex gap-2 border-t border-border p-3">
                 <Input className="flex-1" placeholder="Type a message…" value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} />
                 <Button iconLeft={<Send className="h-4 w-4" />} onClick={send}>Send</Button>
               </div>

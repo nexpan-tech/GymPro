@@ -1,14 +1,18 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Users, DoorOpen, CalendarCheck, TrendingUp, QrCode, Plus, Download } from "lucide-react";
-import Page from "@/components/ui/Page";
-import { Card } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
 import Modal from "@/components/ui/Modal";
 import Select from "@/components/forms/Select";
 import SearchInput from "@/components/common/SearchInput";
-import EmptyState from "@/components/common/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
+import {
+  CommandHero,
+  Highlight,
+  MetricCard,
+  SectionHeader,
+  StatusPill,
+  EmptyMomentumState,
+} from "@/components/premium";
 import { useToast } from "@/hooks/useToast";
 import { attendanceService } from "@/services/attendance.service";
 import { memberService } from "@/services/member.service";
@@ -68,6 +72,8 @@ export default function AttendancePage() {
   }, [load]);
 
   const inside = useMemo(() => today.filter((a) => a.status === "CHECKED_IN").length, [today]);
+  const occupancy = analytics?.currentOccupancy ?? inside;
+  const todayCount = analytics?.todayCheckIns ?? today.length;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -128,41 +134,86 @@ export default function AttendancePage() {
   }
 
   return (
-    <Page
-      title="Attendance"
-      description="Live gym occupancy, today's check-ins, and the scan QR."
-      action={
-        <div className="flex gap-2">
-          <Button variant="secondary" iconLeft={<QrCode className="h-4 w-4" />} onClick={() => void openQr()}>Gym QR</Button>
-          <Button iconLeft={<Plus className="h-4 w-4" />} onClick={() => setManualOpen(true)}>Manual Check-in</Button>
-        </div>
-      }
-    >
-      <div className="space-y-6">
-        {/* Stat cards */}
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard label="Currently Inside" value={analytics?.currentOccupancy ?? inside} tone="success" icon={<DoorOpen className="h-5 w-5" />} />
-          <StatCard label="Today's Check-ins" value={analytics?.todayCheckIns ?? today.length} icon={<CalendarCheck className="h-5 w-5" />} />
-          <StatCard label="Avg / Day (7d)" value={analytics?.avgDailyAttendance ?? 0} icon={<TrendingUp className="h-5 w-5" />} />
-          <StatCard label="Total Check-ins" value={analytics?.totalCheckIns ?? 0} icon={<Users className="h-5 w-5" />} />
-        </div>
+    <div className="space-y-8">
+      {/* ── Live Gym Floor hero ─────────────────────────────────────────────── */}
+      <CommandHero
+        eyebrow={
+          <span className="inline-flex items-center gap-2">
+            <span className="pulse-dot" aria-hidden="true" />
+            Live Gym Floor
+          </span>
+        }
+        title={
+          loading ? (
+            <>Reading the floor…</>
+          ) : occupancy > 0 ? (
+            <>
+              {occupancy} {occupancy === 1 ? "member is" : "members are"}{" "}
+              <Highlight>training right now.</Highlight>
+            </>
+          ) : (
+            <>
+              The floor is <Highlight>ready.</Highlight>
+            </>
+          )
+        }
+        subtitle="Real-time occupancy, today's check-ins, and front-desk controls — your gym, live."
+        stats={[
+          { label: "Inside now", value: loading ? "—" : occupancy.toLocaleString("en-IN") },
+          { label: "Today's check-ins", value: loading ? "—" : todayCount.toLocaleString("en-IN") },
+        ]}
+        actions={
+          <>
+            <button
+              onClick={() => void openQr()}
+              className="press inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/8 px-4 py-2 text-xs font-bold text-white/90 transition-colors hover:bg-white/15 hover:text-white"
+            >
+              <QrCode className="h-3.5 w-3.5" />
+              Gym QR
+            </button>
+            <button
+              onClick={() => setManualOpen(true)}
+              className="press inline-flex items-center gap-1.5 rounded-xl bg-(image:--gradient-primary) px-4 py-2 text-xs font-bold text-white shadow-[0_8px_22px_rgba(231,55,37,0.4)] transition-transform hover:-translate-y-0.5"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Manual Check-in
+            </button>
+          </>
+        }
+      />
 
-        {/* Peak hours */}
-        {analytics && analytics.peakHours.length > 0 && (
-          <Card variant="solid" className="p-5">
-            <p className="mb-3 text-sm font-semibold text-(--text-primary)">Peak hours (last {analytics.windowDays} days)</p>
-            <div className="flex flex-wrap gap-2">
-              {analytics.peakHours.map((h) => (
-                <Badge key={h.hour} variant="info">
-                  {String(h.hour).padStart(2, "0")}:00 — {h.count}
-                </Badge>
-              ))}
-            </div>
-          </Card>
-        )}
+      {/* ── KPI row ─────────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-5 stagger lg:grid-cols-4">
+        <MetricCard label="Currently Inside" value={occupancy} icon={<DoorOpen />} tone="energy" loading={loading} />
+        <MetricCard label="Today's Check-ins" value={todayCount} icon={<CalendarCheck />} tone="neutral" loading={loading} />
+        <MetricCard label="Avg / Day (7d)" value={analytics?.avgDailyAttendance ?? 0} icon={<TrendingUp />} tone="neutral" loading={loading} />
+        <MetricCard label="Total Check-ins" value={analytics?.totalCheckIns ?? 0} icon={<Users />} tone="neutral" loading={loading} />
+      </div>
+
+      {/* ── Peak hours ──────────────────────────────────────────────────────── */}
+      {analytics && analytics.peakHours.length > 0 && (
+        <div className="surface-card p-5">
+          <p className="eyebrow mb-3 flex items-center gap-2">
+            <span className="section-tick" aria-hidden="true" />
+            Peak hours · last {analytics.windowDays} days
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {analytics.peakHours.map((h) => (
+              <span key={h.hour} className="chip">
+                {String(h.hour).padStart(2, "0")}:00
+                <span className="text-primary">· {h.count}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Today's roster ──────────────────────────────────────────────────── */}
+      <div>
+        <SectionHeader eyebrow="Today" title="Who's on the floor" />
 
         {/* Filters */}
-        <Card variant="solid" className="p-4">
+        <div className="surface-card mb-4 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="flex-1">
               <SearchInput value={search} onChange={setSearch} placeholder="Search by member name or email" />
@@ -175,49 +226,69 @@ export default function AttendancePage() {
               ))}
             </div>
           </div>
-        </Card>
+        </div>
 
-        {/* Today table */}
         {loading ? (
-          <Card variant="solid" className="p-4"><div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} height="h-12" />)}</div></Card>
+          <div className="surface-card p-4"><div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} height="h-12" />)}</div></div>
         ) : error ? (
-          <EmptyState title="Couldn't load attendance" message={error} action={<Button variant="secondary" onClick={() => void load()}>Retry</Button>} />
+          <div className="surface-card">
+            <EmptyMomentumState
+              icon={<CalendarCheck />}
+              title="Couldn't load the floor"
+              description={error}
+              action={<Button variant="secondary" onClick={() => void load()}>Retry</Button>}
+            />
+          </div>
         ) : filtered.length === 0 ? (
-          <EmptyState icon={<CalendarCheck className="h-7 w-7" />} title="No check-ins yet" message="Member check-ins for today will appear here." />
+          <div className="surface-card">
+            <EmptyMomentumState
+              icon={<DoorOpen />}
+              title="The doors are open"
+              description="Today's check-ins will appear here the moment members scan in. Display your gym QR to get the floor moving."
+              action={<Button iconLeft={<QrCode className="h-4 w-4" />} variant="secondary" onClick={() => void openQr()}>Show gym QR</Button>}
+            />
+          </div>
         ) : (
-          <Card variant="solid" className="overflow-hidden p-0">
+          <div className="surface-card overflow-hidden p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-(--border) text-xs uppercase tracking-wide text-(--text-secondary)">
+                <thead className="border-b border-border bg-(--surface-secondary) text-xs uppercase tracking-wide text-(--text-muted)">
                   <tr>
-                    <th className="px-5 py-3 font-medium">Member</th>
-                    <th className="px-5 py-3 font-medium">Check-in</th>
-                    <th className="px-5 py-3 font-medium">Check-out</th>
-                    <th className="px-5 py-3 font-medium">Source</th>
-                    <th className="px-5 py-3 font-medium">Status</th>
-                    <th className="px-5 py-3 text-right font-medium">Actions</th>
+                    <th className="px-5 py-3 font-bold">Member</th>
+                    <th className="px-5 py-3 font-bold">Check-in</th>
+                    <th className="px-5 py-3 font-bold">Check-out</th>
+                    <th className="px-5 py-3 font-bold">Source</th>
+                    <th className="px-5 py-3 font-bold">Status</th>
+                    <th className="px-5 py-3 text-right font-bold">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-(--border)">
+                <tbody className="divide-y divide-border">
                   {filtered.map((a) => (
-                    <tr key={a.id} className="hover:bg-(--surface-hover)">
+                    <tr key={a.id} className="transition-colors hover:bg-(--surface-hover)">
                       <td className="px-5 py-4">
-                        <div className="font-medium text-(--text-primary)">{a.member?.user?.name ?? "—"}</div>
-                        <div className="text-xs text-(--text-secondary)">{a.member?.user?.email}</div>
+                        <div className="flex items-center gap-3">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary ring-1 ring-primary/20">
+                            {(a.member?.user?.name ?? "—").charAt(0).toUpperCase()}
+                          </span>
+                          <div className="min-w-0">
+                            <div className="truncate font-bold text-(--text-primary)">{a.member?.user?.name ?? "—"}</div>
+                            <div className="truncate text-xs text-(--text-muted)">{a.member?.user?.email}</div>
+                          </div>
+                        </div>
                       </td>
-                      <td className="px-5 py-4 text-(--text-secondary)">{time(a.checkInAt)}</td>
-                      <td className="px-5 py-4 text-(--text-secondary)">{time(a.checkOutAt)}</td>
+                      <td className="px-5 py-4 tabular-nums text-(--text-secondary)">{time(a.checkInAt)}</td>
+                      <td className="px-5 py-4 tabular-nums text-(--text-secondary)">{time(a.checkOutAt)}</td>
                       <td className="px-5 py-4 text-(--text-secondary)">{a.source ?? "—"}</td>
                       <td className="px-5 py-4">
-                        <Badge variant={a.status === "CHECKED_IN" ? "success" : "default"} dot>
+                        <StatusPill tone={a.status === "CHECKED_IN" ? "live" : "neutral"} size="sm">
                           {a.status === "CHECKED_IN" ? "Inside" : "Left"}
-                        </Badge>
+                        </StatusPill>
                       </td>
                       <td className="px-5 py-4 text-right">
                         {a.status === "CHECKED_IN" ? (
                           <Button size="sm" variant="secondary" loading={busyId === a.id} onClick={() => void handleCheckout(a)}>Check out</Button>
                         ) : (
-                          <span className="text-xs text-(--text-secondary)">—</span>
+                          <span className="text-xs text-(--text-muted)">—</span>
                         )}
                       </td>
                     </tr>
@@ -225,7 +296,7 @@ export default function AttendancePage() {
                 </tbody>
               </table>
             </div>
-          </Card>
+          </div>
         )}
       </div>
 
@@ -245,7 +316,7 @@ export default function AttendancePage() {
       >
         {qr ? (
           <div className="flex flex-col items-center gap-3">
-            <img src={qr.dataUrl} alt="Gym attendance QR" className="h-56 w-56 rounded-xl border border-(--border) bg-white p-2" />
+            <img src={qr.dataUrl} alt="Gym attendance QR" className="h-56 w-56 rounded-xl border border-border bg-white p-2" />
             <p className="text-sm font-medium text-(--text-primary)">{qr.gymName}</p>
             <p className="text-xs text-(--text-secondary)">Encodes: {qr.qrValue}</p>
           </div>
@@ -276,19 +347,6 @@ export default function AttendancePage() {
           onChange={(e) => setManualMemberId(e.target.value)}
         />
       </Modal>
-    </Page>
-  );
-}
-
-function StatCard({ label, value, icon, tone = "default" }: { label: string; value: number; icon: ReactNode; tone?: "default" | "success"; }) {
-  const toneClass = tone === "success" ? "text-emerald-600 dark:text-emerald-400" : "text-indigo-600 dark:text-indigo-400";
-  return (
-    <Card variant="solid" className="p-5">
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-(--text-secondary)">{label}</span>
-        <span className={toneClass}>{icon}</span>
-      </div>
-      <div className="mt-2 text-2xl font-bold text-(--text-primary)">{value}</div>
-    </Card>
+    </div>
   );
 }

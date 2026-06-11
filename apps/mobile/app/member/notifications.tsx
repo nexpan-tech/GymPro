@@ -51,13 +51,13 @@ type NotifIconKey =
 
 // Accent colors only — backgrounds derived as soft tint so both themes work.
 const ICON_MAP: Record<NotifIconKey, { icon: typeof Bell; color: string }> = {
-  WORKOUT: { icon: Dumbbell, color: "#818cf8" },
-  DIET: { icon: Salad, color: "#34d399" },
-  MEMBERSHIP: { icon: CreditCard, color: "#f59e0b" },
-  PAYMENT: { icon: CreditCard, color: "#f87171" },
-  ANNOUNCEMENT: { icon: Megaphone, color: "#60a5fa" },
-  ALERT: { icon: Zap, color: "#fb923c" },
-  DEFAULT: { icon: Info, color: "#94a3b8" },
+  WORKOUT: { icon: Dumbbell, color: "#767676" },
+  DIET: { icon: Salad, color: "#767676" },
+  MEMBERSHIP: { icon: CreditCard, color: "#767676" },
+  PAYMENT: { icon: CreditCard, color: "#ec5848" },
+  ANNOUNCEMENT: { icon: Megaphone, color: "#5c5c5c" },
+  ALERT: { icon: Zap, color: "#767676" },
+  DEFAULT: { icon: Info, color: "#767676" },
 };
 
 function iconConfig(type: string) {

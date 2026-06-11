@@ -72,9 +72,23 @@ export const memberService = {
     return res.data
   },
 
-  /** DELETE /members/:id — soft delete (member becomes INACTIVE). */
-  remove: async (id: string): Promise<ApiResponse<null>> => {
-    const res = await api.delete<ApiResponse<null>>(`/members/${id}`)
+  /** DELETE /members/:id — soft delete (INACTIVE) by default, or ?hard=true to permanently delete. */
+  remove: async (id: string, hard = false): Promise<ApiResponse<null>> => {
+    const res = await api.delete<ApiResponse<null>>(`/members/${id}`, {
+      params: hard ? { hard: true } : undefined,
+    })
+    return res.data
+  },
+
+  /** POST /members/:id/reset-password — sets/generates a temp password (returned once). */
+  resetPassword: async (
+    id: string,
+    password?: string,
+  ): Promise<ApiResponse<{ temporaryPassword: string; generated: boolean }>> => {
+    const res = await api.post<ApiResponse<{ temporaryPassword: string; generated: boolean }>>(
+      `/members/${id}/reset-password`,
+      password ? { password } : {},
+    )
     return res.data
   },
 

@@ -216,7 +216,7 @@ export default function BranchesPage() {
           <Card variant="solid" className="overflow-hidden p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-(--border) text-xs uppercase tracking-wide text-(--text-secondary)">
+                <thead className="border-b border-border text-xs uppercase tracking-wide text-(--text-secondary)">
                   <tr>
                     <th className="px-5 py-3 font-medium">Branch</th>
                     <th className="px-5 py-3 font-medium">Code</th>
@@ -226,7 +226,7 @@ export default function BranchesPage() {
                     <th className="px-5 py-3 text-right font-medium">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-(--border)">
+                <tbody className="divide-y divide-border">
                   {filtered.map((branch) => (
                     <tr key={branch.id} className="hover:bg-(--surface-hover)">
                       <td className="px-5 py-4 font-medium text-(--text-primary)">

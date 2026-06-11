@@ -25,10 +25,10 @@ export default function Pagination({
   }
 
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-      <p className="text-sm text-gray-600 dark:text-gray-400">
-        Page <span className="font-semibold text-gray-900 dark:text-white">{page}</span> of{" "}
-        <span className="font-semibold text-gray-900 dark:text-white">
+    <div className="flex items-center justify-between rounded-2xl border border-border bg-white px-4 py-3 shadow-sm dark:border-border dark:bg-muted">
+      <p className="text-sm text-muted-foreground">
+        Page <span className="font-semibold text-foreground dark:text-white">{page}</span> of{" "}
+        <span className="font-semibold text-foreground dark:text-white">
           {totalPages}
         </span>
       </p>
@@ -38,7 +38,7 @@ export default function Pagination({
           type="button"
           onClick={handlePrevious}
           disabled={!canGoPrevious}
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+          className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 dark:border-border dark:text-muted-foreground dark:hover:bg-muted"
         >
           <ChevronLeft className="h-4 w-4" />
           Previous
@@ -48,7 +48,7 @@ export default function Pagination({
           type="button"
           onClick={handleNext}
           disabled={!canGoNext}
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+          className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 dark:border-border dark:text-muted-foreground dark:hover:bg-muted"
         >
           Next
           <ChevronRight className="h-4 w-4" />

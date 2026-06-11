@@ -1,7 +1,7 @@
 export { ThemeProvider, ThemeContext } from "./ThemeProvider";
 export type { Theme, ThemePreference, ThemeContextValue } from "./ThemeProvider";
 export { useTheme } from "./useTheme";
-export { darkColors, lightColors } from "./colors";
+export { darkColors, lightColors, brandColors } from "./colors";
 export type { ThemeColors, ThemeMode } from "./colors";
 export { spacing, radius } from "./spacing";
 export { typography } from "./typography";

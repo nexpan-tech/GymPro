@@ -30,43 +30,43 @@ export default function GymOverviewCard({
       value: totalMembers,
       icon: Users,
       color:
-        "bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400",
+        "bg-primary/10 text-primary dark:bg-primary/15 dark:text-primary",
     },
     {
       label: "Active Members",
       value: activeMembers,
       icon: UserCheck,
       color:
-        "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400",
+        "bg-muted text-muted-foreground dark:bg-muted dark:text-muted-foreground",
     },
     {
       label: "Trainers",
       value: trainers,
       icon: Dumbbell,
       color:
-        "bg-violet-100 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400",
+        "bg-primary/10 text-primary dark:bg-primary/15 dark:text-primary",
     },
     {
       label: "Today Attendance",
       value: todayAttendance,
       icon: Activity,
       color:
-        "bg-orange-100 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400",
+        "bg-muted text-muted-foreground dark:bg-muted dark:text-muted-foreground",
     },
   ];
 
   return (
-    <Card className="rounded-3xl border border-slate-200/70 bg-white/95 p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900/95">
+    <Card className="rounded-3xl border border-border bg-white/95 p-6 shadow-xl dark:border-border dark:bg-muted">
       <div className="mb-6 flex items-center gap-3">
-        <div className="rounded-2xl bg-indigo-100 p-3 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
+        <div className="rounded-2xl bg-primary/10 p-3 text-primary dark:bg-primary/15 dark:text-primary">
           <Building2 className="h-5 w-5" />
         </div>
 
         <div>
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+          <h3 className="text-lg font-semibold text-foreground dark:text-white">
             {gymName}
           </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-muted-foreground">
             Gym performance overview
           </p>
         </div>
@@ -79,7 +79,7 @@ export default function GymOverviewCard({
           return (
             <div
               key={item.label}
-              className="rounded-2xl border border-slate-200/60 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-800/50"
+              className="rounded-2xl border border-border bg-muted p-4 dark:border-border dark:bg-muted"
             >
               <div
                 className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl ${item.color}`}
@@ -87,11 +87,11 @@ export default function GymOverviewCard({
                 <Icon className="h-5 w-5" />
               </div>
 
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">
+              <p className="text-2xl font-bold text-foreground dark:text-white">
                 {item.value}
               </p>
 
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {item.label}
               </p>
             </div>

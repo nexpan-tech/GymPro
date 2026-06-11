@@ -1,6 +1,6 @@
 import { prisma } from "../../config/db";
 import { AppError } from "../../utils/response";
-import { emitChatMessage, emitToUser } from "../../realtime/socket";
+import { emitChatMessage, emitToUser, emitToStaff } from "../../realtime/socket";
 import { SOCKET_EVENTS } from "../../realtime/socket-events";
 
 type AuthUser = {
@@ -72,8 +72,9 @@ export class CommunicationService {
     });
 
     // Stage 9 — realtime delivery to both participants (trainer + member user).
-    const recipientUserIds = [trainerId, member.userId].filter(Boolean) as string[];
-    emitChatMessage(recipientUserIds, {
+    // Refinement: also push to the gym staff room so the admin chat console
+    // updates live for admin<->member conversations.
+    const payload = {
       id: created.id,
       gymId: created.gymId,
       memberId: created.memberId,
@@ -82,9 +83,75 @@ export class CommunicationService {
       type: created.type,
       message: created.message,
       createdAt: created.createdAt,
-    });
+    };
+    const recipientUserIds = [trainerId, member.userId].filter(Boolean) as string[];
+    emitChatMessage(recipientUserIds, payload);
+    emitToStaff(user.gymId!, SOCKET_EVENTS.CHAT_MESSAGE, payload);
 
     return created;
+  }
+
+  // ── Admin <-> Trainer staff DM (same table, memberId = null) ───────────────
+
+  private static async getTrainerForStaffDm(user: AuthUser, trainerId: string) {
+    if (!user.gymId) throw new AppError("Gym context missing", 403);
+    const trainer = await prisma.user.findFirst({
+      where: { id: trainerId, gymId: user.gymId, role: "TRAINER" },
+      select: { id: true, name: true },
+    });
+    if (!trainer) throw new AppError("Trainer not found in this gym", 404);
+    // A trainer may only access their own staff thread; staff can access any.
+    if (user.role === "TRAINER" && user.id !== trainerId) {
+      throw new AppError("You can only access your own messages", 403);
+    }
+    return trainer;
+  }
+
+  /** Send an admin<->trainer message (memberId null). */
+  static async sendStaffMessage(user: AuthUser, data: { trainerId: string; message: string }) {
+    if (!data.message?.trim()) throw new AppError("Message is required", 400);
+    const trainer = await this.getTrainerForStaffDm(user, data.trainerId);
+
+    const created = await prisma.trainerMessage.create({
+      data: {
+        gymId: user.gymId!,
+        trainerId: trainer.id,
+        memberId: null,
+        senderId: user.id,
+        type: "TEXT",
+        message: data.message,
+      },
+      include: { sender: { select: { id: true, name: true, role: true } } },
+    });
+
+    const payload = {
+      id: created.id,
+      gymId: created.gymId,
+      trainerId: created.trainerId,
+      memberId: null,
+      senderId: created.senderId,
+      message: created.message,
+      createdAt: created.createdAt,
+      staff: true,
+    };
+    emitToUser(trainer.id, SOCKET_EVENTS.CHAT_MESSAGE, payload);
+    emitToStaff(user.gymId!, SOCKET_EVENTS.CHAT_MESSAGE, payload);
+    return created;
+  }
+
+  /** Read an admin<->trainer staff thread (auto-marks the other party read). */
+  static async getStaffThread(user: AuthUser, trainerId: string) {
+    const trainer = await this.getTrainerForStaffDm(user, trainerId);
+    const messages = await prisma.trainerMessage.findMany({
+      where: { gymId: user.gymId!, trainerId: trainer.id, memberId: null },
+      include: { sender: { select: { id: true, name: true, role: true } } },
+      orderBy: { createdAt: "asc" },
+    });
+    await prisma.trainerMessage.updateMany({
+      where: { gymId: user.gymId!, trainerId: trainer.id, memberId: null, senderId: { not: user.id }, isRead: false },
+      data: { isRead: true, readAt: new Date() },
+    });
+    return { trainerId: trainer.id, name: trainer.name, messages };
   }
 
   // ── Stage 9 — read receipts + thread helpers ──────────────────────────────

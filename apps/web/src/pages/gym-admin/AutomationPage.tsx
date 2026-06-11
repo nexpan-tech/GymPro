@@ -48,7 +48,7 @@ export default function AutomationPage() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <Bot className="h-4 w-4 text-indigo-500" />
+                    <Bot className="h-4 w-4 text-primary" />
                     <span className="text-sm font-semibold text-(--text-primary)">{a.name}</span>
                     <Badge variant="success">Active</Badge>
                   </div>
@@ -72,7 +72,7 @@ export default function AutomationPage() {
           ) : (
             <div className="space-y-2">
               {log.map((l, i) => (
-                <div key={i} className="rounded-md border border-(--border) p-2 text-xs">
+                <div key={i} className="rounded-md border border-border p-2 text-xs">
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-(--text-primary)">{l.name}</span>
                     <span className="text-(--text-secondary)">{l.at}</span>

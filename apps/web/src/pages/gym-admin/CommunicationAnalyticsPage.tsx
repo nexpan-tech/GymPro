@@ -39,9 +39,9 @@ export default function CommunicationAnalyticsPage() {
       <div className="space-y-6">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <Stat label="Notifications sent" value={String(analytics?.delivery.sent ?? 0)} icon={<Send className="h-5 w-5" />} />
-          <Stat label="Read rate" value={`${analytics?.notifications.readRate ?? 0}%`} icon={<CheckCheck className="h-5 w-5" />} tone="emerald" />
+          <Stat label="Read rate" value={`${analytics?.notifications.readRate ?? 0}%`} icon={<CheckCheck className="h-5 w-5" />} tone="neutral" />
           <Stat label="Failed" value={String(analytics?.delivery.failed ?? 0)} icon={<XCircle className="h-5 w-5" />} tone="rose" />
-          <Stat label="Avg chat reply" value={`${analytics?.chat.avgResponseMinutes ?? 0}m`} icon={<Clock className="h-5 w-5" />} tone="amber" />
+          <Stat label="Avg chat reply" value={`${analytics?.chat.avgResponseMinutes ?? 0}m`} icon={<Clock className="h-5 w-5" />} tone="steel" />
         </div>
 
         {/* Channel breakdown */}
@@ -49,7 +49,7 @@ export default function CommunicationAnalyticsPage() {
           <h3 className="mb-3 text-sm font-semibold text-(--text-primary)">Channel performance</h3>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
             {Object.entries(analytics?.channels ?? {}).map(([ch, v]) => (
-              <div key={ch} className="rounded-lg border border-(--border) p-3 text-sm">
+              <div key={ch} className="rounded-lg border border-border p-3 text-sm">
                 <div className="font-semibold text-(--text-primary)">{ch}</div>
                 <div className="text-(--text-secondary)">✓ {v.sent} · ✗ {v.failed} · – {v.skipped}</div>
               </div>
@@ -66,7 +66,7 @@ export default function CommunicationAnalyticsPage() {
           </div>
           <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
             {queues.map((q) => (
-              <div key={q.name} className="rounded-lg border border-(--border) p-3 text-sm">
+              <div key={q.name} className="rounded-lg border border-border p-3 text-sm">
                 <div className="font-semibold text-(--text-primary)">{q.name}</div>
                 <div className="text-(--text-secondary)">wait {q.waiting} · active {q.active} · done {q.completed} · failed {q.failed}</div>
               </div>
@@ -74,10 +74,10 @@ export default function CommunicationAnalyticsPage() {
           </div>
           {dlq.length > 0 && (
             <div className="mt-4">
-              <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-rose-400">Dead-letter queue ({dlq.length})</div>
+              <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">Dead-letter queue ({dlq.length})</div>
               <div className="space-y-2">
                 {dlq.map((j) => (
-                  <div key={j.id} className="flex items-center justify-between rounded-md border border-(--border) p-2 text-xs">
+                  <div key={j.id} className="flex items-center justify-between rounded-md border border-border p-2 text-xs">
                     <span className="truncate text-(--text-secondary)">[{j.originalQueue}] {j.errorMessage}</span>
                     <Button size="sm" variant="secondary" onClick={() => retry(j.id)}>Retry</Button>
                   </div>
@@ -89,14 +89,14 @@ export default function CommunicationAnalyticsPage() {
 
         {/* Delivery logs */}
         <Card variant="solid" className="overflow-hidden p-0">
-          <div className="border-b border-(--border) px-5 py-3 text-sm font-semibold text-(--text-primary)">Recent deliveries</div>
+          <div className="border-b border-border px-5 py-3 text-sm font-semibold text-(--text-primary)">Recent deliveries</div>
           {logs.length === 0 ? <p className="px-5 py-6 text-sm text-(--text-secondary)">No delivery logs yet.</p> : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-(--border) text-xs uppercase tracking-wide text-(--text-secondary)">
+                <thead className="border-b border-border text-xs uppercase tracking-wide text-(--text-secondary)">
                   <tr><th className="px-4 py-2">Channel</th><th className="px-4 py-2">Status</th><th className="px-4 py-2">Recipient</th><th className="px-4 py-2">Title</th><th className="px-4 py-2">When</th></tr>
                 </thead>
-                <tbody className="divide-y divide-(--border)">
+                <tbody className="divide-y divide-border">
                   {logs.map((l) => (
                     <tr key={l.id}>
                       <td className="px-4 py-2">{l.channel}</td>
@@ -116,8 +116,8 @@ export default function CommunicationAnalyticsPage() {
   );
 }
 
-function Stat({ label, value, icon, tone }: { label: string; value: string; icon: ReactNode; tone?: "emerald" | "rose" | "amber" }) {
-  const color = tone === "emerald" ? "text-emerald-500" : tone === "rose" ? "text-rose-500" : tone === "amber" ? "text-amber-500" : "text-indigo-500";
+function Stat({ label, value, icon, tone }: { label: string; value: string; icon: ReactNode; tone?: "neutral" | "rose" | "steel" }) {
+  const color = tone === "neutral" ? "text-muted-foreground" : tone === "rose" ? "text-primary" : tone === "steel" ? "text-muted-foreground" : "text-primary";
   return (
     <Card variant="solid" className="p-5">
       <div className="flex items-center justify-between"><span className="text-sm text-(--text-secondary)">{label}</span><span className={color}>{icon}</span></div>

@@ -95,13 +95,19 @@ export default function LoginScreen() {
             </AppText>
           </LinearGradient>
 
-          <AppText variant="display">GymPro</AppText>
+          <AppText variant="overline" color="primary" style={{ marginBottom: 6 }}>
+            GymPro Member
+          </AppText>
+          <AppText variant="display" style={{ textAlign: "center" }}>
+            Train. Track.{"\n"}
+            <AppText variant="display" color="primary">Transform.</AppText>
+          </AppText>
           <AppText
             variant="body"
             color="textSecondary"
-            style={{ marginTop: 8, textAlign: "center" }}
+            style={{ marginTop: 12, textAlign: "center", maxWidth: 280 }}
           >
-            Your personal fitness command center
+            Your progress, your streaks, your wins — all in one place.
           </AppText>
         </View>
 

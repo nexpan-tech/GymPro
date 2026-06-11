@@ -68,13 +68,13 @@ export default function LoginPage() {
 
   return (
     <AuthLayout
-      title="Welcome Back"
-      subtitle="Sign in to your GymPro account"
+      title="Welcome back."
+      subtitle="Sign in to your command center and keep the momentum going."
     >
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
         {/* API error banner */}
         {apiError && (
-          <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400">
+          <div className="flex items-start gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm text-primary dark:border-primary/40 dark:bg-primary/15 dark:text-primary">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{apiError}</span>
           </div>
@@ -104,7 +104,7 @@ export default function LoginPage() {
             </label>
             <Link
               to="/forgot-password"
-              className="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+              className="text-sm font-medium text-primary transition-colors hover:opacity-80"
             >
               Forgot password?
             </Link>
@@ -156,7 +156,7 @@ export default function LoginPage() {
         Don&apos;t have an account?{" "}
         <Link
           to="/register"
-          className="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+          className="font-semibold text-primary transition-colors hover:opacity-80"
         >
           Register your gym
         </Link>

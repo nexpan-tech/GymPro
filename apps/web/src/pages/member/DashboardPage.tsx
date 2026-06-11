@@ -147,7 +147,7 @@ function StatCard({ icon, label, value, color, subLabel }: StatCardProps) {
   return (
     <div
       className={cn(
-        "flex min-w-35 flex-col gap-2 rounded-2xl border border-(--border) bg-(--glass-strong)",
+        "flex min-w-35 flex-col gap-2 rounded-2xl border border-border bg-(--glass-strong)",
         "p-4 shadow-(--shadow-md) backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-(--shadow-xl)"
       )}
     >
@@ -209,7 +209,7 @@ function GreetingBanner({
               ) : (
                 <>
                   Welcome back,{" "}
-                  <span className="bg-linear-to-r from-orange-400 to-rose-500 bg-clip-text text-transparent">
+                  <span className="bg-linear-to-r from-muted to-primary bg-clip-text text-transparent">
                     {name}!
                   </span>
                 </>
@@ -224,10 +224,10 @@ function GreetingBanner({
 
           {/* XP badge */}
           {!loading && xp > 0 && (
-            <div className="flex items-center gap-2 rounded-2xl border border-amber-400/20 bg-amber-500/10 px-5 py-3">
-              <Zap className="h-5 w-5 text-amber-500" />
+            <div className="flex items-center gap-2 rounded-2xl border border-border bg-muted-foreground px-5 py-3">
+              <Zap className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+                <p className="text-xs font-semibold text-muted-foreground">
                   XP Points
                 </p>
                 <p className="text-xl font-black text-(--text-primary)">{xp.toLocaleString()}</p>
@@ -240,36 +240,36 @@ function GreetingBanner({
         <div className="mt-6 flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] scrollbar-none [&::-webkit-scrollbar]:hidden">
           {loading ? (
             Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} width="w-[140px]" height="h-[120px]" rounded="lg" className="shrink-0" />
+              <Skeleton key={i} width="w-35" height="h-30" rounded="lg" className="shrink-0" />
             ))
           ) : (
             <>
               <StatCard
-                icon={<Flame className="h-5 w-5 text-orange-500" />}
+                icon={<Flame className="h-5 w-5 text-muted-foreground" />}
                 label="Current Streak"
                 value={`${streak}d`}
-                color="bg-orange-500/10"
+                color="bg-muted-foreground"
                 subLabel={streak > 0 ? "Keep it up!" : "Start today"}
               />
               <StatCard
-                icon={<Zap className="h-5 w-5 text-amber-500" />}
+                icon={<Zap className="h-5 w-5 text-muted-foreground" />}
                 label="XP Points"
                 value={xp > 0 ? xp.toLocaleString() : "0"}
-                color="bg-amber-500/10"
+                color="bg-muted-foreground"
                 subLabel="Lifetime total"
               />
               <StatCard
-                icon={<CheckCircle2 className="h-5 w-5 text-emerald-500" />}
+                icon={<CheckCircle2 className="h-5 w-5 text-muted-foreground" />}
                 label="Goals Completed"
                 value={goalsCompleted}
-                color="bg-emerald-500/10"
+                color="bg-muted-foreground"
                 subLabel="All time"
               />
               <StatCard
-                icon={<CalendarDays className="h-5 w-5 text-indigo-500" />}
+                icon={<CalendarDays className="h-5 w-5 text-primary" />}
                 label="Days Active"
                 value={daysActive}
-                color="bg-indigo-500/10"
+                color="bg-primary"
                 subLabel="This month"
               />
             </>
@@ -297,7 +297,7 @@ function TodayWorkoutCard({
     <Card variant="glass" hover className="flex flex-col">
       <CardContent className="flex flex-1 flex-col p-6">
         <div className="flex items-start justify-between">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-violet-500 to-purple-600 text-white shadow-lg">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-primary text-white shadow-lg">
             <Dumbbell className="h-6 w-6" />
           </div>
           <Badge variant="primary" dot>
@@ -316,11 +316,11 @@ function TodayWorkoutCard({
             </p>
             <div className="mt-4 flex items-center gap-4 text-xs font-semibold text-(--text-secondary)">
               <span className="flex items-center gap-1">
-                <Dumbbell className="h-3.5 w-3.5 text-violet-500" />
+                <Dumbbell className="h-3.5 w-3.5 text-primary" />
                 {workout.exerciseCount} exercises
               </span>
               <span className="flex items-center gap-1">
-                <Clock className="h-3.5 w-3.5 text-violet-500" />
+                <Clock className="h-3.5 w-3.5 text-primary" />
                 {workout.duration}
               </span>
             </div>
@@ -371,7 +371,7 @@ function TodayDietCard({
     <Card variant="glass" hover className="flex flex-col">
       <CardContent className="flex flex-1 flex-col p-6">
         <div className="flex items-start justify-between">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 text-white shadow-lg">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-muted to-muted text-white shadow-lg">
             <Salad className="h-6 w-6" />
           </div>
           <Badge variant="success" dot>
@@ -390,11 +390,11 @@ function TodayDietCard({
             </p>
             <div className="mt-4 flex items-center gap-4 text-xs font-semibold text-(--text-secondary)">
               <span className="flex items-center gap-1">
-                <Salad className="h-3.5 w-3.5 text-emerald-500" />
+                <Salad className="h-3.5 w-3.5 text-muted-foreground" />
                 {diet.mealCount} meals
               </span>
               <span className="flex items-center gap-1">
-                <Flame className="h-3.5 w-3.5 text-emerald-500" />
+                <Flame className="h-3.5 w-3.5 text-muted-foreground" />
                 {diet.calories}
               </span>
             </div>
@@ -467,8 +467,8 @@ function MembershipStatusCard({
             className={cn(
               "flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-lg",
               isExpiring
-                ? "bg-linear-to-br from-rose-500 to-red-600"
-                : "bg-linear-to-br from-sky-500 to-indigo-600"
+                ? "bg-linear-to-br from-primary to-primary"
+                : "bg-linear-to-br from-primary to-primary"
             )}
           >
             <CreditCard className="h-6 w-6" />
@@ -506,8 +506,8 @@ function MembershipStatusCard({
                   className={cn(
                     "h-full rounded-full transition-all duration-500",
                     isExpiring
-                      ? "bg-linear-to-r from-rose-500 to-red-400"
-                      : "bg-linear-to-r from-sky-500 to-indigo-500"
+                      ? "bg-linear-to-r from-primary to-primary"
+                      : "bg-linear-to-r from-primary to-primary"
                   )}
                   style={{ width: `${progress}%` }}
                 />
@@ -585,7 +585,7 @@ function ProgressChart({
   // Show attendance frequency if no specific weight data
   const dataKey = hasWeight ? "weight" : "attended";
   const chartLabel = hasWeight ? "Weight (kg)" : "Sessions";
-  const chartColor = hasWeight ? "#f97316" : "#6366f1";
+  const chartColor = hasWeight ? "#767676" : "#e73725";
   const gradientId = hasWeight ? "weightGrad" : "attendGrad";
 
   return (
@@ -599,7 +599,7 @@ function ProgressChart({
         }
         action={
           <div className="flex items-center gap-1.5 text-xs font-semibold text-(--text-secondary)">
-            <TrendingUp className="h-3.5 w-3.5 text-indigo-500" />
+            <TrendingUp className="h-3.5 w-3.5 text-primary" />
             Last 30 days
           </div>
         }
@@ -619,7 +619,7 @@ function ProgressChart({
               </defs>
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="rgba(148,163,184,0.12)"
+                stroke="rgba(143,143,143,0.12)"
                 vertical={false}
               />
               <XAxis
@@ -663,7 +663,7 @@ function ProgressChart({
             icon={<TrendingUp className="h-10 w-10" />}
             title="No progress data yet"
             description="Check in to the gym or log your weight to start tracking your progress journey."
-            color="indigo"
+            color="energy"
           />
         )}
       </CardContent>
@@ -689,7 +689,7 @@ function RecentAttendanceCard({
       <CardHeader title="Recent Attendance" subtitle="Your last 7 gym visits" />
       <CardContent className="p-0">
         {recent.length > 0 ? (
-          <ul className="divide-y divide-(--border)">
+          <ul className="divide-y divide-border">
             {recent.map((item, idx) => {
               const checkInDate = new Date(item.checkInAt || item.date);
               const isToday =
@@ -701,14 +701,14 @@ function RecentAttendanceCard({
                   className="flex items-center justify-between px-6 py-3.5 transition-colors hover:bg-(--surface-secondary)"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10">
-                      <CalendarDays className="h-4 w-4 text-emerald-500" />
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted-foreground">
+                      <CalendarDays className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <div>
                       <p className="text-sm font-bold text-(--text-primary)">
                         Gym Check-in
                         {isToday && (
-                          <span className="ml-2 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
+                          <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
                             Today
                           </span>
                         )}
@@ -743,7 +743,7 @@ function RecentAttendanceCard({
               icon={<CalendarDays className="h-10 w-10" />}
               title="No attendance yet"
               description="Check in at the gym to start building your record. Your consistency journey starts today!"
-              color="emerald"
+              color="neutral"
             />
           </div>
         )}
@@ -763,8 +763,8 @@ const STATIC_CHALLENGES = [
     target: 20,
     unit: "days",
     icon: <Flame className="h-5 w-5" />,
-    color: "from-orange-500 to-rose-500",
-    bgColor: "bg-orange-500/10",
+    color: "from-muted to-primary",
+    bgColor: "bg-muted-foreground",
   },
   {
     id: "2",
@@ -773,8 +773,8 @@ const STATIC_CHALLENGES = [
     target: 7,
     unit: "days",
     icon: <Zap className="h-5 w-5" />,
-    color: "from-amber-500 to-yellow-400",
-    bgColor: "bg-amber-500/10",
+    color: "from-muted to-muted",
+    bgColor: "bg-muted-foreground",
   },
   {
     id: "3",
@@ -783,8 +783,8 @@ const STATIC_CHALLENGES = [
     target: 15,
     unit: "sessions",
     icon: <Target className="h-5 w-5" />,
-    color: "from-indigo-500 to-violet-500",
-    bgColor: "bg-indigo-500/10",
+    color: "from-primary to-primary",
+    bgColor: "bg-primary",
   },
 ];
 
@@ -813,7 +813,7 @@ function ActiveChallengesCard({
           return (
             <div
               key={challenge.id}
-              className="rounded-2xl border border-(--border) bg-(--surface-secondary) p-4"
+              className="rounded-2xl border border-border bg-(--surface-secondary) p-4"
             >
               <div className="flex items-start gap-3">
                 <div
@@ -849,7 +849,7 @@ function ActiveChallengesCard({
                   <p className="mt-0.5 text-xs text-(--text-secondary)">
                     {challenge.description}
                   </p>
-                  <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-(--border)">
+                  <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-border">
                     <div
                       className={cn(
                         "h-full rounded-full bg-linear-to-r transition-all duration-700",
@@ -949,7 +949,7 @@ function AchievementsSection({
             icon={<Trophy className="h-10 w-10" />}
             title="Your trophy case awaits"
             description="Complete challenges, check in consistently, and hit your goals to earn achievement badges!"
-            color="amber"
+            color="steel"
           />
         ) : (
           <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
@@ -958,9 +958,9 @@ function AchievementsSection({
               <div
                 key={mb.id}
                 title={mb.badge?.description ?? mb.badge?.name ?? "Badge"}
-                className="group flex flex-col items-center gap-2 rounded-2xl border border-amber-400/20 bg-linear-to-b from-amber-500/10 to-amber-500/5 p-3 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
+                className="group flex flex-col items-center gap-2 rounded-2xl border border-border bg-linear-to-b from-muted to-muted p-3 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-amber-500 to-orange-500 text-white shadow-md">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-muted to-muted text-white shadow-md">
                   <BadgeIcon name={mb.badge?.name ?? ""} />
                 </div>
                 <p className="text-[10px] font-bold leading-tight text-(--text-primary)">
@@ -974,7 +974,7 @@ function AchievementsSection({
               <div
                 key={ub.id}
                 title={`Locked — Requires ${ub.xpRequired?.toLocaleString()} XP`}
-                className="flex flex-col items-center gap-2 rounded-2xl border border-(--border) bg-(--surface-secondary) p-3 text-center opacity-40 grayscale"
+                className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-(--surface-secondary) p-3 text-center opacity-40 grayscale"
               >
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-(--surface-hover) text-(--text-muted)">
                   <BadgeIcon name={ub.name} />
@@ -997,18 +997,18 @@ function EmptyState({
   icon,
   title,
   description,
-  color = "indigo",
+  color = "energy",
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
-  color?: "indigo" | "emerald" | "amber" | "rose";
+  color?: "energy" | "neutral" | "steel" | "rose";
 }) {
   const colorMap = {
-    indigo: "text-indigo-400 bg-indigo-500/10",
-    emerald: "text-emerald-400 bg-emerald-500/10",
-    amber: "text-amber-400 bg-amber-500/10",
-    rose: "text-rose-400 bg-rose-500/10",
+    energy: "text-white bg-primary",
+    neutral: "text-muted-foreground bg-muted",
+    steel: "text-muted-foreground bg-muted",
+    rose: "text-white bg-primary",
   };
 
   return (

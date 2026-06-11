@@ -57,4 +57,29 @@ export const userService = {
   setActive: async (id: string, isActive: boolean): Promise<GymUser> => {
     return userService.update(id, { isActive });
   },
+
+  /** GET /users?roles=ADMIN,RECEPTIONIST,… — filter to specific roles. */
+  listByRoles: async (roles: string[]): Promise<GymUser[]> => {
+    const res = await api.get<ApiResponse<GymUser[]>>("/users", {
+      params: { roles: roles.join(",") },
+    });
+    return res.data.data;
+  },
+
+  /** POST /users/:id/reset-password — sets/generates a temp password (returned once). */
+  resetPassword: async (
+    id: string,
+    password?: string,
+  ): Promise<{ temporaryPassword: string; generated: boolean }> => {
+    const res = await api.post<ApiResponse<{ temporaryPassword: string; generated: boolean }>>(
+      `/users/${id}/reset-password`,
+      password ? { password } : {},
+    );
+    return res.data.data;
+  },
+
+  /** DELETE /users/:id — backend soft-deletes if the user has history. */
+  remove: async (id: string): Promise<void> => {
+    await api.delete(`/users/${id}`);
+  },
 };

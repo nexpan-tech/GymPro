@@ -21,7 +21,7 @@ export default function AnalyticsPage() {
     <div className="p-6">
       <h1 className="text-xl font-bold mb-4">Analytics</h1>
 
-      <pre className="text-sm bg-gray-100 p-4 rounded">
+      <pre className="text-sm bg-muted p-4 rounded">
         {JSON.stringify(data, null, 2)}
       </pre>
     </div>

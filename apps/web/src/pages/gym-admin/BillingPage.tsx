@@ -50,13 +50,13 @@ export default function BillingPage() {
             <Stat label="Invoiced Revenue" value={inr(stats.revenue)} icon={<IndianRupee className="h-5 w-5" />} />
             <Stat label="GST Collected" value={inr(stats.gst)} icon={<FileText className="h-5 w-5" />} />
             <Stat label="Invoices" value={String(stats.count)} icon={<FileText className="h-5 w-5" />} />
-            <Stat label="Paid" value={String(stats.paid)} icon={<CheckCircle2 className="h-5 w-5" />} tone="emerald" />
+            <Stat label="Paid" value={String(stats.paid)} icon={<CheckCircle2 className="h-5 w-5" />} tone="neutral" />
           </div>
 
           {/* SaaS subscription status */}
           <Card variant="solid" className="p-5">
             <div className="flex items-center gap-2">
-              <Crown className="h-4 w-4 text-amber-500" />
+              <Crown className="h-4 w-4 text-muted-foreground" />
               <h3 className="text-sm font-semibold text-(--text-primary)">GymPro Subscription</h3>
             </div>
             {subscription ? (
@@ -76,10 +76,10 @@ export default function BillingPage() {
             <EmptyState icon={<FileText className="h-7 w-7" />} title="No invoices yet" message="Member invoices appear here as payments are recorded." />
           ) : (
             <Card variant="solid" className="overflow-hidden p-0">
-              <div className="border-b border-(--border) px-5 py-3 text-sm font-semibold text-(--text-primary)">Member Invoices</div>
+              <div className="border-b border-border px-5 py-3 text-sm font-semibold text-(--text-primary)">Member Invoices</div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <thead className="border-b border-(--border) text-xs uppercase tracking-wide text-(--text-secondary)">
+                  <thead className="border-b border-border text-xs uppercase tracking-wide text-(--text-secondary)">
                     <tr>
                       <th className="px-4 py-2 font-medium">Invoice #</th>
                       <th className="px-4 py-2 font-medium">Member</th>
@@ -89,7 +89,7 @@ export default function BillingPage() {
                       <th className="px-4 py-2 font-medium">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-(--border)">
+                  <tbody className="divide-y divide-border">
                     {invoices.map((i) => (
                       <tr key={i.id}>
                         <td className="px-4 py-2 font-medium text-(--text-primary)">{i.invoiceNumber}</td>
@@ -111,12 +111,12 @@ export default function BillingPage() {
   );
 }
 
-function Stat({ label, value, icon, tone }: { label: string; value: string; icon: ReactNode; tone?: "emerald" }) {
+function Stat({ label, value, icon, tone }: { label: string; value: string; icon: ReactNode; tone?: "neutral" }) {
   return (
     <Card variant="solid" className="p-5">
       <div className="flex items-center justify-between">
         <span className="text-sm text-(--text-secondary)">{label}</span>
-        <span className={tone === "emerald" ? "text-emerald-500" : "text-indigo-500"}>{icon}</span>
+        <span className={tone === "neutral" ? "text-muted-foreground" : "text-primary"}>{icon}</span>
       </div>
       <div className="mt-2 text-2xl font-bold text-(--text-primary)">{value}</div>
     </Card>

@@ -64,23 +64,23 @@ function DefaultErrorFallback({ error, onReset }: DefaultErrorFallbackProps) {
   };
 
   return (
-    <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-red-200 bg-red-50 p-8 text-center dark:border-red-900/40 dark:bg-red-950/20">
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40">
-        <AlertTriangle className="h-7 w-7 text-red-600 dark:text-red-400" />
+    <div className="flex min-h-100 flex-col items-center justify-center rounded-xl border border-primary/40 bg-primary/10 p-8 text-center dark:border-primary/40 dark:bg-primary">
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 dark:bg-primary">
+        <AlertTriangle className="h-7 w-7 text-primary" />
       </div>
 
-      <h2 className="mb-2 text-lg font-semibold text-red-800 dark:text-red-300">
+      <h2 className="mb-2 text-lg font-semibold text-primary">
         Something went wrong
       </h2>
 
-      <p className="mb-1 max-w-sm text-sm text-red-600 dark:text-red-400">
+      <p className="mb-1 max-w-sm text-sm text-primary">
         {isDev
           ? error.message
           : "An unexpected error occurred. Please try again or return to the dashboard."}
       </p>
 
       {isDev && error.stack && (
-        <pre className="my-3 max-h-40 w-full max-w-lg overflow-auto rounded-lg bg-red-100 p-3 text-left text-xs text-red-700 dark:bg-red-900/40 dark:text-red-300">
+        <pre className="my-3 max-h-40 w-full max-w-lg overflow-auto rounded-lg bg-primary/10 p-3 text-left text-xs text-primary dark:bg-primary/15 dark:text-primary">
           {error.stack}
         </pre>
       )}
@@ -88,14 +88,14 @@ function DefaultErrorFallback({ error, onReset }: DefaultErrorFallbackProps) {
       <div className="mt-5 flex gap-3">
         <button
           onClick={onReset}
-          className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2"
         >
           <RefreshCw className="h-4 w-4" />
           Try again
         </button>
         <button
           onClick={handleDashboard}
-          className="inline-flex items-center gap-2 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:border-red-700 dark:bg-transparent dark:text-red-400 dark:hover:bg-red-900/20"
+          className="inline-flex items-center gap-2 rounded-lg border border-primary/40 bg-white px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 dark:border-primary/40 dark:bg-transparent dark:text-primary dark:hover:bg-primary"
         >
           <LayoutDashboard className="h-4 w-4" />
           Go to Dashboard

@@ -1,4 +1,30 @@
 :root {
+  /* ── GymPro brand palette — STRICT 4-color identity (single source of truth) ──
+     GymPro Red  #E73725  → primary actions / accents / danger
+     Soft Gray   #E1E1E1  → borders / muted surfaces / secondary derivatives
+     Jet Black   #010000  → text / sidebar / dark surfaces
+     Pure White  #FFFFFF  → backgrounds / cards
+     Only derivatives (opacity / hover / shade) of these four are permitted. */
+  --brand-red: #e73725;
+  --brand-red-strong: #c72a1b;
+  --brand-red-deep: #a11f13;
+  --brand-gray: #e1e1e1;
+  --brand-black: #010000;
+  --brand-white: #ffffff;
+
+  /* Back-compat aliases (older code references these names) → remapped to brand. */
+  --brand-cosmos: #010000;
+  --brand-cosmos-700: #141414;
+  --brand-crimson: #e73725;
+  --brand-crimson-700: #c72a1b;
+  --brand-gochujang: #a11f13;
+  --brand-varden: #f4f4f4;
+
+  /* Singular primary token used by buttons, links, chat bubbles, accents. */
+  --primary: var(--brand-red);
+  --primary-strong: var(--brand-red-strong);
+  --on-primary: #ffffff;
+
   --radius-xs: 6px;
   --radius-sm: 10px;
   --radius-md: 14px;
@@ -6,44 +32,77 @@
   --radius-xl: 22px;
   --radius-2xl: 28px;
 
-  --background: #f4f7fb;
-  --background-secondary: #eef3f8;
+  /* Clean white app background. */
+  --background: #ffffff;
+  --background-secondary: #f4f4f4;
 
-  --surface: rgba(255, 255, 255, 0.88);
+  --surface: #ffffff;
   --surface-solid: #ffffff;
-  --surface-secondary: #f7f9fc;
-  --surface-hover: #eef2f7;
+  --surface-secondary: #f4f4f4;
+  --surface-hover: #ececec;
 
-  --surface: rgba(255, 255, 255, 0.96);
   --glass: rgba(255, 255, 255, 0.94);
   --glass-strong: #ffffff;
+  --glass-border: rgba(1,0,0, 0.08);
 
-  --text-primary: #020617;
-  --text-secondary: #1e293b;
-  --text-muted: #475569;
+  --text-primary: #010000;
+  --text-secondary: #3d3d3d;
+  --text-muted: #6e6e6e;
 
-  --border: rgba(15, 23, 42, 0.10);
-  --border-strong: rgba(15, 23, 42, 0.18);
+  --border: #e1e1e1;
+  --border-strong: #cfcfcf;
 
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 10px 28px rgba(15, 23, 42, 0.07);
-  --shadow-lg: 0 20px 55px rgba(15, 23, 42, 0.1);
-  --shadow-xl: 0 32px 90px rgba(15, 23, 42, 0.14);
+  --shadow-sm: 0 1px 3px rgba(1,0,0, 0.05);
+  --shadow-md: 0 10px 28px rgba(1,0,0, 0.08);
+  --shadow-lg: 0 20px 55px rgba(1,0,0, 0.12);
+  --shadow-xl: 0 32px 90px rgba(1,0,0, 0.16);
 
-  --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  /* Primary actions = GymPro Red → darker red derivative. */
+  --gradient-primary: linear-gradient(135deg, #e73725 0%, #c72a1b 100%);
   --gradient-surface: linear-gradient(
     135deg,
     rgba(255, 255, 255, 0.98),
-    rgba(248, 250, 252, 0.92)
+    rgba(244, 244, 244, 0.85)
   );
 
   --gradient-page:
-    radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.1), transparent 28%),
-    radial-gradient(circle at 100% 0%, rgba(14, 165, 233, 0.08), transparent 28%),
-    linear-gradient(135deg, #f8fbff 0%, #f4f7fb 50%, #f8f7ff 100%);
+    radial-gradient(circle at 0% 0%, rgba(231,55,37, 0.05), transparent 30%),
+    radial-gradient(circle at 100% 0%, rgba(1,0,0, 0.03), transparent 28%),
+    linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
 
-  --sidebar-bg: rgba(255, 255, 255, 0.82);
-  --header-bg: rgba(255, 255, 255, 0.78);
+  /* Sidebar + header = Jet Black. */
+  --sidebar-bg: #010000;
+  --header-bg: rgba(1,0,0, 0.03);
+
+  /* App page background (read as inline style by layouts). */
+  --bg-page: #ffffff;
+
+  /* ── Semantic (shadcn-style) layer — single source of truth, both themes ──
+     Mapped onto the workhorse tokens + brand palette so utilities
+     bg-card / text-foreground / text-muted-foreground / border-border etc.
+     resolve correctly in light AND dark. */
+  --foreground: var(--text-primary);
+  --card: var(--surface-solid);
+  --card-foreground: var(--text-primary);
+  --popover: var(--surface-solid);
+  --popover-foreground: var(--text-primary);
+  --muted: var(--surface-secondary);
+  --muted-foreground: var(--text-muted);
+  --input: var(--border);
+  --ring: var(--brand-red);
+  --primary-foreground: #ffffff;
+  --secondary: var(--surface-secondary);
+  --secondary-foreground: var(--text-primary);
+  --accent: var(--brand-red);
+  --accent-foreground: #ffffff;
+  --destructive: var(--brand-red);
+  --destructive-foreground: #ffffff;
+
+  /* Sidebar semantic tokens. */
+  --sidebar: #010000;
+  --sidebar-foreground: rgba(255, 255, 255, 0.7);
+  --sidebar-active: #e73725;
+  --sidebar-active-foreground: #ffffff;
 
   --transition-fast: 150ms ease;
   --transition-base: 250ms ease;
@@ -51,43 +110,57 @@
 }
 
 .dark {
-  --background: #020617;
-  --background-secondary: #0f172a;
+  /* GymPro Red primary persists; surfaces shift to Jet-Black-derived darks.
+     Cards (surface-solid / glass-strong) are deliberately LIGHTER than the
+     page background so panels separate cleanly and text stays high-contrast. */
+  --primary: #e73725;
+  --primary-strong: #c72a1b;
 
-  --surface: rgba(15, 23, 42, 0.82);
-  --surface-solid: #0f172a;
-  --surface-secondary: #111827;
-  --surface-hover: #1e293b;
+  /* Jet Black page background. */
+  --background: #010000;
+  --background-secondary: #0a0a0a;
+  --bg-page: #010000;
 
-  --glass: rgba(15, 23, 42, 0.72);
-  --glass-strong: rgba(15, 23, 42, 0.9);
-  --glass-border: rgba(148, 163, 184, 0.16);
+  /* Cards: a step lighter than the background (jet-black-derived charcoal). */
+  --surface: rgba(20, 20, 20, 0.86);
+  --surface-solid: #141414;
+  --surface-secondary: #1a1a1a;
+  --surface-hover: #242424;
 
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
+  --glass: rgba(20, 20, 20, 0.8);
+  --glass-strong: #141414;
+  --glass-border: rgba(225, 225, 225, 0.12);
 
-  --border: rgba(148, 163, 184, 0.14);
-  --border-strong: rgba(148, 163, 184, 0.28);
+  /* White primary text, Soft-Gray-derived secondary/muted text. */
+  --text-primary: #ffffff;
+  --text-secondary: #c9c9c9;
+  --text-muted: #8f8f8f;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
-  --shadow-md: 0 12px 34px rgba(0, 0, 0, 0.34);
-  --shadow-lg: 0 24px 70px rgba(0, 0, 0, 0.45);
-  --shadow-xl: 0 36px 110px rgba(0, 0, 0, 0.65);
+  --border: #2a2a2a;
+  --border-strong: #3a3a3a;
 
-  --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 12px 34px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 24px 70px rgba(0, 0, 0, 0.6);
+  --shadow-xl: 0 36px 110px rgba(0, 0, 0, 0.75);
+
+  --gradient-primary: linear-gradient(135deg, #e73725 0%, #a11f13 100%);
   --gradient-surface: linear-gradient(
     135deg,
-    rgba(15, 23, 42, 0.9),
-    rgba(17, 24, 39, 0.82)
+    rgba(20, 20, 20, 0.9),
+    rgba(5, 5, 5, 0.82)
   );
 
   --gradient-page:
-    radial-gradient(circle at 8% 8%, rgba(79, 70, 229, 0.18), transparent 28%),
-    radial-gradient(circle at 92% 12%, rgba(124, 58, 237, 0.14), transparent 28%),
-    radial-gradient(circle at 80% 90%, rgba(16, 185, 129, 0.08), transparent 30%),
-    linear-gradient(135deg, #020617 0%, #070b1f 45%, #111827 100%);
+    radial-gradient(circle at 8% 8%, rgba(231,55,37, 0.16), transparent 30%),
+    radial-gradient(circle at 92% 12%, rgba(231,55,37, 0.08), transparent 32%),
+    linear-gradient(135deg, #010000 0%, #050505 50%, #0a0a0a 100%);
 
-  --sidebar-bg: rgba(15, 23, 42, 0.74);
-  --header-bg: rgba(15, 23, 42, 0.74);
+  --sidebar-bg: #010000;
+  --header-bg: rgba(0, 0, 0, 0.85);
+
+  --sidebar: #010000;
+  --sidebar-foreground: rgba(255, 255, 255, 0.72);
+  --sidebar-active: #e73725;
+  --sidebar-active-foreground: #ffffff;
 }

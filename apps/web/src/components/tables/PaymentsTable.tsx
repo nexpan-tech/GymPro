@@ -24,15 +24,15 @@ function getStatusClasses(status: string) {
   const s = (status || "").toString().toLowerCase();
   switch (s) {
     case "paid":
-      return "bg-green-100 text-green-700";
+      return "bg-muted text-muted-foreground";
     case "pending":
-      return "bg-yellow-100 text-yellow-700";
+      return "bg-muted text-muted-foreground";
     case "failed":
-      return "bg-red-100 text-red-700";
+      return "bg-primary/10 text-primary";
     case "refunded":
-      return "bg-gray-100 text-gray-700";
+      return "bg-muted text-foreground";
     default:
-      return "bg-gray-100 text-gray-700";
+      return "bg-muted text-foreground";
   }
 }
 
@@ -41,16 +41,16 @@ export default function PaymentsTable({
 }: PaymentsTableProps) {
   if (payments.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center text-gray-500">
+      <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center text-muted-foreground">
         No payments found.
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <div className="overflow-x-auto rounded-2xl border border-border bg-card shadow-sm">
       <table className="min-w-full text-sm">
-        <thead className="bg-gray-50 text-left text-gray-600">
+        <thead className="bg-muted text-left text-muted-foreground">
           <tr>
             <th className="px-4 py-3 font-medium">Invoice #</th>
             <th className="px-4 py-3 font-medium">Member</th>
@@ -62,28 +62,28 @@ export default function PaymentsTable({
           </tr>
         </thead>
 
-        <tbody className="divide-y divide-gray-100">
+        <tbody className="divide-y divide-border">
           {payments.map((payment) => (
-            <tr key={payment.id} className="hover:bg-gray-50">
-              <td className="px-4 py-3 font-medium text-gray-900">
+            <tr key={payment.id} className="hover:bg-muted">
+              <td className="px-4 py-3 font-medium text-foreground">
                 {payment.id}
               </td>
 
-              <td className="px-4 py-3 text-gray-700">
+              <td className="px-4 py-3 text-foreground">
                 {"N/A"}
               </td>
 
-              <td className="px-4 py-3 text-gray-700">-</td>
+              <td className="px-4 py-3 text-foreground">-</td>
 
-              <td className="px-4 py-3 font-semibold text-gray-900">
+              <td className="px-4 py-3 font-semibold text-foreground">
                 {formatCurrency(payment.amount)}
               </td>
 
-              <td className="px-4 py-3 text-gray-700">
+              <td className="px-4 py-3 text-foreground">
                 {payment.method}
               </td>
 
-              <td className="px-4 py-3 text-gray-700">
+              <td className="px-4 py-3 text-foreground">
                 {payment.date ? formatDate(payment.date) : (payment.paidAt ? formatDate(payment.paidAt) : "-")}
               </td>
 

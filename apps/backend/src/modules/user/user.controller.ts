@@ -76,7 +76,12 @@ export const getUsers = asyncHandler(
 
     if (!gymId) return;
 
-    const users = await userService.getUsers(gymId);
+    // Optional ?roles=ADMIN,TRAINER filter (Admins page = staff roles; Trainers
+    // page = TRAINER).
+    const rolesParam = typeof req.query.roles === "string" ? req.query.roles : undefined;
+    const roles = rolesParam ? rolesParam.split(",").map((r) => r.trim()).filter(Boolean) : undefined;
+
+    const users = await userService.getUsers(gymId, { roles });
 
     return successResponse(
       res,
@@ -84,6 +89,28 @@ export const getUsers = asyncHandler(
       users,
       200
     );
+  }
+);
+
+export const resetUserPassword = asyncHandler(
+  async (req: Request, res: Response) => {
+    const gymId = getGymId(req, res);
+    if (!gymId || !req.user) return;
+
+    const userId = req.params.id as string;
+    const data = await userService.resetUserPassword(gymId, userId, req.body?.password);
+
+    await createAuditLog({
+      gymId,
+      userId: req.user.id,
+      action: AuditAction.UPDATE,
+      entity: "User",
+      entityId: userId,
+      newData: { passwordReset: true },
+      ...getRequestMeta(req),
+    });
+
+    return successResponse(res, "Password reset successfully", data, 200);
   }
 );
 

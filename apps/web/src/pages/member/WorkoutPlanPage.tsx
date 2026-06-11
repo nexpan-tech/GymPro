@@ -93,7 +93,7 @@ export default function WorkoutPlanPage() {
                 <CardContent>
                   <div className="space-y-2">
                     {dayExercises.map((e) => (
-                      <div key={e.id} className="border-b border-(--border) pb-2 last:border-0">
+                      <div key={e.id} className="border-b border-border pb-2 last:border-0">
                         <p className="text-sm font-medium text-(--text-primary)">
                           {e.exercise?.name}
                         </p>

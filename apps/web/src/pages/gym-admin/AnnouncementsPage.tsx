@@ -89,18 +89,18 @@ function AddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => vo
         <Input label="Title" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />
         <div>
           <label className="text-sm font-semibold text-(--text-secondary)">Message</label>
-          <textarea className="mt-1 w-full rounded-md border border-(--border) bg-(--surface) px-3 py-2 text-sm" rows={3} value={f.message} onChange={(e) => setF({ ...f, message: e.target.value })} />
+          <textarea className="mt-1 w-full rounded-md border border-border bg-(--surface) px-3 py-2 text-sm" rows={3} value={f.message} onChange={(e) => setF({ ...f, message: e.target.value })} />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="text-sm font-semibold text-(--text-secondary)">Audience</label>
-            <select className="mt-1 w-full rounded-md border border-(--border) bg-(--surface) px-3 py-2 text-sm" value={f.audience} onChange={(e) => setF({ ...f, audience: e.target.value as AnnouncementAudience })}>
+            <select className="mt-1 w-full rounded-md border border-border bg-(--surface) px-3 py-2 text-sm" value={f.audience} onChange={(e) => setF({ ...f, audience: e.target.value as AnnouncementAudience })}>
               {["ALL", "MEMBERS", "TRAINERS", "STAFF"].map((a) => <option key={a}>{a}</option>)}
             </select>
           </div>
           <div>
             <label className="text-sm font-semibold text-(--text-secondary)">Priority</label>
-            <select className="mt-1 w-full rounded-md border border-(--border) bg-(--surface) px-3 py-2 text-sm" value={f.priority} onChange={(e) => setF({ ...f, priority: e.target.value as AnnouncementPriority })}>
+            <select className="mt-1 w-full rounded-md border border-border bg-(--surface) px-3 py-2 text-sm" value={f.priority} onChange={(e) => setF({ ...f, priority: e.target.value as AnnouncementPriority })}>
               {["LOW", "NORMAL", "HIGH", "URGENT"].map((p) => <option key={p}>{p}</option>)}
             </select>
           </div>

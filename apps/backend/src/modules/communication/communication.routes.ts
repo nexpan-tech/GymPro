@@ -22,6 +22,10 @@ router.post("/messages", chatLimiter, roleMiddleware(CHAT), CommunicationControl
 router.get("/messages/member/:memberId", roleMiddleware(CHAT), CommunicationController.getMemberMessages);
 router.patch("/messages/member/:memberId/read", roleMiddleware(CHAT), CommunicationController.markThreadRead);
 
+// ── Admin <-> Trainer staff DM (memberId null). "/me" resolves to the caller. ──
+router.post("/staff-messages", chatLimiter, roleMiddleware([ROLES.TRAINER, ...STAFF]), CommunicationController.sendStaffMessage);
+router.get("/staff-messages/:trainerId", roleMiddleware([ROLES.TRAINER, ...STAFF]), CommunicationController.getStaffThread);
+
 // ── Progress comments + feedback (trainer/staff) ──
 router.post("/progress-comments", roleMiddleware([ROLES.TRAINER, ...STAFF]), CommunicationController.addProgressComment);
 router.post("/feedback", roleMiddleware([ROLES.MEMBER, ...STAFF]), CommunicationController.submitFeedback);

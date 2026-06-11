@@ -17,10 +17,13 @@ import {
   AppScreen,
   AppText,
 } from "../../src/components/ui";
+import { useTheme } from "../../src/theme";
 
 const tone = (p: string) => (p === "URGENT" ? "danger" : p === "HIGH" ? "warning" : "info");
 
 export default function AnnouncementsScreen() {
+  const { theme } = useTheme();
+  const c = theme.colors;
   const [items, setItems] = useState<MemberAnnouncement[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -64,7 +67,7 @@ export default function AnnouncementsScreen() {
               <AppCard variant={a.isRead ? undefined : "elevated"}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
-                    <Megaphone color="#6366f1" size={18} />
+                    <Megaphone color={c.info} size={18} />
                     <AppText variant="bodyStrong" style={{ flex: 1 }}>{a.title}</AppText>
                     {!a.isRead && <AppBadge label="New" tone="danger" />}
                   </View>

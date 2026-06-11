@@ -37,6 +37,7 @@ import {
   AppScreen,
   AppText,
   AppLoadingState,
+  MissionCard,
 } from "../../src/components/ui";
 import type { Attendance } from "../../src/types/attendance.types";
 import type { Member } from "../../src/types/member.types";
@@ -226,7 +227,7 @@ export default function MemberDashboardScreen() {
   return (
     <AppScreen onRefresh={handleRefresh} refreshing={refreshing}>
       {/* Header */}
-      <View style={{ marginBottom: 8 }}>
+      <View style={{ marginBottom: 4 }}>
         <AppText variant="overline" color="primary">
           GymPro Member
         </AppText>
@@ -238,13 +239,32 @@ export default function MemberDashboardScreen() {
         </AppText>
       </View>
 
+      {/* ── Today's Mission — premium command hero ─────────────────────────── */}
+      <MissionCard
+        streak={streak}
+        title={
+          streak >= 7
+            ? "Unstoppable. Elite consistency. 🏆"
+            : streak >= 3
+              ? "You're on fire. Keep it going. 🔥"
+              : streak >= 1
+                ? "Momentum is building. Show up again."
+                : "Today's the day. Make it count."
+        }
+        subtitle={`${attendance.length} session${attendance.length === 1 ? "" : "s"} logged · weekly goal ${Math.min(streak, 7)}/7`}
+        ctaLabel={isInside ? "View today's workout" : "Check in to the gym"}
+        onPressCta={() =>
+          router.push(isInside ? "/member/workout" : "/member/scanner?action=checkin")
+        }
+      />
+
       {/* Stats Row */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ gap: 10, paddingBottom: 4 }}
       >
-        <StatBadge icon={<Flame color="#f97316" size={16} />} label="Streak" value={`${streak}d`} />
+        <StatBadge icon={<Flame color={c.primary} size={16} />} label="Streak" value={`${streak}d`} />
         <StatBadge icon={<Star color={c.warning} size={16} />} label="XP" value={`${attendance.length * 50}`} />
         <StatBadge icon={<Target color={c.primary} size={16} />} label="Goals" value="0" />
         <StatBadge
@@ -268,7 +288,7 @@ export default function MemberDashboardScreen() {
               marginBottom: 10,
             }}
           >
-            <Dumbbell color="#fff" size={18} />
+            <Dumbbell color={c.onPrimary} size={18} />
           </View>
           <AppText variant="caption" color="textSecondary">
             Today's Workout
@@ -305,13 +325,15 @@ export default function MemberDashboardScreen() {
               height: 38,
               width: 38,
               borderRadius: theme.radius.md,
-              backgroundColor: c.success,
+              backgroundColor: c.muted,
+              borderWidth: 1,
+              borderColor: c.border,
               alignItems: "center",
               justifyContent: "center",
               marginBottom: 10,
             }}
           >
-            <Salad color="#fff" size={18} />
+            <Salad color={c.textPrimary} size={18} />
           </View>
           <AppText variant="caption" color="textSecondary">
             Today's Diet
@@ -331,12 +353,14 @@ export default function MemberDashboardScreen() {
               marginTop: 12,
               height: 34,
               borderRadius: theme.radius.sm,
-              backgroundColor: c.success,
+              backgroundColor: "transparent",
+              borderWidth: 1,
+              borderColor: c.border,
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <AppText variant="caption" style={{ color: "#fff" }}>
+            <AppText variant="caption" color="textPrimary">
               View Diet
             </AppText>
           </TouchableOpacity>
@@ -490,7 +514,7 @@ export default function MemberDashboardScreen() {
       <AppText variant="heading">Quick Actions</AppText>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
         <QuickAction
-          icon={<Trophy color="#f59e0b" size={22} />}
+          icon={<Trophy color={c.textMuted} size={22} />}
           label="Achievements"
           onPress={() => router.push("/member/achievements")}
         />
@@ -500,7 +524,7 @@ export default function MemberDashboardScreen() {
           onPress={() => router.push("/member/challenges")}
         />
         <QuickAction
-          icon={<Gift color="#ec4899" size={22} />}
+          icon={<Gift color={c.primary} size={22} />}
           label="Rewards"
           onPress={() => router.push("/member/rewards")}
         />
@@ -510,7 +534,7 @@ export default function MemberDashboardScreen() {
           onPress={() => router.push("/member/insights")}
         />
         <QuickAction
-          icon={<Sparkles color="#a855f7" size={22} />}
+          icon={<Sparkles color={c.info} size={22} />}
           label="AI Coach"
           onPress={() => router.push("/member/coach")}
         />
@@ -525,7 +549,7 @@ export default function MemberDashboardScreen() {
           onPress={() => router.push("/member/payments")}
         />
         <QuickAction
-          icon={<CreditCard color="#f97316" size={22} />}
+          icon={<CreditCard color={c.textMuted} size={22} />}
           label="Renew"
           onPress={() => router.push("/member/renew-membership")}
         />
@@ -540,7 +564,7 @@ export default function MemberDashboardScreen() {
           onPress={() => router.push("/member/notifications")}
         />
         <QuickAction
-          icon={<Megaphone color="#6366f1" size={22} />}
+          icon={<Megaphone color={c.info} size={22} />}
           label="News"
           onPress={() => router.push("/member/announcements")}
         />
@@ -550,7 +574,7 @@ export default function MemberDashboardScreen() {
           onPress={() => router.push("/member/chat")}
         />
         <QuickAction
-          icon={<Target color="#f97316" size={22} />}
+          icon={<Target color={c.textMuted} size={22} />}
           label="Goals"
           onPress={() =>
             Alert.alert(

@@ -21,19 +21,19 @@ export default function SuperAdminEngagementPage() {
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <Stat label="Challenge participations" value={String(data?.totalChallengeParticipations ?? 0)} icon={<Trophy className="h-5 w-5" />} />
-            <Stat label="Reward redemptions" value={String(data?.totalRedemptions ?? 0)} icon={<Gift className="h-5 w-5" />} tone="pink" />
-            <Stat label="Referrals (conv %)" value={`${data?.totalReferrals ?? 0} (${data?.referralConversionRate ?? 0}%)`} icon={<Share2 className="h-5 w-5" />} tone="emerald" />
-            <Stat label="Avg level" value={String(data?.avgLevel ?? 1)} icon={<Star className="h-5 w-5" />} tone="amber" />
+            <Stat label="Reward redemptions" value={String(data?.totalRedemptions ?? 0)} icon={<Gift className="h-5 w-5" />} tone="flame" />
+            <Stat label="Referrals (conv %)" value={`${data?.totalReferrals ?? 0} (${data?.referralConversionRate ?? 0}%)`} icon={<Share2 className="h-5 w-5" />} tone="neutral" />
+            <Stat label="Avg level" value={String(data?.avgLevel ?? 1)} icon={<Star className="h-5 w-5" />} tone="steel" />
           </div>
 
           <Card variant="solid" className="overflow-hidden p-0">
-            <div className="border-b border-(--border) px-5 py-3 text-sm font-semibold text-(--text-primary)">Top gyms by participation</div>
+            <div className="border-b border-border px-5 py-3 text-sm font-semibold text-(--text-primary)">Top gyms by participation</div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-(--border) text-xs uppercase tracking-wide text-(--text-secondary)">
+                <thead className="border-b border-border text-xs uppercase tracking-wide text-(--text-secondary)">
                   <tr><th className="px-4 py-2">Gym</th><th className="px-4 py-2">Challenge participations</th><th className="px-4 py-2">Redemptions</th><th className="px-4 py-2">Referrals</th></tr>
                 </thead>
-                <tbody className="divide-y divide-(--border)">
+                <tbody className="divide-y divide-border">
                   {(data?.topGyms ?? []).map((g) => (
                     <tr key={g.gymId}>
                       <td className="px-4 py-2 font-medium text-(--text-primary)">{g.name}</td>
@@ -53,8 +53,8 @@ export default function SuperAdminEngagementPage() {
   );
 }
 
-function Stat({ label, value, icon, tone }: { label: string; value: string; icon: ReactNode; tone?: "pink" | "emerald" | "amber" }) {
-  const color = tone === "pink" ? "text-pink-500" : tone === "emerald" ? "text-emerald-500" : tone === "amber" ? "text-amber-500" : "text-indigo-500";
+function Stat({ label, value, icon, tone }: { label: string; value: string; icon: ReactNode; tone?: "flame" | "neutral" | "steel" }) {
+  const color = tone === "flame" ? "text-primary" : tone === "neutral" ? "text-muted-foreground" : tone === "steel" ? "text-muted-foreground" : "text-primary";
   return (
     <Card variant="solid" className="p-5">
       <div className="flex items-center justify-between"><span className="text-sm text-(--text-secondary)">{label}</span><span className={color}>{icon}</span></div>

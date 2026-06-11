@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Users as UsersIcon, UserCheck, UserX } from "lucide-react";
-import Page from "@/components/ui/Page";
-import { Card } from "@/components/ui/Card";
+import {
+  Plus, Users as UsersIcon, UserCheck, UserX, KeyRound, Trash2, Copy,
+  MapPin, Dumbbell, CalendarClock, ArrowRight,
+} from "lucide-react";
 import Button from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
 import Modal from "@/components/ui/Modal";
 import Input from "@/components/forms/Input";
 import Select from "@/components/forms/Select";
 import SearchInput from "@/components/common/SearchInput";
-import EmptyState from "@/components/common/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
+import {
+  CommandHero, Highlight, MetricCard, SectionHeader, StatusPill,
+  EmptyMomentumState, type StatusTone,
+} from "@/components/premium";
 import { useToast } from "@/hooks/useToast";
 import { memberService, type CreateMemberPayload } from "@/services/member.service";
 import { branchService, type Branch } from "@/services/branch.service";
@@ -20,21 +23,10 @@ import type { Member } from "@/types/member.types";
 type StatusFilter = "ALL" | "ACTIVE" | "INACTIVE";
 
 interface FormState {
-  name: string;
-  email: string;
-  password: string;
-  phone: string;
-  gender: string;
-  dateOfBirth: string;
-  address: string;
-  fitnessGoal: string;
-  branchId: string;
-  trainerId: string;
-  emergencyContactName: string;
-  emergencyContactPhone: string;
-  healthNotes: string;
-  injuryNotes: string;
-  medicalConditions: string;
+  name: string; email: string; password: string; phone: string; gender: string;
+  dateOfBirth: string; address: string; fitnessGoal: string; branchId: string;
+  trainerId: string; emergencyContactName: string; emergencyContactPhone: string;
+  healthNotes: string; injuryNotes: string; medicalConditions: string;
 }
 
 const emptyForm: FormState = {
@@ -51,9 +43,24 @@ const GENDER_OPTIONS = [
 ];
 
 function errMsg(err: unknown, fallback: string) {
-  return (
-    (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback
-  );
+  return (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
+}
+
+function daysUntil(d?: string | null): number | null {
+  if (!d) return null;
+  const t = new Date(d); t.setHours(0, 0, 0, 0);
+  const n = new Date(); n.setHours(0, 0, 0, 0);
+  return Math.round((t.getTime() - n.getTime()) / 86_400_000);
+}
+
+function statusTone(s: Member["status"]): StatusTone {
+  if (s === "ACTIVE") return "active";
+  if (s === "EXPIRED" || s === "SUSPENDED") return "expired";
+  return "pending";
+}
+
+function statusLabel(s: Member["status"]): string {
+  return s.charAt(0) + s.slice(1).toLowerCase();
 }
 
 export default function MembersPage() {
@@ -77,6 +84,12 @@ export default function MembersPage() {
   const [submitting, setSubmitting] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
+  const [resetTarget, setResetTarget] = useState<Member | null>(null);
+  const [resetResult, setResetResult] = useState<string | null>(null);
+  const [resetting, setResetting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Member | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   const loadMembers = useCallback(async () => {
     try {
       setLoading(true);
@@ -93,13 +106,17 @@ export default function MembersPage() {
 
   useEffect(() => {
     void loadMembers();
-    // Branches + trainers feed the assignment dropdowns; failures are non-fatal.
     branchService.list().then(setBranches).catch(() => undefined);
     userService
       .list()
       .then((users) => setTrainers(users.filter((u) => u.role === "TRAINER")))
       .catch(() => undefined);
   }, [loadMembers]);
+
+  const trainerName = useCallback(
+    (m: Member) => m.trainer?.name ?? trainers.find((t) => t.id === m.trainerId)?.name ?? null,
+    [trainers]
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -118,37 +135,31 @@ export default function MembersPage() {
   const stats = useMemo(() => {
     const total = members.length;
     const active = members.filter((m) => m.status === "ACTIVE").length;
-    return { total, active, inactive: total - active };
+    const renewingSoon = members.filter((m) => {
+      const d = daysUntil(m.activeMembership?.endDate);
+      return d !== null && d >= 0 && d <= 7;
+    }).length;
+    return { total, active, inactive: total - active, renewingSoon };
   }, [members]);
 
   function openCreate() {
-    setEditingId(null);
-    setForm(emptyForm);
-    setFormErrors({});
-    setFormOpen(true);
+    setEditingId(null); setForm(emptyForm); setFormErrors({}); setFormOpen(true);
   }
 
   function openEdit(m: Member) {
     setEditingId(m.id);
     setForm({
-      name: m.user?.name ?? "",
-      email: m.user?.email ?? "",
-      password: "",
-      phone: m.phone ?? "",
-      gender: (m.gender as string) ?? "",
+      name: m.user?.name ?? "", email: m.user?.email ?? "", password: "",
+      phone: m.phone ?? "", gender: (m.gender as string) ?? "",
       dateOfBirth: m.dateOfBirth ? m.dateOfBirth.slice(0, 10) : "",
-      address: m.address ?? "",
-      fitnessGoal: m.fitnessGoal ?? "",
-      branchId: m.branchId ?? "",
-      trainerId: m.trainerId ?? "",
+      address: m.address ?? "", fitnessGoal: m.fitnessGoal ?? "",
+      branchId: m.branchId ?? "", trainerId: m.trainerId ?? "",
       emergencyContactName: m.emergencyContactName ?? "",
       emergencyContactPhone: m.emergencyContactPhone ?? "",
-      healthNotes: m.healthNotes ?? "",
-      injuryNotes: m.injuryNotes ?? "",
+      healthNotes: m.healthNotes ?? "", injuryNotes: m.injuryNotes ?? "",
       medicalConditions: m.medicalConditions ?? "",
     });
-    setFormErrors({});
-    setFormOpen(true);
+    setFormErrors({}); setFormOpen(true);
   }
 
   function validate(): boolean {
@@ -163,9 +174,7 @@ export default function MembersPage() {
 
   function buildPayload() {
     const p: Record<string, unknown> = {
-      name: form.name.trim(),
-      email: form.email.trim(),
-      phone: form.phone.trim(),
+      name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim(),
     };
     if (form.gender) p.gender = form.gender;
     if (form.dateOfBirth) p.dateOfBirth = form.dateOfBirth;
@@ -219,6 +228,35 @@ export default function MembersPage() {
     }
   }
 
+  async function handleReset() {
+    if (!resetTarget) return;
+    setResetting(true);
+    try {
+      const res = await memberService.resetPassword(resetTarget.id);
+      setResetResult(res.data?.temporaryPassword ?? null);
+    } catch (err) {
+      toast.error(errMsg(err, "Failed to reset password."));
+      setResetTarget(null);
+    } finally {
+      setResetting(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await memberService.remove(deleteTarget.id, true);
+      toast.success("Member permanently deleted.");
+      setDeleteTarget(null);
+      await loadMembers();
+    } catch (err) {
+      toast.error(errMsg(err, "Member has history — deactivate instead of deleting."));
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   function set<K extends keyof FormState>(k: K, v: FormState[K]) {
     setForm((prev) => ({ ...prev, [k]: v }));
   }
@@ -227,23 +265,56 @@ export default function MembersPage() {
   const trainerOptions = trainers.map((t) => ({ label: t.name, value: t.id }));
 
   return (
-    <Page
-      title="Members"
-      description="Manage your gym members, branches, and health profiles."
-      action={
-        <Button iconLeft={<Plus className="h-4 w-4" />} onClick={openCreate}>
-          Add Member
-        </Button>
-      }
-    >
-      <div className="space-y-6">
-        <div className="grid grid-cols-3 gap-4">
-          <SummaryCard label="Total Members" value={stats.total} icon={<UsersIcon className="h-5 w-5" />} />
-          <SummaryCard label="Active" value={stats.active} tone="success" icon={<UserCheck className="h-5 w-5" />} />
-          <SummaryCard label="Inactive" value={stats.inactive} tone="danger" icon={<UserX className="h-5 w-5" />} />
-        </div>
+    <div className="space-y-8">
+      {/* ── Member Command Center hero ──────────────────────────────────────── */}
+      <CommandHero
+        eyebrow="Member Command Center"
+        title={
+          <>
+            Build a community members <Highlight>never want to leave.</Highlight>
+          </>
+        }
+        subtitle="Every member, their status, and their next renewal — at a glance."
+        stats={[
+          { label: "Total members", value: loading ? "—" : stats.total.toLocaleString("en-IN") },
+          { label: "Active", value: loading ? "—" : stats.active.toLocaleString("en-IN") },
+        ]}
+        actions={
+          <button
+            onClick={openCreate}
+            className="press inline-flex items-center gap-1.5 rounded-xl bg-(image:--gradient-primary) px-4 py-2 text-xs font-bold text-white shadow-[0_8px_22px_rgba(231,55,37,0.4)] transition-transform hover:-translate-y-0.5"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add Member
+          </button>
+        }
+      />
 
-        <Card variant="solid" className="p-4">
+      {/* ── KPI row ─────────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-5 stagger xl:grid-cols-4">
+        <MetricCard label="Total Members" value={loading ? "—" : stats.total} icon={<UsersIcon />} tone="energy" loading={loading} />
+        <MetricCard label="Active" value={loading ? "—" : stats.active} icon={<UserCheck />} tone="neutral" loading={loading} />
+        <MetricCard label="Inactive" value={loading ? "—" : stats.inactive} icon={<UserX />} tone="neutral" loading={loading} />
+        <MetricCard
+          label="Renewing ≤ 7 days"
+          value={loading ? "—" : stats.renewingSoon}
+          icon={<CalendarClock />}
+          tone={stats.renewingSoon > 0 ? "energy" : "neutral"}
+          changeLabel={stats.renewingSoon > 0 ? "Reach out soon" : "Nothing urgent"}
+          loading={loading}
+        />
+      </div>
+
+      {/* ── Roster ──────────────────────────────────────────────────────────── */}
+      <div>
+        <SectionHeader
+          eyebrow="Roster"
+          title="Your members"
+          action={<span className="text-xs font-semibold text-(--text-muted)">{filtered.length} shown</span>}
+        />
+
+        {/* Filters */}
+        <div className="surface-card mb-5 p-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             <div className="flex-1">
               <SearchInput value={search} onChange={setSearch} placeholder="Search by name, email, or phone" />
@@ -266,74 +337,108 @@ export default function MembersPage() {
               </div>
             )}
           </div>
-        </Card>
+        </div>
 
         {loading ? (
-          <Card variant="solid" className="p-4">
-            <div className="space-y-3">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} height="h-12" />)}</div>
-          </Card>
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="surface-card p-5"><Skeleton height="h-28" /></div>
+            ))}
+          </div>
         ) : error ? (
-          <EmptyState title="Couldn't load members" message={error} action={<Button variant="secondary" onClick={() => void loadMembers()}>Retry</Button>} />
+          <div className="surface-card">
+            <EmptyMomentumState
+              icon={<UsersIcon />}
+              title="Couldn't load members"
+              description={error}
+              action={<Button variant="secondary" onClick={() => void loadMembers()}>Retry</Button>}
+            />
+          </div>
         ) : filtered.length === 0 ? (
-          <EmptyState
-            icon={<UsersIcon className="h-7 w-7" />}
-            title={members.length === 0 ? "No members yet" : "No matching members"}
-            message={members.length === 0 ? "Add your first gym member." : "Try different filters."}
-            action={members.length === 0 ? <Button iconLeft={<Plus className="h-4 w-4" />} onClick={openCreate}>Add Member</Button> : undefined}
-          />
+          <div className="surface-card">
+            <EmptyMomentumState
+              icon={<UsersIcon />}
+              title={members.length === 0 ? "Start building your fitness community" : "No matching members"}
+              description={
+                members.length === 0
+                  ? "Add your first member and begin transforming lives. Every champion starts with day one."
+                  : "Try a different search or filter to find who you're looking for."
+              }
+              action={
+                members.length === 0
+                  ? <Button iconLeft={<Plus className="h-4 w-4" />} onClick={openCreate}>Add your first member</Button>
+                  : undefined
+              }
+            />
+          </div>
         ) : (
-          <Card variant="solid" className="overflow-hidden p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-(--border) text-xs uppercase tracking-wide text-(--text-secondary)">
-                  <tr>
-                    <th className="px-5 py-3 font-medium">Member</th>
-                    <th className="px-5 py-3 font-medium">Phone</th>
-                    <th className="px-5 py-3 font-medium">Branch</th>
-                    <th className="px-5 py-3 font-medium">Status</th>
-                    <th className="px-5 py-3 text-right font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-(--border)">
-                  {filtered.map((m) => (
-                    <tr
-                      key={m.id}
-                      className="cursor-pointer hover:bg-(--surface-hover)"
-                      onClick={() => navigate(`/gym-admin/members/${m.id}`)}
-                    >
-                      <td className="px-5 py-4">
-                        <div className="font-medium text-(--text-primary)">{m.user?.name ?? "—"}</div>
-                        <div className="text-xs text-(--text-secondary)">{m.user?.email}</div>
-                      </td>
-                      <td className="px-5 py-4 text-(--text-secondary)">{m.phone}</td>
-                      <td className="px-5 py-4 text-(--text-secondary)">{m.branch?.name ?? "—"}</td>
-                      <td className="px-5 py-4">
-                        <Badge variant={m.status === "ACTIVE" ? "success" : "danger"} dot>
-                          {m.status === "ACTIVE" ? "Active" : "Inactive"}
-                        </Badge>
-                      </td>
-                      <td className="px-5 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex justify-end gap-2">
-                          <Button size="sm" variant="secondary" onClick={() => openEdit(m)}>Edit</Button>
-                          <Button
-                            size="sm"
-                            variant={m.status === "ACTIVE" ? "danger" : "success"}
-                            loading={togglingId === m.id}
-                            onClick={() => void handleToggle(m)}
-                          >
-                            {m.status === "ACTIVE" ? "Deactivate" : "Activate"}
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
+          <div className="grid gap-5 stagger sm:grid-cols-2 xl:grid-cols-3">
+            {filtered.map((m) => (
+              <MemberCard
+                key={m.id}
+                member={m}
+                trainerName={trainerName(m)}
+                toggling={togglingId === m.id}
+                onView={() => navigate(`/gym-admin/members/${m.id}`)}
+                onEdit={() => openEdit(m)}
+                onToggle={() => void handleToggle(m)}
+                onReset={() => { setResetResult(null); setResetTarget(m); }}
+                onDelete={() => setDeleteTarget(m)}
+              />
+            ))}
+          </div>
         )}
       </div>
 
+      {/* Reset password */}
+      <Modal
+        open={!!resetTarget}
+        onClose={() => { if (!resetting) { setResetTarget(null); setResetResult(null); } }}
+        title="Reset Password"
+        description={resetResult ? undefined : `Generate a new temporary password for ${resetTarget?.user?.name ?? "this member"}.`}
+        footer={
+          resetResult ? (
+            <Button onClick={() => { setResetTarget(null); setResetResult(null); }}>Done</Button>
+          ) : (
+            <div className="flex justify-end gap-3">
+              <Button variant="secondary" onClick={() => setResetTarget(null)} disabled={resetting}>Cancel</Button>
+              <Button onClick={() => void handleReset()} loading={resetting}>Generate Password</Button>
+            </div>
+          )
+        }
+      >
+        {resetResult ? (
+          <div className="space-y-3">
+            <p className="text-sm text-(--text-secondary)">Share this one-time password with the member. It won't be shown again.</p>
+            <div className="flex items-center justify-between rounded-lg border border-border bg-(--surface-secondary) px-4 py-3">
+              <code className="text-lg font-bold tracking-wide text-(--text-primary)">{resetResult}</code>
+              <Button size="sm" variant="secondary" iconLeft={<Copy className="h-3.5 w-3.5" />} onClick={() => { navigator.clipboard?.writeText(resetResult); toast.success("Copied"); }}>Copy</Button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-(--text-secondary)">A secure temporary password will be generated and shown once.</p>
+        )}
+      </Modal>
+
+      {/* Delete confirmation */}
+      <Modal
+        open={!!deleteTarget}
+        onClose={() => !deleting && setDeleteTarget(null)}
+        title="Delete Member"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" onClick={() => setDeleteTarget(null)} disabled={deleting}>Cancel</Button>
+            <Button variant="danger" onClick={() => void handleDelete()} loading={deleting}>Delete Permanently</Button>
+          </div>
+        }
+      >
+        <p className="text-sm text-(--text-secondary)">
+          Permanently delete <strong className="text-(--text-primary)">{deleteTarget?.user?.name}</strong>? This cannot be undone.
+          Members with payment, membership, or attendance history cannot be deleted — deactivate them instead.
+        </p>
+      </Modal>
+
+      {/* Create / edit form */}
       <Modal
         open={formOpen}
         onClose={() => !submitting && setFormOpen(false)}
@@ -377,7 +482,100 @@ export default function MembersPage() {
           </Section>
         </div>
       </Modal>
-    </Page>
+    </div>
+  );
+}
+
+// ─── Member card ───────────────────────────────────────────────────────────────
+
+function MemberCard({
+  member: m, trainerName, toggling, onView, onEdit, onToggle, onReset, onDelete,
+}: {
+  member: Member;
+  trainerName: string | null;
+  toggling: boolean;
+  onView: () => void;
+  onEdit: () => void;
+  onToggle: () => void;
+  onReset: () => void;
+  onDelete: () => void;
+}) {
+  const isActive = m.status === "ACTIVE";
+  const renewIn = daysUntil(m.activeMembership?.endDate);
+  const plan = m.activeMembership?.planName ?? null;
+  const level = m.xp?.level;
+  const initial = (m.user?.name ?? "—").charAt(0).toUpperCase();
+
+  return (
+    <article className="group surface-card spotlight lift flex flex-col p-5">
+      {/* Header */}
+      <button onClick={onView} className="flex items-start gap-3 text-left">
+        <span className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-(image:--gradient-primary) text-base font-black text-white shadow-[0_8px_20px_rgba(231,55,37,0.32)]">
+          {initial}
+          {typeof level === "number" && (
+            <span className="absolute -bottom-1.5 -right-1.5 rounded-full border-2 border-(--surface-solid) bg-(--surface-solid) px-1.5 text-[10px] font-black text-primary">
+              L{level}
+            </span>
+          )}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-black tracking-tight text-(--text-primary) group-hover:text-primary">
+            {m.user?.name ?? "—"}
+          </p>
+          <p className="truncate text-xs text-(--text-muted)">{m.user?.email}</p>
+        </div>
+        <StatusPill tone={statusTone(m.status)} size="sm">
+          {statusLabel(m.status)}
+        </StatusPill>
+      </button>
+
+      {/* Meta */}
+      <dl className="mt-4 grid grid-cols-2 gap-2.5 text-xs">
+        <MetaRow icon={<MapPin className="h-3.5 w-3.5" />} label={m.branch?.name ?? "No branch"} />
+        <MetaRow icon={<Dumbbell className="h-3.5 w-3.5" />} label={trainerName ?? "No trainer"} />
+        <MetaRow icon={<UsersIcon className="h-3.5 w-3.5" />} label={m.phone || "No phone"} />
+        <MetaRow icon={<CalendarClock className="h-3.5 w-3.5" />} label={plan ?? "No plan"} />
+      </dl>
+
+      {/* Renewal urgency */}
+      {renewIn !== null && renewIn <= 14 && (
+        <div className="mt-3">
+          {renewIn < 0 ? (
+            <StatusPill tone="expired" size="sm">Membership expired</StatusPill>
+          ) : renewIn <= 7 ? (
+            <StatusPill tone="expired" size="sm">Renews in {renewIn === 0 ? "today" : `${renewIn}d`}</StatusPill>
+          ) : (
+            <StatusPill tone="pending" size="sm">Renews in {renewIn}d</StatusPill>
+          )}
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-border pt-3">
+        <Button size="sm" variant="secondary" className="flex-1" iconRight={<ArrowRight className="h-3.5 w-3.5" />} onClick={onView}>
+          View
+        </Button>
+        <Button size="sm" variant="ghost" onClick={onEdit}>Edit</Button>
+        <Button size="sm" variant={isActive ? "danger" : "success"} loading={toggling} onClick={onToggle}>
+          {isActive ? "Deactivate" : "Activate"}
+        </Button>
+        <Button size="sm" variant="ghost" iconLeft={<KeyRound className="h-3.5 w-3.5" />} onClick={onReset} title="Reset password">
+          <span className="sr-only">Reset password</span>
+        </Button>
+        <Button size="sm" variant="ghost" iconLeft={<Trash2 className="h-3.5 w-3.5 text-primary" />} onClick={onDelete} title="Delete">
+          <span className="sr-only">Delete</span>
+        </Button>
+      </div>
+    </article>
+  );
+}
+
+function MetaRow({ icon, label }: { icon: ReactNode; label: string }) {
+  return (
+    <div className="flex min-w-0 items-center gap-1.5 text-(--text-secondary)">
+      <span className="shrink-0 text-(--text-muted)">{icon}</span>
+      <span className="truncate font-medium">{label}</span>
+    </div>
   );
 }
 
@@ -387,18 +585,5 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
       <p className="mb-3 text-sm font-semibold text-(--text-primary)">{title}</p>
       <div className="grid gap-4 sm:grid-cols-2">{children}</div>
     </div>
-  );
-}
-
-function SummaryCard({ label, value, icon, tone = "default" }: { label: string; value: number; icon: ReactNode; tone?: "default" | "success" | "danger"; }) {
-  const toneClass = tone === "success" ? "text-emerald-600 dark:text-emerald-400" : tone === "danger" ? "text-red-600 dark:text-red-400" : "text-indigo-600 dark:text-indigo-400";
-  return (
-    <Card variant="solid" className="p-5">
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-(--text-secondary)">{label}</span>
-        <span className={toneClass}>{icon}</span>
-      </div>
-      <div className="mt-2 text-2xl font-bold text-(--text-primary)">{value}</div>
-    </Card>
   );
 }

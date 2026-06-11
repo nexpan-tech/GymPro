@@ -36,29 +36,27 @@ const SUPER_ADMIN_NAV: NavItem[] = [
 const ADMIN_NAV: NavItem[] = [
   // Core
   { label: "Dashboard",    path: "/gym-admin/dashboard",    icon: "LayoutDashboard", group: "Core" },
-  { label: "Users",        path: "/gym-admin/users",        icon: "UserCheck",       group: "Core" },
   { label: "Members",      path: "/gym-admin/members",      icon: "Users",           group: "Core" },
-  { label: "Trainers",     path: "/gym-admin/trainers",     icon: "UserCheck",       group: "Core" },
+  { label: "Trainers",     path: "/gym-admin/trainers",     icon: "Dumbbell",        group: "Core" },
+  { label: "Admins",       path: "/gym-admin/admins",       icon: "UserCheck",       group: "Core" },
   { label: "Attendance",   path: "/gym-admin/attendance",   icon: "CalendarCheck",   group: "Core" },
   { label: "Memberships",  path: "/gym-admin/memberships",  icon: "IdCard",          group: "Core" },
   { label: "Payments",     path: "/gym-admin/payments",     icon: "Banknote",        group: "Core" },
 
   // Growth
   { label: "Analytics",   path: "/gym-admin/analytics",    icon: "BarChart3",       group: "Growth" },
+  { label: "Reports",     path: "/gym-admin/reports",      icon: "FileText",        group: "Growth" },
   { label: "Leads CRM",   path: "/gym-admin/leads",        icon: "Funnel",          group: "Growth" },
   { label: "Retention",   path: "/gym-admin/retention",    icon: "HeartPulse",      group: "Growth" },
   { label: "AI Insights", path: "/gym-admin/ai-insights",  icon: "Brain",           group: "Growth" },
   { label: "Automation",  path: "/gym-admin/automation",   icon: "Bot",             group: "Growth" },
-  { label: "Campaigns",   path: "/gym-admin/campaigns",    icon: "Megaphone",       group: "Growth" },
-  { label: "Reports",     path: "/gym-admin/reports",      icon: "FileText",        group: "Growth" },
 
   // Communication
+  { label: "Chat",          path: "/gym-admin/chat",          icon: "MessageSquare", group: "Communication" },
   { label: "Notifications", path: "/gym-admin/notifications", icon: "Bell",          group: "Communication" },
   { label: "Broadcast",     path: "/gym-admin/broadcast",     icon: "Megaphone",     group: "Communication" },
   { label: "Announcements", path: "/gym-admin/announcements", icon: "Megaphone",     group: "Communication" },
-  { label: "Member Chat",   path: "/gym-admin/chat",          icon: "MessageSquare", group: "Communication" },
   { label: "Comms Analytics", path: "/gym-admin/communication-analytics", icon: "BarChart3", group: "Communication" },
-  { label: "Audit Logs",    path: "/gym-admin/audit",         icon: "ScrollText",    group: "Communication" },
 
   // Engagement
   { label: "Challenges",   path: "/gym-admin/challenges",   icon: "Trophy",          group: "Engagement" },
@@ -68,12 +66,10 @@ const ADMIN_NAV: NavItem[] = [
 
   // Multi-branch
   { label: "Branches",    path: "/gym-admin/branches",     icon: "GitBranch",       group: "Multi-branch" },
-  { label: "Marketplace", path: "/gym-admin/marketplace",  icon: "ShoppingBag",     group: "Multi-branch" },
   { label: "Billing",     path: "/gym-admin/billing",      icon: "Receipt",         group: "Multi-branch" },
 
   // Config
   { label: "White Label", path: "/gym-admin/white-label",  icon: "Palette",         group: "Config" },
-  { label: "Settings",    path: "/gym-admin/settings",     icon: "Settings",        group: "Config" },
 ];
 
 const TRAINER_NAV: NavItem[] = [
@@ -152,14 +148,14 @@ export function getRoleLabel(role: string): string {
 /** Returns the role badge color class for Tailwind. */
 export function getRoleBadgeColor(role: string): string {
   switch (role) {
-    case "SUPER_ADMIN":      return "bg-violet-500/20 text-violet-300 border-violet-500/30";
+    case "SUPER_ADMIN":      return "bg-primary text-white border-primary/40";
     case "ADMIN":
-    case "GYM_ADMIN":        return "bg-indigo-500/20 text-indigo-300 border-indigo-500/30";
+    case "GYM_ADMIN":        return "bg-primary text-white border-primary/40";
     case "REGIONAL_MANAGER":
-    case "BRANCH_MANAGER":   return "bg-blue-500/20 text-blue-300 border-blue-500/30";
-    case "RECEPTIONIST":     return "bg-sky-500/20 text-sky-300 border-sky-500/30";
-    case "TRAINER":          return "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
-    case "MEMBER":           return "bg-amber-500/20 text-amber-300 border-amber-500/30";
-    default:                 return "bg-gray-500/20 text-gray-300 border-gray-500/30";
+    case "BRANCH_MANAGER":   return "bg-primary text-white border-primary/40";
+    case "RECEPTIONIST":     return "bg-primary text-white border-primary/40";
+    case "TRAINER":          return "bg-muted text-muted-foreground border-border";
+    case "MEMBER":           return "bg-muted text-muted-foreground border-border";
+    default:                 return "bg-muted text-muted-foreground border-border";
   }
 }

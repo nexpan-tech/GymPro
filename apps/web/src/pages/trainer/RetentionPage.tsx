@@ -34,7 +34,7 @@ export default function TrainerRetentionPage() {
         <div className="space-y-6">
           <Card variant="solid" className="p-5">
             <div className="flex items-center gap-2 text-sm">
-              <ShieldAlert className="h-4 w-4 text-amber-500" />
+              <ShieldAlert className="h-4 w-4 text-muted-foreground" />
               <span className="font-semibold text-(--text-primary)">{needsFollowUp.length}</span>
               <span className="text-(--text-secondary)">members need follow-up (high/critical risk)</span>
             </div>
@@ -43,7 +43,7 @@ export default function TrainerRetentionPage() {
           <Card variant="solid" className="overflow-hidden p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-(--border) text-xs uppercase tracking-wide text-(--text-secondary)">
+                <thead className="border-b border-border text-xs uppercase tracking-wide text-(--text-secondary)">
                   <tr>
                     <th className="px-4 py-2 font-medium">Member</th>
                     <th className="px-4 py-2 font-medium">Risk</th>
@@ -51,7 +51,7 @@ export default function TrainerRetentionPage() {
                     <th className="px-4 py-2 font-medium">Retention score</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-(--border)">
+                <tbody className="divide-y divide-border">
                   {members.map((m) => (
                     <tr key={m.memberId}>
                       <td className="px-4 py-2 font-medium text-(--text-primary)">{m.name}</td>

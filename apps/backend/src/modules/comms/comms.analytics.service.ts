@@ -62,7 +62,8 @@ export class CommsAnalyticsService {
    */
   private static async chatResponseTime(gymId: string) {
     const messages = await prisma.trainerMessage.findMany({
-      where: { gymId },
+      // Trainer<->member threads only (skip admin<->trainer staff DMs, memberId null).
+      where: { gymId, memberId: { not: null } },
       select: { memberId: true, senderId: true, member: { select: { userId: true } }, createdAt: true },
       orderBy: { createdAt: "asc" },
       take: 2000,
@@ -71,6 +72,7 @@ export class CommsAnalyticsService {
     const deltas: number[] = [];
     const lastMemberMsgAt = new Map<string, number>(); // memberId → ts of last member-sent msg awaiting reply
     for (const m of messages) {
+      if (!m.memberId) continue;
       const fromMember = m.senderId === m.member?.userId;
       if (fromMember) {
         if (!lastMemberMsgAt.has(m.memberId)) lastMemberMsgAt.set(m.memberId, m.createdAt.getTime());

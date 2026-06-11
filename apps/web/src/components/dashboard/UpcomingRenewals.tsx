@@ -43,17 +43,17 @@ export default function UpcomingRenewals({
   data = defaultData,
 }: UpcomingRenewalsProps) {
   return (
-    <Card className="rounded-3xl border border-slate-200/70 bg-white/95 p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900/95">
+    <Card className="rounded-3xl border border-border bg-white/95 p-6 shadow-xl dark:border-border dark:bg-muted">
       <div className="mb-6 flex items-center gap-3">
-        <div className="rounded-2xl bg-rose-100 p-3 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">
+        <div className="rounded-2xl bg-primary/10 p-3 text-primary dark:bg-primary/15 dark:text-primary">
           <CalendarDays className="h-5 w-5" />
         </div>
 
         <div>
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+          <h3 className="text-lg font-semibold text-foreground dark:text-white">
             Upcoming Renewals
           </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-muted-foreground">
             Memberships expiring soon
           </p>
         </div>
@@ -63,25 +63,25 @@ export default function UpcomingRenewals({
         {data.map((item) => (
           <div
             key={item.id}
-            className="rounded-2xl border border-slate-200/60 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-800/50"
+            className="rounded-2xl border border-border bg-muted p-4 dark:border-border dark:bg-muted"
           >
             <div className="flex items-start justify-between">
               <div>
-                <h4 className="font-semibold text-slate-900 dark:text-white">
+                <h4 className="font-semibold text-foreground dark:text-white">
                   {item.name}
                 </h4>
 
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                <p className="mt-1 text-sm text-muted-foreground">
                   Expires on {item.expiryDate}
                 </p>
               </div>
 
               <div className="text-right">
-                <p className="font-bold text-slate-900 dark:text-white">
+                <p className="font-bold text-foreground dark:text-white">
                   ₹{item.amount.toLocaleString("en-IN")}
                 </p>
 
-                <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-400">
+                <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs font-semibold text-primary dark:bg-primary/15 dark:text-primary">
                   <AlertCircle className="h-3 w-3" />
                   {item.daysLeft} days left
                 </div>

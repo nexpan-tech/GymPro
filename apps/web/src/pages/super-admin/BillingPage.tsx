@@ -46,10 +46,10 @@ export default function BillingPage() {
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <Stat label="MRR" value={inr(overview?.mrr ?? 0)} icon={<IndianRupee className="h-5 w-5" />} tone="indigo" />
-            <Stat label="ARR" value={inr(overview?.arr ?? 0)} icon={<TrendingUp className="h-5 w-5" />} tone="emerald" />
-            <Stat label="Active Gyms" value={String(overview?.activeGyms ?? 0)} icon={<Building2 className="h-5 w-5" />} tone="indigo" />
-            <Stat label="Trial Gyms" value={String(overview?.trialGyms ?? 0)} icon={<Clock className="h-5 w-5" />} tone="amber" />
+            <Stat label="MRR" value={inr(overview?.mrr ?? 0)} icon={<IndianRupee className="h-5 w-5" />} tone="energy" />
+            <Stat label="ARR" value={inr(overview?.arr ?? 0)} icon={<TrendingUp className="h-5 w-5" />} tone="neutral" />
+            <Stat label="Active Gyms" value={String(overview?.activeGyms ?? 0)} icon={<Building2 className="h-5 w-5" />} tone="energy" />
+            <Stat label="Trial Gyms" value={String(overview?.trialGyms ?? 0)} icon={<Clock className="h-5 w-5" />} tone="steel" />
           </div>
 
           <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
@@ -59,15 +59,15 @@ export default function BillingPage() {
                 <AreaChart data={trend}>
                   <defs>
                     <linearGradient id="saasRev" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#6366f1" stopOpacity={0.4} />
-                      <stop offset="100%" stopColor="#6366f1" stopOpacity={0.02} />
+                      <stop offset="0%" stopColor="#e73725" stopOpacity={0.4} />
+                      <stop offset="100%" stopColor="#e73725" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.12)" />
-                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-                  <Tooltip formatter={(value) => inr(Number(value))} contentStyle={{ borderRadius: 12, border: "1px solid rgba(148,163,184,0.15)", backgroundColor: "rgba(15,23,42,0.95)", color: "#fff" }} />
-                  <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={2.5} fill="url(#saasRev)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(143,143,143,0.12)" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#767676" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "#767676" }} axisLine={false} tickLine={false} />
+                  <Tooltip formatter={(value) => inr(Number(value))} contentStyle={{ borderRadius: 12, border: "1px solid rgba(143,143,143,0.15)", backgroundColor: "rgba(1,0,0,0.95)", color: "#fff" }} />
+                  <Area type="monotone" dataKey="revenue" stroke="#e73725" strokeWidth={2.5} fill="url(#saasRev)" />
                 </AreaChart>
               </ResponsiveContainer>
             </Card>
@@ -75,7 +75,7 @@ export default function BillingPage() {
             <Card variant="solid" className="p-5">
               <h3 className="mb-4 text-sm font-semibold text-(--text-primary)">Churn</h3>
               <div className="flex items-center gap-3">
-                <TrendingDown className="h-8 w-8 text-red-500" />
+                <TrendingDown className="h-8 w-8 text-primary" />
                 <div>
                   <div className="text-3xl font-black text-(--text-primary)">{overview?.churnRate ?? 0}%</div>
                   <div className="text-xs text-(--text-secondary)">last 30 days</div>
@@ -92,8 +92,8 @@ export default function BillingPage() {
   );
 }
 
-function Stat({ label, value, icon, tone }: { label: string; value: string; icon: ReactNode; tone: "indigo" | "emerald" | "amber" }) {
-  const c = tone === "emerald" ? "text-emerald-500" : tone === "amber" ? "text-amber-500" : "text-indigo-500";
+function Stat({ label, value, icon, tone }: { label: string; value: string; icon: ReactNode; tone: "energy" | "neutral" | "steel" }) {
+  const c = tone === "neutral" ? "text-muted-foreground" : tone === "steel" ? "text-muted-foreground" : "text-primary";
   return (
     <Card variant="solid" className="p-5">
       <div className="flex items-center justify-between">

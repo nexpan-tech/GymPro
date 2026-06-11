@@ -73,6 +73,22 @@ export class ReportsController {
     const result = await ReportsService.churnReport(user, getFormat(req));
     return sendReport(res, result);
   }
+
+  static async monthly(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    const month = typeof req.query.month === "string" ? req.query.month : undefined;
+    const format = req.query.format === "pdf" ? "pdf" : "json";
+    const result = await ReportsService.monthlyReport(user, month, format);
+
+    if (result.format === "pdf") {
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="${result.filename}"`);
+      return res.send(result.content);
+    }
+    return res.json({ success: true, data: result.data });
+  }
 }
 
 export default ReportsController;

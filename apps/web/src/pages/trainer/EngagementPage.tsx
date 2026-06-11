@@ -27,7 +27,7 @@ export default function TrainerEngagementPage() {
         <div className="space-y-6">
           <Card variant="solid" className="p-5">
             <div className="flex items-center gap-2 text-sm">
-              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
               <span className="font-semibold text-(--text-primary)">{needMotivation.length}</span>
               <span className="text-(--text-secondary)">members need motivation (no active attendance streak)</span>
             </div>
@@ -36,21 +36,21 @@ export default function TrainerEngagementPage() {
           <Card variant="solid" className="overflow-hidden p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-(--border) text-xs uppercase tracking-wide text-(--text-secondary)">
+                <thead className="border-b border-border text-xs uppercase tracking-wide text-(--text-secondary)">
                   <tr>
                     <th className="px-4 py-2">Member</th><th className="px-4 py-2">Points</th><th className="px-4 py-2">Attendance</th>
                     <th className="px-4 py-2">Workout</th><th className="px-4 py-2">Diet</th><th className="px-4 py-2">Challenges</th><th className="px-4 py-2"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-(--border)">
+                <tbody className="divide-y divide-border">
                   {rows.map((r) => (
                     <tr key={r.memberId}>
                       <td className="px-4 py-2 font-medium text-(--text-primary)">{r.name}</td>
                       <td className="px-4 py-2">{r.points} <span className="text-xs text-(--text-secondary)">(Lvl {r.level})</span></td>
-                      <td className="px-4 py-2"><span className="flex items-center gap-1"><Flame className="h-3 w-3 text-orange-500" />{r.attendanceStreak}</span></td>
+                      <td className="px-4 py-2"><span className="flex items-center gap-1"><Flame className="h-3 w-3 text-muted-foreground" />{r.attendanceStreak}</span></td>
                       <td className="px-4 py-2">{r.workoutStreak}</td>
                       <td className="px-4 py-2">{r.dietStreak}</td>
-                      <td className="px-4 py-2"><span className="flex items-center gap-1"><Trophy className="h-3 w-3 text-amber-500" />{r.activeChallenges}</span></td>
+                      <td className="px-4 py-2"><span className="flex items-center gap-1"><Trophy className="h-3 w-3 text-muted-foreground" />{r.activeChallenges}</span></td>
                       <td className="px-4 py-2">{r.needsMotivation && <Badge variant="warning">Motivate</Badge>}</td>
                     </tr>
                   ))}

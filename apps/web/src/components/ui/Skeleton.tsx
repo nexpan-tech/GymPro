@@ -83,7 +83,7 @@ export function SkeletonCard({
   return (
     <div
       className={cn(
-        "rounded-[22px] border border-(--border) bg-(--glass-strong) p-6 shadow-(--shadow-md)",
+        "rounded-[22px] border border-border bg-(--glass-strong) p-6 shadow-(--shadow-md)",
         className
       )}
       aria-hidden="true"
@@ -125,14 +125,14 @@ export function SkeletonTable({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-[22px] border border-(--border) bg-(--glass-strong) shadow-(--shadow-md)",
+        "overflow-hidden rounded-[22px] border border-border bg-(--glass-strong) shadow-(--shadow-md)",
         className
       )}
       aria-hidden="true"
       aria-label="Loading table data"
     >
       {/* Header */}
-      <div className="flex gap-4 border-b border-(--border) bg-(--surface-secondary) px-6 py-3">
+      <div className="flex gap-4 border-b border-border bg-(--surface-secondary) px-6 py-3">
         {Array.from({ length: cols }).map((_, i) => (
           <Skeleton
             key={i}
@@ -143,7 +143,7 @@ export function SkeletonTable({
       </div>
 
       {/* Rows */}
-      <div className="divide-y divide-(--border)">
+      <div className="divide-y divide-border">
         {Array.from({ length: rows }).map((_, rowIdx) => (
           <div key={rowIdx} className="flex items-center gap-4 px-6 py-4">
             {Array.from({ length: cols }).map((_, colIdx) => (
@@ -170,7 +170,7 @@ export function SkeletonKpi({ className }: SkeletonKpiProps) {
   return (
     <div
       className={cn(
-        "rounded-[22px] border border-(--border) bg-(--glass-strong) p-6 shadow-(--shadow-md)",
+        "rounded-[22px] border border-border bg-(--glass-strong) p-6 shadow-(--shadow-md)",
         className
       )}
       aria-hidden="true"

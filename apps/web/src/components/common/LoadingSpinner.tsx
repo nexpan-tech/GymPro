@@ -22,13 +22,13 @@ export default function LoadingSpinner({
     <div className="flex flex-col items-center justify-center gap-3">
       <Loader2
         className={clsx(
-          "animate-spin text-indigo-600 dark:text-indigo-400",
+          "animate-spin text-primary",
           sizeClasses[size]
         )}
       />
 
       {text && (
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-sm text-muted-foreground">
           {text}
         </p>
       )}
@@ -37,7 +37,7 @@ export default function LoadingSpinner({
 
   if (fullScreen) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950">
+      <div className="flex min-h-screen items-center justify-center bg-muted dark:bg-muted">
         {content}
       </div>
     );

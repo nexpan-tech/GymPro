@@ -64,6 +64,16 @@ export default function AppButton({
     gap: 8,
     opacity: disabled || loading ? 0.6 : 1,
     width: fullWidth ? "100%" : undefined,
+    // Premium red glow on the primary action; subtle elevation on danger.
+    ...(variant === "primary" && !disabled && !loading
+      ? {
+          shadowColor: c.primary,
+          shadowOpacity: 0.4,
+          shadowRadius: 16,
+          shadowOffset: { width: 0, height: 8 },
+          elevation: 6,
+        }
+      : {}),
   };
 
   return (

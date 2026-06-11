@@ -38,6 +38,8 @@ router.post("/missions/:id/complete", roleMiddleware(STAFF_TRAINER), Gamificatio
 // ── Rewards catalogue + redemption ──
 router.post("/rewards", roleMiddleware(STAFF), GamificationController.createReward);
 router.get("/rewards", roleMiddleware(ALL), GamificationController.getRewards);
+router.patch("/rewards/:id", roleMiddleware(STAFF), GamificationController.updateReward);
+router.delete("/rewards/:id", roleMiddleware(STAFF), GamificationController.deleteReward);
 router.post("/rewards/:id/redeem", roleMiddleware([ROLES.MEMBER, ...STAFF]), GamificationController.redeemReward);
 
 // ── Redemptions admin ──

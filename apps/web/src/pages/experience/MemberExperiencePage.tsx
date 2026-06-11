@@ -35,11 +35,11 @@ export function MemberExperiencePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
+      <div className="flex min-h-screen items-center justify-center bg-muted text-white">
         <motion.div
           initial={{ opacity: 0, scale: 0.94 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="rounded-3xl border border-slate-800 bg-slate-900 p-8 shadow-xl"
+          className="rounded-3xl border border-border bg-muted p-8 shadow-xl"
         >
           Loading premium experience...
         </motion.div>
@@ -49,30 +49,30 @@ export function MemberExperiencePage() {
 
   if (!dashboard) {
     return (
-      <div className="min-h-screen bg-slate-950 p-6 text-white">
+      <div className="min-h-screen bg-muted p-6 text-white">
         No experience data found.
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 p-6 text-white">
+    <div className="min-h-screen bg-muted p-6 text-white">
       <div className="mx-auto max-w-7xl space-y-6">
         <motion.section
           initial={{ opacity: 0, y: -18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55 }}
-          className="relative overflow-hidden rounded-3xl bg-linear-to-r from-indigo-600 to-purple-600 p-8 shadow-xl"
+          className="relative overflow-hidden rounded-3xl bg-linear-to-r from-primary to-primary p-8 shadow-xl"
         >
           <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
-          <div className="absolute -bottom-24 left-20 h-56 w-56 rounded-full bg-emerald-400/20 blur-3xl" />
+          <div className="absolute -bottom-24 left-20 h-56 w-56 rounded-full bg-muted-foreground blur-3xl" />
 
           <div className="relative z-10">
             <p className="text-sm opacity-80">Welcome back</p>
             <h1 className="mt-2 text-4xl font-bold">
               {dashboard.member.name}
             </h1>
-            <p className="mt-2 text-indigo-100">
+            <p className="mt-2 text-primary">
               Goal: {dashboard.member.fitnessGoal || "Stay consistent"}
             </p>
           </div>
@@ -100,13 +100,13 @@ export function MemberExperiencePage() {
         </section>
 
         <AnimatedCard
-          className="rounded-3xl bg-slate-900 p-6 shadow-lg"
+          className="rounded-3xl bg-muted p-6 shadow-lg"
           delay={0.25}
         >
           <div className="flex flex-col items-center gap-6 md:flex-row md:justify-between">
             <div>
               <h2 className="text-xl font-semibold">Level Progress</h2>
-              <p className="mt-2 max-w-xl text-slate-400">
+              <p className="mt-2 max-w-xl text-muted-foreground">
                 Keep earning XP to unlock rewards, higher achievement levels,
                 and consistency bonuses.
               </p>
@@ -126,8 +126,8 @@ export function MemberExperiencePage() {
               <p
                 className={
                   dashboard.membership?.isActive
-                    ? "text-green-400"
-                    : "text-red-400"
+                    ? "text-muted-foreground"
+                    : "text-primary"
                 }
               >
                 {dashboard.membership?.isActive ? "Active" : "Expired"}
@@ -173,7 +173,7 @@ export function MemberExperiencePage() {
         />
 
         <AnimatedCard
-          className="rounded-3xl bg-slate-900 p-6 shadow-lg"
+          className="rounded-3xl bg-muted p-6 shadow-lg"
           delay={0.45}
         >
           <h2 className="mb-4 text-xl font-semibold">Smart Recommendations</h2>
@@ -186,7 +186,7 @@ export function MemberExperiencePage() {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5 + index * 0.06 }}
-                  className="rounded-2xl border border-slate-800 bg-slate-950 p-4 text-slate-200"
+                  className="rounded-2xl border border-border bg-muted p-4 text-muted-foreground"
                 >
                   {item}
                 </motion.div>
@@ -201,8 +201,8 @@ export function MemberExperiencePage() {
 
 function StatCard({ title, value }: { title: string; value: string | number }) {
   return (
-    <div className="rounded-3xl bg-slate-900 p-5 shadow-lg transition hover:bg-slate-800">
-      <p className="text-sm text-slate-400">{title}</p>
+    <div className="rounded-3xl bg-muted p-5 shadow-lg transition hover:bg-muted">
+      <p className="text-sm text-muted-foreground">{title}</p>
       <p className="mt-2 text-3xl font-bold">{value}</p>
     </div>
   );
@@ -216,9 +216,9 @@ function PremiumCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="h-full rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
+    <div className="h-full rounded-3xl border border-border bg-muted p-6 shadow-lg">
       <h3 className="mb-3 text-lg font-semibold">{title}</h3>
-      <div className="space-y-1 text-slate-300">{children}</div>
+      <div className="space-y-1 text-muted-foreground">{children}</div>
     </div>
   );
 }

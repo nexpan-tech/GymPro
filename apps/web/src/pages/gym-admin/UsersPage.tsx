@@ -18,18 +18,20 @@ import {
   type CreateUserPayload,
 } from "@/services/user.service";
 
+// Admins page manages STAFF only. Members + Trainers have their own pages.
 const ROLE_OPTIONS: { label: string; value: GymAssignableRole }[] = [
-  { label: "Trainer", value: "TRAINER" },
-  { label: "Receptionist", value: "RECEPTIONIST" },
-  { label: "Member", value: "MEMBER" },
   { label: "Gym Admin", value: "ADMIN" },
+  { label: "Receptionist", value: "RECEPTIONIST" },
 ];
+
+// Roles surfaced on the Admins page (read filter).
+const STAFF_ROLES = ["ADMIN", "RECEPTIONIST", "BRANCH_MANAGER", "REGIONAL_MANAGER"];
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: "Gym Admin",
   RECEPTIONIST: "Receptionist",
-  TRAINER: "Trainer",
-  MEMBER: "Member",
+  BRANCH_MANAGER: "Branch Manager",
+  REGIONAL_MANAGER: "Regional Manager",
 };
 
 interface FormState {
@@ -43,7 +45,7 @@ const emptyForm: FormState = {
   name: "",
   email: "",
   password: "",
-  role: "TRAINER",
+  role: "ADMIN",
 };
 
 function roleVariant(role: string): "primary" | "info" | "success" | "default" {
@@ -71,7 +73,8 @@ export default function UsersPage() {
     try {
       setLoading(true);
       setError(null);
-      const data = await userService.list();
+      // Admins page = staff accounts only (members + trainers have their own pages).
+      const data = await userService.listByRoles(STAFF_ROLES);
       setUsers(data);
     } catch (err) {
       console.error("Failed to load users:", err);
@@ -163,8 +166,8 @@ export default function UsersPage() {
 
   return (
     <Page
-      title="Users"
-      description="Create and manage trainers, receptionists, members, and admins in your gym."
+      title="Admins"
+      description="Manage staff and admin accounts for your gym."
       action={
         <Button iconLeft={<Plus className="h-4 w-4" />} onClick={openCreate}>
           Add User
@@ -219,7 +222,7 @@ export default function UsersPage() {
           <Card variant="solid" className="overflow-hidden p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-(--border) text-xs uppercase tracking-wide text-(--text-secondary)">
+                <thead className="border-b border-border text-xs uppercase tracking-wide text-(--text-secondary)">
                   <tr>
                     <th className="px-5 py-3 font-medium">Name</th>
                     <th className="px-5 py-3 font-medium">Email</th>
@@ -228,7 +231,7 @@ export default function UsersPage() {
                     <th className="px-5 py-3 text-right font-medium">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-(--border)">
+                <tbody className="divide-y divide-border">
                   {filtered.map((user) => (
                     <tr key={user.id} className="hover:bg-(--surface-hover)">
                       <td className="px-5 py-4 font-medium text-(--text-primary)">
@@ -267,8 +270,8 @@ export default function UsersPage() {
       <Modal
         open={createOpen}
         onClose={() => !submitting && setCreateOpen(false)}
-        title="Add User"
-        description="New accounts are created inside your gym."
+        title="Add Admin"
+        description="Create a staff or admin account inside your gym."
         size="md"
         footer={
           <div className="flex justify-end gap-3">

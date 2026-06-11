@@ -44,7 +44,7 @@ export default function ChallengesPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <Trophy className="h-4 w-4 text-amber-500" />
+                    <Trophy className="h-4 w-4 text-muted-foreground" />
                     <span className="font-semibold text-(--text-primary)">{c.title}</span>
                   </div>
                   <p className="mt-1 text-sm text-(--text-secondary)">{c.description || c.type}</p>
@@ -90,7 +90,7 @@ function AddChallengeModal({ onClose, onSaved }: { onClose: () => void; onSaved:
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="text-sm font-semibold text-(--text-secondary)">Type</label>
-            <select className="mt-1 w-full rounded-md border border-(--border) bg-(--surface) px-3 py-2 text-sm" value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>
+            <select className="mt-1 w-full rounded-md border border-border bg-(--surface) px-3 py-2 text-sm" value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>
               {TYPES.map((t) => <option key={t}>{t}</option>)}
             </select>
           </div>
@@ -119,7 +119,7 @@ function ChallengeDetailModal({ challenge, onClose }: { challenge: Challenge; on
       ) : (
         <div className="space-y-1">
           {board.map((r) => (
-            <div key={r.memberId} className="flex items-center justify-between rounded-md border border-(--border) px-3 py-2 text-sm">
+            <div key={r.memberId} className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm">
               <span className="flex items-center gap-2"><span className="w-6 font-bold text-(--text-secondary)">#{r.rank}</span>{r.name}</span>
               <span className="flex items-center gap-2">{r.progress}{r.isCompleted && <Badge variant="success">Done</Badge>}</span>
             </div>

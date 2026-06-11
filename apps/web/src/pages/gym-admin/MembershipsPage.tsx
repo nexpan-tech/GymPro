@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus, RefreshCw, Snowflake, Clock, Users, AlertTriangle, CalendarClock } from "lucide-react";
 import Page from "@/components/ui/Page";
 import { Card } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
 import Modal from "@/components/ui/Modal";
 import Input from "@/components/forms/Input";
 import Select from "@/components/forms/Select";
-import EmptyState from "@/components/common/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
+import {
+  MetricCard, StatusPill, type StatusTone, SectionHeader, InsightCard, EmptyMomentumState,
+} from "@/components/premium";
 import { useToast } from "@/hooks/useToast";
 import {
   membershipService,
@@ -25,11 +26,11 @@ type Tab = "memberships" | "plans";
 function fmt(d?: string | null) {
   return d ? new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "—";
 }
-function statusVariant(s: string): "success" | "danger" | "warning" | "default" {
-  if (s === "ACTIVE") return "success";
-  if (s === "EXPIRED" || s === "CANCELLED") return "danger";
-  if (s === "FROZEN") return "warning";
-  return "default";
+function statusTone(s: string): StatusTone {
+  if (s === "ACTIVE") return "active";
+  if (s === "EXPIRED" || s === "CANCELLED") return "expired";
+  if (s === "FROZEN") return "pending";
+  return "neutral";
 }
 function errMsg(err: unknown, fallback: string) {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
@@ -217,7 +218,8 @@ export default function MembershipsPage() {
   return (
     <Page
       title="Memberships"
-      description="Plans, assignments, renewals, and lifecycle."
+      eyebrow="Subscription Intelligence Center"
+      description="Plans, assignments, renewals, and the full subscription lifecycle — at a glance."
       action={
         tab === "plans" ? (
           <Button iconLeft={<Plus className="h-4 w-4" />} onClick={openCreatePlan}>New Plan</Button>
@@ -226,14 +228,26 @@ export default function MembershipsPage() {
         )
       }
     >
-      <div className="space-y-6">
-        {/* Analytics cards */}
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard label="Active Members" value={analytics?.activeMembers} icon={<Users className="h-5 w-5" />} tone="success" />
-          <StatCard label="Expired Memberships" value={analytics?.expiredMemberships} icon={<AlertTriangle className="h-5 w-5" />} tone="danger" />
-          <StatCard label="Due This Week" value={analytics?.renewalsDueThisWeek} icon={<CalendarClock className="h-5 w-5" />} tone="warning" />
-          <StatCard label="Due This Month" value={analytics?.renewalsDueThisMonth} icon={<CalendarClock className="h-5 w-5" />} />
+      <div className="space-y-8">
+        {/* Lifecycle metrics */}
+        <div className="grid grid-cols-2 gap-5 stagger lg:grid-cols-4">
+          <MetricCard label="Active Members" value={analytics?.activeMembers ?? "—"} icon={<Users />} tone="energy" />
+          <MetricCard label="Expired" value={analytics?.expiredMemberships ?? "—"} icon={<AlertTriangle />} tone={(analytics?.expiredMemberships ?? 0) > 0 ? "energy" : "neutral"} />
+          <MetricCard label="Renewals Due This Week" value={analytics?.renewalsDueThisWeek ?? "—"} icon={<CalendarClock />} tone={(analytics?.renewalsDueThisWeek ?? 0) > 0 ? "energy" : "neutral"} />
+          <MetricCard label="Due This Month" value={analytics?.renewalsDueThisMonth ?? "—"} icon={<CalendarClock />} tone="neutral" />
         </div>
+
+        {/* Lifecycle insight */}
+        {analytics && (analytics.renewalsDueThisWeek ?? 0) > 0 && (
+          <InsightCard
+            tone="opportunity"
+            title="Renewals are knocking"
+            description={`${analytics.renewalsDueThisWeek} membership${analytics.renewalsDueThisWeek === 1 ? "" : "s"} expire this week. A timely nudge now is the cheapest revenue you'll earn all month.`}
+            metric={analytics.renewalsDueThisWeek}
+            metricLabel="due"
+            action={<Button size="sm" variant="secondary" onClick={() => setView("current")}>Review current</Button>}
+          />
+        )}
 
         {/* Tabs */}
         <div className="flex items-center justify-between gap-2">
@@ -242,7 +256,7 @@ export default function MembershipsPage() {
             <Button size="sm" variant={tab === "plans" ? "primary" : "secondary"} onClick={() => setTab("plans")}>Plans</Button>
           </div>
           {tab === "memberships" && (
-            <div className="flex gap-1 rounded-lg border border-(--border) p-1">
+            <div className="flex gap-1 rounded-lg border border-border p-1">
               <Button size="sm" variant={view === "current" ? "primary" : "ghost"} onClick={() => setView("current")}>Current</Button>
               <Button size="sm" variant={view === "history" ? "primary" : "ghost"} onClick={() => setView("history")}>History</Button>
             </div>
@@ -252,15 +266,15 @@ export default function MembershipsPage() {
         {loading ? (
           <Card variant="solid" className="p-4"><div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} height="h-12" />)}</div></Card>
         ) : error ? (
-          <EmptyState title="Couldn't load data" message={error} action={<Button variant="secondary" onClick={() => void load()}>Retry</Button>} />
+          <div className="surface-card"><EmptyMomentumState icon={<AlertTriangle />} title="Couldn't load data" description={error} action={<Button variant="secondary" onClick={() => void load()}>Retry</Button>} /></div>
         ) : tab === "plans" ? (
           plans.length === 0 ? (
-            <EmptyState title="No plans yet" message="Create a membership plan to start assigning memberships." action={<Button iconLeft={<Plus className="h-4 w-4" />} onClick={openCreatePlan}>New Plan</Button>} />
+            <div className="surface-card"><EmptyMomentumState icon={<Plus />} title="Design your first plan" description="Create a membership plan and start turning visitors into committed members." action={<Button iconLeft={<Plus className="h-4 w-4" />} onClick={openCreatePlan}>New Plan</Button>} /></div>
           ) : (
             <Card variant="solid" className="overflow-hidden p-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <thead className="border-b border-(--border) text-xs uppercase tracking-wide text-(--text-secondary)">
+                  <thead className="border-b border-border text-xs uppercase tracking-wide text-(--text-secondary)">
                     <tr>
                       <th className="px-5 py-3 font-medium">Plan</th>
                       <th className="px-5 py-3 font-medium">Duration</th>
@@ -269,7 +283,7 @@ export default function MembershipsPage() {
                       <th className="px-5 py-3 text-right font-medium">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-(--border)">
+                  <tbody className="divide-y divide-border">
                     {plans.map((p) => (
                       <tr key={p.id} className="hover:bg-(--surface-hover)">
                         <td className="px-5 py-4">
@@ -278,7 +292,7 @@ export default function MembershipsPage() {
                         </td>
                         <td className="px-5 py-4 text-(--text-secondary)">{p.durationDays} days</td>
                         <td className="px-5 py-4 text-(--text-secondary)">₹{p.price}</td>
-                        <td className="px-5 py-4"><Badge variant={p.isActive ? "success" : "default"} dot>{p.isActive ? "Active" : "Inactive"}</Badge></td>
+                        <td className="px-5 py-4"><StatusPill tone={p.isActive ? "active" : "neutral"} size="sm">{p.isActive ? "Active" : "Inactive"}</StatusPill></td>
                         <td className="px-5 py-4 text-right">
                           <div className="flex justify-end gap-2">
                             <Button size="sm" variant="secondary" onClick={() => openEditPlan(p)}>Edit</Button>
@@ -293,12 +307,12 @@ export default function MembershipsPage() {
             </Card>
           )
         ) : memberships.length === 0 ? (
-          <EmptyState title="No memberships yet" message="Assign a plan to a member to get started." action={<Button iconLeft={<Plus className="h-4 w-4" />} onClick={() => setAssignOpen(true)}>Assign Membership</Button>} />
+          <div className="surface-card"><EmptyMomentumState icon={<Users />} title="Put members on a plan" description="Assign a plan to a member and start the relationship that keeps them coming back." action={<Button iconLeft={<Plus className="h-4 w-4" />} onClick={() => setAssignOpen(true)}>Assign Membership</Button>} /></div>
         ) : (
           <Card variant="solid" className="overflow-hidden p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-(--border) text-xs uppercase tracking-wide text-(--text-secondary)">
+                <thead className="border-b border-border text-xs uppercase tracking-wide text-(--text-secondary)">
                   <tr>
                     <th className="px-5 py-3 font-medium">Member</th>
                     <th className="px-5 py-3 font-medium">Plan</th>
@@ -308,7 +322,7 @@ export default function MembershipsPage() {
                     <th className="px-5 py-3 text-right font-medium">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-(--border)">
+                <tbody className="divide-y divide-border">
                   {memberships.map((m) => (
                     <tr key={m.id} className="hover:bg-(--surface-hover)">
                       <td className="px-5 py-4">
@@ -318,7 +332,7 @@ export default function MembershipsPage() {
                       <td className="px-5 py-4 text-(--text-secondary)">{planName(m)}</td>
                       <td className="px-5 py-4 text-(--text-secondary)">{fmt(m.endDate)}</td>
                       <td className="px-5 py-4 text-(--text-secondary)">{m.daysRemaining}</td>
-                      <td className="px-5 py-4"><Badge variant={statusVariant(m.effectiveStatus)} dot>{m.effectiveStatus}</Badge></td>
+                      <td className="px-5 py-4"><StatusPill tone={statusTone(m.effectiveStatus)} size="sm">{m.effectiveStatus}</StatusPill></td>
                       <td className="px-5 py-4 text-right">
                         <div className="flex justify-end gap-1.5">
                           <Button size="sm" variant="secondary" iconLeft={<RefreshCw className="h-3.5 w-3.5" />} loading={busyId === m.id} onClick={() => void renew(m)}>Renew</Button>
@@ -401,22 +415,5 @@ export default function MembershipsPage() {
         <Input label="Number of days" type="number" value={extendDays} onChange={(e) => setExtendDays(e.target.value)} />
       </Modal>
     </Page>
-  );
-}
-
-function StatCard({ label, value, icon, tone = "default" }: { label: string; value?: number; icon: ReactNode; tone?: "default" | "success" | "danger" | "warning"; }) {
-  const toneClass =
-    tone === "success" ? "text-emerald-600 dark:text-emerald-400"
-      : tone === "danger" ? "text-red-600 dark:text-red-400"
-        : tone === "warning" ? "text-amber-600 dark:text-amber-400"
-          : "text-indigo-600 dark:text-indigo-400";
-  return (
-    <Card variant="solid" className="p-5">
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-(--text-secondary)">{label}</span>
-        <span className={toneClass}>{icon}</span>
-      </div>
-      <div className="mt-2 text-2xl font-bold text-(--text-primary)">{value ?? "—"}</div>
-    </Card>
   );
 }

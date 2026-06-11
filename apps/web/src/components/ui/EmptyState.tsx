@@ -43,27 +43,28 @@ export default function EmptyState({
       role="status"
       aria-label={title}
     >
-      {/* Icon container */}
+      {/* Icon container — premium concentric red halo */}
       {icon && (
-        <div
-          className={cn(
-            "mb-4 flex items-center justify-center",
-            "h-16 w-16 rounded-2xl",
-            "bg-(--surface-secondary)",
-            "text-(--text-muted)",
-            "[&_svg]:h-8 [&_svg]:w-8"
-          )}
-          aria-hidden="true"
-        >
-          {icon}
+        <div className="relative mb-5 reveal-pop" aria-hidden="true">
+          <span className="absolute inset-0 -m-3 rounded-full bg-primary/5 blur-xl" />
+          <div
+            className={cn(
+              "relative flex items-center justify-center",
+              "h-20 w-20 rounded-[26px]",
+              "bg-primary/10 ring-1 ring-primary/20 text-primary",
+              "[&_svg]:h-9 [&_svg]:w-9"
+            )}
+          >
+            {icon}
+          </div>
         </div>
       )}
 
       {/* Text content */}
-      <h3 className="text-base font-semibold text-(--text-primary)">{title}</h3>
+      <h3 className="text-display text-xl text-(--text-primary)">{title}</h3>
 
       {description && (
-        <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-(--text-secondary)">
+        <p className="mt-2 max-w-md text-sm leading-relaxed text-(--text-secondary) text-balance">
           {description}
         </p>
       )}
