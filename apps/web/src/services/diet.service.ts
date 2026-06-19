@@ -47,10 +47,19 @@ export interface DietPlanFull {
 }
 
 export interface CreateDietBuilderPlanInput {
-  memberId: string;
+  /** Legacy single assignment. */
+  memberId?: string;
+  /** Multi-assign — one plan is upserted per member (preferred). */
+  memberIds?: string[];
   goal?: string;
   notes?: string;
 }
+
+/** createBuilderPlan returns the first plan augmented with the full list. */
+export type CreateDietBuilderPlanResult = DietPlanFull & {
+  plans?: DietPlanFull[];
+  count?: number;
+};
 
 export interface AddDietMealInput {
   dayOfWeek: string;
@@ -90,9 +99,23 @@ export const dietService = {
     return unwrap<DietPlanFull[]>(res) ?? [];
   },
 
-  createBuilderPlan: async (input: CreateDietBuilderPlanInput): Promise<DietPlanFull> => {
+  createBuilderPlan: async (input: CreateDietBuilderPlanInput): Promise<CreateDietBuilderPlanResult> => {
     const res = await api.post("/diet-builder", input);
+    return unwrap<CreateDietBuilderPlanResult>(res);
+  },
+
+  getBuilderPlanById: async (id: string): Promise<DietPlanFull> => {
+    const res = await api.get(`/diet-builder/${id}`);
     return unwrap<DietPlanFull>(res);
+  },
+
+  updateBuilderPlan: async (id: string, input: { goal?: string; notes?: string }): Promise<DietPlanFull> => {
+    const res = await api.put(`/diet-builder/${id}`, input);
+    return unwrap<DietPlanFull>(res);
+  },
+
+  deleteBuilderPlan: async (id: string): Promise<void> => {
+    await api.delete(`/diet-builder/${id}`);
   },
 
   addMeal: async (dietPlanId: string, input: AddDietMealInput): Promise<DietMealRow> => {
@@ -100,9 +123,53 @@ export const dietService = {
     return unwrap<DietMealRow>(res);
   },
 
+  deleteMeal: async (mealId: string): Promise<void> => {
+    await api.delete(`/diet-builder/meals/${mealId}`);
+  },
+
   // Logged-in member's own structured plan (with meals) — for the member UI.
   getMy: async (): Promise<DietPlanFull | null> => {
     const res = await api.get("/diets/my");
     return unwrap<DietPlanFull | null>(res);
   },
+
+  // Phase 2 — only TODAY's meals (day-of-week filtered). The client passes its
+  // LOCAL weekday so the view matches the member's date, not the server's.
+  getMyToday: async (): Promise<TodayDiet> => {
+    const day = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][new Date().getDay()];
+    const res = await api.get(`/diets/my/today?day=${day}`);
+    return (
+      unwrap<TodayDiet>(res) ?? { day, meals: [], dayPlanText: null, mealCount: 0, goal: null }
+    );
+  },
+
+  // Phase D — full Mon–Sun diet week.
+  getMyWeek: async (): Promise<DietWeek> => {
+    const res = await api.get(`/diets/my/week`);
+    return unwrap<DietWeek>(res) ?? { planId: null, goal: null, days: [] };
+  },
 };
+
+export interface DietWeekDay {
+  day: string;
+  isToday: boolean;
+  mealCount: number;
+  meals: DietMealRow[];
+  totals: { kcal: number; protein: number; carbs: number; fats: number };
+  dayPlanText?: string | null;
+  source: "TRAINER" | "PERSONAL" | null;
+}
+export interface DietWeek {
+  planId: string | null;
+  goal: string | null;
+  days: DietWeekDay[];
+}
+
+export interface TodayDiet {
+  day: string;
+  planId?: string;
+  goal?: string | null;
+  meals: DietMealRow[];
+  dayPlanText?: string | null;
+  mealCount: number;
+}

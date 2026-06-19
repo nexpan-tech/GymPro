@@ -18,7 +18,9 @@ const SUPER_ADMIN_NAV: NavItem[] = [
 
   // Analytics
   { label: "Enterprise Analytics", path: "/super-admin/enterprise", icon: "Building2",   group: "Analytics" },
-  { label: "Revenue Analytics", path: "/super-admin/analytics", icon: "TrendingUp",      group: "Analytics" },
+  // "Revenue Analytics" (/super-admin/analytics) was a duplicate that hit the
+  // gym-admin analytics endpoint (403); it now redirects to Enterprise Analytics,
+  // so the nav entry is removed to avoid a redirecting link.
   { label: "Retention",         path: "/super-admin/retention", icon: "HeartPulse",      group: "Analytics" },
   { label: "Engagement",        path: "/super-admin/engagement", icon: "Trophy",         group: "Analytics" },
   { label: "Platform Metrics",  path: "/super-admin/metrics",   icon: "BarChart3",       group: "Analytics" },
@@ -30,6 +32,7 @@ const SUPER_ADMIN_NAV: NavItem[] = [
 
   // Config
   { label: "Feature Flags",    path: "/super-admin/feature-flags", icon: "Flag",         group: "Config" },
+  { label: "Billing Settings", path: "/super-admin/billing-settings", icon: "Receipt",   group: "Config" },
   { label: "Settings",         path: "/super-admin/settings",   icon: "Settings",        group: "Config" },
 ];
 
@@ -81,10 +84,11 @@ const TRAINER_NAV: NavItem[] = [
   { label: "Workout Plans",      path: "/trainer/workout-plans", icon: "Dumbbell",        group: "Programs" },
   { label: "Diet Plans",         path: "/trainer/diet-plans",    icon: "Salad",           group: "Programs" },
   { label: "Attendance",         path: "/trainer/attendance",    icon: "CalendarCheck",   group: "Tracking" },
-  { label: "Progress Tracking",  path: "/trainer/progress",      icon: "TrendingUp",      group: "Tracking" },
-  { label: "Progress",           path: "/trainer/progress",      icon: "TrendingUp",      group: "Tracking" },
-  { label: "Schedule",           path: "/trainer/schedule",      icon: "CalendarDays",    group: "Schedule" },
-  { label: "Notifications",      path: "/trainer/notifications", icon: "Bell",            group: "Schedule" },
+  // Single Member Progress entry (the former duplicate "Progress Tracking"/"Progress"
+  // both pointed at /trainer/progress). Schedule + Notifications were removed:
+  // no /trainer/schedule route/page exists, and there is no trainer-self
+  // notification endpoint yet — hidden until built to avoid broken links.
+  { label: "Member Progress",    path: "/trainer/progress",      icon: "TrendingUp",      group: "Tracking" },
 ];
 
 const MEMBER_NAV: NavItem[] = [
@@ -95,14 +99,15 @@ const MEMBER_NAV: NavItem[] = [
   { label: "Progress",     path: "/member/progress",            icon: "TrendingUp",      group: "Fitness" },
   { label: "Goals",        path: "/member/goals",               icon: "Target",          group: "Fitness" },
   { label: "Challenges",   path: "/member/challenges",          icon: "Flame",           group: "Community" },
-  { label: "Achievements", path: "/member/achievements",        icon: "Trophy",          group: "Community" },
+  { label: "Leaderboard",  path: "/member/leaderboard",         icon: "Trophy",          group: "Community" },
+  { label: "Achievements", path: "/member/achievements",        icon: "Medal",           group: "Community" },
   { label: "Rewards",      path: "/member/rewards",             icon: "Gift",            group: "Community" },
   { label: "Announcements", path: "/member/announcements",      icon: "Megaphone",       group: "Account" },
   { label: "Chat",         path: "/member/chat",                icon: "MessageSquare",   group: "Account" },
   { label: "Membership",   path: "/member/membership-details",  icon: "IdCard",          group: "Account" },
   { label: "Payments",     path: "/member/payment-history",     icon: "CreditCard",      group: "Account" },
   { label: "Invoices",     path: "/member/invoices",            icon: "Receipt",         group: "Account" },
-  { label: "Notifications", path: "/member/notifications",      icon: "Bell",            group: "Account" },
+  { label: "Notifications", path: "/notifications",             icon: "Bell",            group: "Account" },
 ];
 
 /**

@@ -59,29 +59,65 @@ export class WorkoutService {
     return member;
   }
 
+  /**
+   * Create a workout plan and assign it to one or more members.
+   *
+   * Accepts either `memberIds: string[]` (multi-assign) or the legacy single
+   * `memberId: string` — both are normalised to a target list. Because a
+   * WorkoutPlan belongs to a single member, multi-assign creates one duplicated
+   * plan record per selected member (each member gets their own plan + their
+   * own completion history). With no target it creates a single unassigned /
+   * template plan (backward-compatible).
+   *
+   * Returns the first created plan (so existing single-member callers that read
+   * `.id` keep working) augmented with `plans` (all created) + `count`.
+   */
   static async createPlan(user: AuthUser, data: any) {
     if (!user.gymId) throw new AppError("Gym context missing", 403);
 
-    if (data.memberId) {
-      await this.assertMemberAssignable(user, data.memberId);
+    const rawIds: string[] = Array.isArray(data.memberIds)
+      ? data.memberIds.filter((id: unknown): id is string => typeof id === "string" && !!id)
+      : data.memberId
+        ? [data.memberId]
+        : [];
+    const targetIds = [...new Set(rawIds)];
+
+    // Validate assignability for every target up front (trainer → assigned).
+    for (const memberId of targetIds) {
+      await this.assertMemberAssignable(user, memberId);
     }
 
-    return prisma.workoutPlan.create({
-      data: {
-        gymId: user.gymId,
-        trainerId: user.id,
-        memberId: data.memberId || null,
-        title: data.title,
-        description: data.description,
-        difficulty: data.difficulty,
-        durationWeeks: data.durationWeeks ? Number(data.durationWeeks) : null,
-        isTemplate: data.isTemplate ?? false,
-      },
-      include: {
-        trainer: true,
-        member: { include: { user: true } },
-        exercises: { include: { exercise: true } },
-      },
+    const baseData = {
+      gymId: user.gymId,
+      trainerId: user.id,
+      title: data.title,
+      description: data.description,
+      difficulty: data.difficulty,
+      durationWeeks: data.durationWeeks ? Number(data.durationWeeks) : null,
+      isTemplate: data.isTemplate ?? false,
+    };
+    const include = {
+      trainer: true,
+      member: { include: { user: true } },
+      exercises: { include: { exercise: true } },
+    };
+
+    // No target → one unassigned/template plan; otherwise one plan per member.
+    const idsToCreate: (string | null)[] = targetIds.length > 0 ? targetIds : [null];
+
+    const created = [];
+    for (const memberId of idsToCreate) {
+      const plan = await prisma.workoutPlan.create({
+        data: { ...baseData, memberId: memberId || null },
+        include,
+      });
+      created.push(plan);
+    }
+
+    return Object.assign({}, created[0], {
+      plans: created,
+      count: created.length,
+      assignedCount: targetIds.length,
     });
   }
 

@@ -18,6 +18,7 @@ import { GlobalErrorFallback } from "@/components/ui/GlobalErrorFallback";
 import { ToastContainer } from "@/components/ui/ToastContainer";
 import { ThemeProvider } from "./ThemeProvider";
 import { AuthProvider } from "@/context/AuthContext";
+import { CelebrationProvider } from "@/components/premium/CelebrationProvider";
 
 // ─── QueryClient ──────────────────────────────────────────────────────────────
 // Defined here so it is created once and shared across the app.
@@ -59,7 +60,9 @@ export function AppProviders({ children }: PropsWithChildren) {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
-            {children}
+            <CelebrationProvider>
+              {children}
+            </CelebrationProvider>
             <ToastContainer />
           </AuthProvider>
         </ThemeProvider>

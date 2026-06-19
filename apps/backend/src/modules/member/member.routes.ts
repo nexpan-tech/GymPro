@@ -43,6 +43,15 @@ router.get(
   MemberController.me
 );
 
+// Self-service attendance streak (operational-day engine; Sundays excluded).
+// Registered before "/:id" so "streak" isn't treated as a member id.
+router.get(
+  "/streak",
+  authMiddleware,
+  roleMiddleware([ROLES.MEMBER]),
+  MemberController.streak
+);
+
 router.get(
   "/:id",
   authMiddleware,

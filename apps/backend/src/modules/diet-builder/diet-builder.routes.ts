@@ -42,4 +42,18 @@ router.delete(
   DietBuilderController.deleteMeal
 );
 
+// Plan-level edit / delete. Trainer → assigned members only (enforced in the
+// service). The two-segment "/meals/..." routes above never collide with the
+// single-segment "/:id" matcher.
+router.put(
+  "/:id",
+  roleMiddleware([ROLES.ADMIN, ROLES.TRAINER]),
+  DietBuilderController.updatePlan
+);
+router.delete(
+  "/:id",
+  roleMiddleware([ROLES.ADMIN, ROLES.TRAINER]),
+  DietBuilderController.deletePlan
+);
+
 export default router;

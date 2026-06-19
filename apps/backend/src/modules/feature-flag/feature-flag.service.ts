@@ -55,6 +55,94 @@ export class FeatureFlagService {
     return this.effectiveForGym(user.gymId);
   }
 
+  /** Super-admin: full management list with per-flag override counts. */
+  static async listAll() {
+    const flags = await prisma.featureFlag.findMany({
+      orderBy: [{ category: "asc" }, { label: "asc" }],
+      include: { assignments: { select: { enabled: true } } },
+    });
+    return flags.map((f) => {
+      const overrides = f.assignments.length;
+      const enabledOverrides = f.assignments.filter((a) => a.enabled).length;
+      return {
+        id: f.id,
+        key: f.key,
+        label: f.label,
+        description: f.description,
+        category: f.category,
+        defaultEnabled: f.defaultEnabled,
+        rolloutPercentage: (f as { rolloutPercentage?: number | null }).rolloutPercentage ?? null,
+        environment: (f as { environment?: string | null }).environment ?? null,
+        isActive: (f as { isActive?: boolean }).isActive ?? true,
+        overrides,
+        enabledOverrides,
+        disabledOverrides: overrides - enabledOverrides,
+        createdAt: f.createdAt,
+        updatedAt: f.updatedAt,
+      };
+    });
+  }
+
+  /** Super-admin: create a new feature flag (slug key, unique). */
+  static async createFlag(data: any) {
+    const key = String(data.key ?? "").trim().toLowerCase();
+    if (!/^[a-z0-9-]+$/.test(key)) {
+      throw new AppError("Key must be slug format (lowercase letters, numbers, hyphens)", 400);
+    }
+    if (!data.label || String(data.label).trim().length < 2) {
+      throw new AppError("A label is required", 400);
+    }
+    const existing = await prisma.featureFlag.findUnique({ where: { key } });
+    if (existing) throw new AppError("A feature flag with this key already exists", 400);
+
+    return prisma.featureFlag.create({
+      data: {
+        key,
+        label: String(data.label).trim(),
+        description: data.description ?? null,
+        category: data.category ?? null,
+        defaultEnabled: data.defaultEnabled ?? true,
+        rolloutPercentage:
+          data.rolloutPercentage != null ? Math.max(0, Math.min(100, Number(data.rolloutPercentage))) : null,
+        environment: data.environment ?? null,
+        isActive: data.isActive ?? true,
+      } as any,
+    });
+  }
+
+  /** Super-admin: edit a flag's metadata / global default / rollout. */
+  static async updateFlag(key: string, data: any) {
+    const flag = await prisma.featureFlag.findUnique({ where: { key } });
+    if (!flag) throw new AppError("Feature flag not found", 404);
+    return prisma.featureFlag.update({
+      where: { key },
+      data: {
+        label: data.label != null ? String(data.label).trim() : undefined,
+        description: data.description != null ? data.description : undefined,
+        category: data.category != null ? data.category : undefined,
+        defaultEnabled: typeof data.defaultEnabled === "boolean" ? data.defaultEnabled : undefined,
+        rolloutPercentage:
+          data.rolloutPercentage !== undefined
+            ? data.rolloutPercentage == null
+              ? null
+              : Math.max(0, Math.min(100, Number(data.rolloutPercentage)))
+            : undefined,
+        environment: data.environment !== undefined ? data.environment : undefined,
+        isActive: typeof data.isActive === "boolean" ? data.isActive : undefined,
+      } as any,
+    });
+  }
+
+  /**
+   * Super-admin: safely deactivate a flag (soft delete). We do NOT hard-delete
+   * so runtime `featureEnabled()` checks and audit history stay intact.
+   */
+  static async deleteFlag(key: string) {
+    const flag = await prisma.featureFlag.findUnique({ where: { key } });
+    if (!flag) throw new AppError("Feature flag not found", 404);
+    return prisma.featureFlag.update({ where: { key }, data: { isActive: false } as any });
+  }
+
   /** Super-admin: set a per-gym override. */
   static async setForGym(gymId: string, flagKey: string, enabled: boolean) {
     const flag = await prisma.featureFlag.findUnique({ where: { key: flagKey } });

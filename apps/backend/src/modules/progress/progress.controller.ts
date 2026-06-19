@@ -97,4 +97,12 @@ export class ProgressController {
       await ProgressService.updateGoal(user, memberId, req.params.goalId as string, data),
     );
   }
+
+  static async deleteGoal(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const memberId = await resolveMemberId(req);
+    await ProgressService.deleteGoal(user, memberId, req.params.goalId as string);
+    return ok(res, { deleted: true });
+  }
 }

@@ -4,6 +4,7 @@ import { CalendarCheck } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  AppState,
   Linking,
   ScrollView,
   StyleSheet,
@@ -13,6 +14,8 @@ import {
 } from "react-native";
 
 import { attendanceService } from "../../src/services/attendance.service";
+import { memberService, type MemberStreak } from "../../src/services/member.service";
+import { enqueueScan, isOfflineError, pendingCount, syncPending } from "../../src/utils/offline-attendance";
 import type { Attendance } from "../../src/types/attendance.types";
 import { useTheme, type Theme } from "../../src/theme";
 import {
@@ -24,7 +27,7 @@ import {
   AppText,
 } from "../../src/components/ui";
 
-type ScanStatus = "idle" | "processing" | "success" | "already" | "error";
+type ScanStatus = "idle" | "processing" | "success" | "already" | "error" | "offline";
 
 function formatDate(date: string) {
   return new Date(date).toLocaleDateString("en-IN", {
@@ -41,32 +44,6 @@ function formatTime(date: string) {
   });
 }
 
-/** Consecutive-day check-in streak ending today or yesterday. */
-function computeStreak(records: Attendance[]): number {
-  const days = [...new Set(records.map((r) => r.date.slice(0, 10)))].sort((a, b) =>
-    b.localeCompare(a),
-  );
-  if (days.length === 0) return 0;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const dayMs = 86_400_000;
-  const diffFromToday = Math.round(
-    (today.getTime() - new Date(days[0]).getTime()) / dayMs,
-  );
-  if (diffFromToday > 1) return 0; // last visit before yesterday → streak broken
-
-  let streak = 1;
-  for (let i = 1; i < days.length; i++) {
-    const gap = Math.round(
-      (new Date(days[i - 1]).getTime() - new Date(days[i]).getTime()) / dayMs,
-    );
-    if (gap === 1) streak += 1;
-    else break;
-  }
-  return streak;
-}
-
 export default function AttendanceScreen() {
   const { theme } = useTheme();
   const c = theme.colors;
@@ -74,18 +51,24 @@ export default function AttendanceScreen() {
 
   const [permission, requestPermission] = useCameraPermissions();
   const [records, setRecords] = useState<Attendance[]>([]);
+  const [streak, setStreak] = useState<MemberStreak | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [scanStatus, setScanStatus] = useState<ScanStatus>("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [alreadyMessage, setAlreadyMessage] = useState("");
   const [checkingOut, setCheckingOut] = useState(false);
+  const [pending, setPending] = useState(0);
   const scanningRef = useRef(false);
 
   const loadAttendance = useCallback(async () => {
     try {
-      const data = await attendanceService.getMyAttendance();
+      const [data, streakData] = await Promise.all([
+        attendanceService.getMyAttendance(),
+        memberService.getStreak().catch(() => null),
+      ]);
       setRecords(Array.isArray(data) ? data : []);
+      setStreak(streakData);
     } catch {
       setRecords([]);
     } finally {
@@ -104,29 +87,33 @@ export default function AttendanceScreen() {
       scanningRef.current = true;
       setScanStatus("processing");
 
+      let gymId = data;
       try {
-        let gymId = data;
-        try {
-          const parsed = JSON.parse(data) as { gymId?: string };
-          if (parsed.gymId) gymId = parsed.gymId;
-        } catch {
-          // plain string gymId — use as-is
-        }
+        const parsed = JSON.parse(data) as { gymId?: string };
+        if (parsed.gymId) gymId = parsed.gymId;
+      } catch {
+        // plain string gymId — use as-is
+      }
 
+      try {
         await attendanceService.scanQr({ gymId });
         setScanStatus("success");
         void loadAttendance();
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "Something went wrong";
-        if (
-          msg.toLowerCase().includes("already") ||
-          msg.toLowerCase().includes("checked in")
-        ) {
-          setAlreadyMessage(msg);
-          setScanStatus("already");
+        // Offline → queue the check-in and sync automatically later. (Phase N)
+        if (isOfflineError(err)) {
+          await enqueueScan("checkin", gymId);
+          setPending(await pendingCount());
+          setScanStatus("offline");
         } else {
-          setErrorMessage(msg);
-          setScanStatus("error");
+          const msg = err instanceof Error ? err.message : "Something went wrong";
+          if (msg.toLowerCase().includes("already") || msg.toLowerCase().includes("checked in")) {
+            setAlreadyMessage(msg);
+            setScanStatus("already");
+          } else {
+            setErrorMessage(msg);
+            setScanStatus("error");
+          }
         }
       }
 
@@ -140,16 +127,6 @@ export default function AttendanceScreen() {
     [loadAttendance],
   );
 
-  const thisMonthCount = records.filter((item) => {
-    const now = new Date();
-    const date = new Date(item.date);
-    return (
-      date.getMonth() === now.getMonth() &&
-      date.getFullYear() === now.getFullYear()
-    );
-  }).length;
-
-  const streak = computeStreak(records);
   const todayStr = new Date().toISOString().slice(0, 10);
   const todayRecord = records.find((r) => r.date.slice(0, 10) === todayStr);
   const isCheckedIn = todayRecord?.status === "CHECKED_IN";
@@ -159,11 +136,27 @@ export default function AttendanceScreen() {
       setCheckingOut(true);
       await attendanceService.checkout();
       await loadAttendance();
-    } catch {
-      // surfaced via reload; keep UI simple
+    } catch (err) {
+      // Offline → queue the check-out for later sync. (Phase N)
+      if (isOfflineError(err) && todayRecord?.gymId) {
+        await enqueueScan("checkout", todayRecord.gymId);
+        setPending(await pendingCount());
+      }
     } finally {
       setCheckingOut(false);
     }
+  }, [loadAttendance, todayRecord]);
+
+  // Auto-sync the offline queue on mount + whenever the app returns to foreground.
+  useEffect(() => {
+    const run = async () => {
+      const { synced, remaining } = await syncPending();
+      setPending(remaining);
+      if (synced > 0) await loadAttendance();
+    };
+    void run();
+    const sub = AppState.addEventListener("change", (st) => { if (st === "active") void run(); });
+    return () => sub.remove();
   }, [loadAttendance]);
 
   if (loading || !permission) {
@@ -208,12 +201,30 @@ export default function AttendanceScreen() {
     >
       <AppHeader title="Attendance" subtitle="Scan QR to check in" onBack={() => router.back()} />
 
-      {/* Stats */}
+      {/* Streak stats — backend operational-day engine (Sundays excluded) */}
       <View style={{ flexDirection: "row", gap: 12 }}>
-        <AppStatCard label="Day Streak" value={streak} tone="primary" />
-        <AppStatCard label="This Month" value={thisMonthCount} tone="success" />
-        <AppStatCard label="Total Visits" value={records.length} tone="primary" />
+        <AppStatCard label="Current Streak" value={streak?.current ?? 0} tone="primary" />
+        <AppStatCard label="Best Streak" value={streak?.best ?? 0} tone="success" />
       </View>
+      <View style={{ flexDirection: "row", gap: 12 }}>
+        <AppStatCard label="Monthly Streak" value={streak?.thisMonth.streak ?? 0} tone="primary" />
+        <AppStatCard label="Attendance Rate" value={`${streak?.thisMonth.consistency ?? 0}%`} tone="success" />
+      </View>
+      <AppText variant="caption" color="textMuted">
+        Streaks count operational days only — Sundays don't break your streak.
+      </AppText>
+
+      {/* Offline queue indicator (Phase N) */}
+      {pending > 0 && (
+        <AppCard style={{ borderColor: c.primary }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <ActivityIndicator color={c.primary} size="small" />
+            <AppText variant="caption" color="textSecondary" style={{ flex: 1 }}>
+              {pending} scan{pending === 1 ? "" : "s"} saved offline — syncing automatically when you're back online.
+            </AppText>
+          </View>
+        </AppCard>
+      )}
 
       {/* Active session → allow checkout */}
       {isCheckedIn && (
@@ -278,6 +289,13 @@ export default function AttendanceScreen() {
             <Text style={styles.overlayTitle}>Scan Failed</Text>
             <Text style={styles.overlayText}>{errorMessage || "Unable to process QR code"}</Text>
             <Text style={styles.overlayHint}>Resetting in 3s...</Text>
+          </View>
+        )}
+        {scanStatus === "offline" && (
+          <View style={[styles.overlay, { backgroundColor: "rgba(16,16,16,0.92)" }]}>
+            <Text style={styles.overlayEmoji}>📥</Text>
+            <Text style={styles.overlayTitle}>Saved Offline</Text>
+            <Text style={styles.overlayText}>No connection — your check-in is queued and will sync automatically.</Text>
           </View>
         )}
       </View>

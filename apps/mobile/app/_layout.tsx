@@ -5,6 +5,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useAuthStore } from "../src/stores/auth.store";
 import { authEvents } from "../src/api/client";
 import { ThemeProvider, useTheme } from "../src/theme";
+import { CelebrationProvider } from "../src/components/CelebrationProvider";
 
 function RootStack() {
   const { theme } = useTheme();
@@ -36,7 +37,9 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <RootStack />
+        <CelebrationProvider>
+          <RootStack />
+        </CelebrationProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

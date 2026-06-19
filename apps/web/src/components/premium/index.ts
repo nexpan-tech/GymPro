@@ -27,3 +27,6 @@ export { AnimatedCard } from "./AnimatedCard";
 export { ChallengeCarousel } from "./ChallengeCarousel";
 export { LeaderboardPreview } from "./LeaderboardPreview";
 export { XPProgressRing } from "./XPProgressRing";
+
+// Phase M — reusable celebration system.
+export { CelebrationProvider, useCelebrate } from "./CelebrationProvider";

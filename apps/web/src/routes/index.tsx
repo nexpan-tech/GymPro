@@ -29,6 +29,10 @@ import SuperAdminRetentionPage from "@/pages/super-admin/RetentionPage";
 import SuperAdminEngagementPage from "@/pages/super-admin/EngagementPage";
 import SuperAdminEnterpriseAnalyticsPage from "@/pages/super-admin/EnterpriseAnalyticsPage";
 import SuperAdminFeatureFlagsPage from "@/pages/super-admin/FeatureFlagsPage";
+import SuperAdminMetricsPage from "@/pages/super-admin/PlatformMetricsPage";
+import SuperAdminSystemMonitorPage from "@/pages/super-admin/SystemMonitorPage";
+import SuperAdminQueueDashboardPage from "@/pages/super-admin/QueueDashboardPage";
+import SuperAdminBillingSettingsPage from "@/pages/super-admin/PlatformBillingSettingsPage";
 import SuperAdminSettingsPage from "@/pages/super-admin/SettingsPage";
 
 // Gym Admin
@@ -72,6 +76,7 @@ import TrainerDietsPage from "@/pages/trainer/DietPlansPage";
 import TrainerProgressPage from "@/pages/trainer/ProgressPage";
 import TrainerRetentionPage from "@/pages/trainer/RetentionPage";
 import TrainerEngagementPage from "@/pages/trainer/EngagementPage";
+import TrainerChatPage from "@/pages/trainer/ChatPage";
 
 // Member
 import MemberLayout from "@/layouts/MemberLayout";
@@ -88,6 +93,8 @@ import MemberChallengesPage from "@/pages/member/ChallengesPage";
 import MemberRewardsPage from "@/pages/member/RewardsPage";
 import MemberAnnouncementsPage from "@/pages/member/AnnouncementsPage";
 import MemberChatPage from "@/pages/member/ChatPage";
+import MemberLeaderboardPage from "@/pages/member/LeaderboardPage";
+import MemberGoalsPage from "@/pages/member/GoalsPage";
 
 const router = createBrowserRouter([
   // ── Public routes (redirect to dashboard when already authenticated) ──────
@@ -119,7 +126,11 @@ const router = createBrowserRouter([
           { path: "retention", element: <SuperAdminRetentionPage /> },
           { path: "engagement", element: <SuperAdminEngagementPage /> },
           { path: "enterprise", element: <SuperAdminEnterpriseAnalyticsPage /> },
+          { path: "metrics", element: <SuperAdminMetricsPage /> },
+          { path: "system", element: <SuperAdminSystemMonitorPage /> },
+          { path: "queues", element: <SuperAdminQueueDashboardPage /> },
           { path: "feature-flags", element: <SuperAdminFeatureFlagsPage /> },
+          { path: "billing-settings", element: <SuperAdminBillingSettingsPage /> },
           { path: "audit", element: <AuditLogsPage /> },
           { path: "settings", element: <SuperAdminSettingsPage /> },
         ],
@@ -194,6 +205,7 @@ const router = createBrowserRouter([
           { path: "progress", element: <TrainerProgressPage /> },
           { path: "retention", element: <TrainerRetentionPage /> },
           { path: "engagement", element: <TrainerEngagementPage /> },
+          { path: "chat", element: <TrainerChatPage /> },
           { path: "chat", element: <ChatThreadsPage /> },
         ],
       },
@@ -218,8 +230,10 @@ const router = createBrowserRouter([
           { path: "workout-plan", element: <WorkoutPlanPage /> },
           { path: "diet-plan", element: <DietPlanPage /> },
           { path: "progress", element: <ProgressPage /> },
+          { path: "goals", element: <MemberGoalsPage /> },
           { path: "achievements", element: <MemberAchievementsPage /> },
           { path: "challenges", element: <MemberChallengesPage /> },
+          { path: "leaderboard", element: <MemberLeaderboardPage /> },
           { path: "rewards", element: <MemberRewardsPage /> },
           { path: "announcements", element: <MemberAnnouncementsPage /> },
           { path: "chat", element: <MemberChatPage /> },

@@ -126,4 +126,8 @@ export const progressService = {
     data: Record<string, unknown>,
   ): Promise<ProgressGoal> =>
     unwrap<ProgressGoal>(await api.patch(`/progress/${scope}/goals/${goalId}`, data)),
+
+  deleteGoal: async (scope: string, goalId: string): Promise<void> => {
+    await api.delete(`/progress/${scope}/goals/${goalId}`);
+  },
 };

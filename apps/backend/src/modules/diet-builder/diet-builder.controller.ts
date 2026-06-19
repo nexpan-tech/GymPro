@@ -99,4 +99,33 @@ export class DietBuilderController {
       message: "Meal deleted successfully",
     });
   }
+
+  static async updatePlan(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    const data = await DietBuilderService.updatePlan(
+      user,
+      req.params.id as string,
+      req.body
+    );
+
+    return res.json({
+      success: true,
+      message: "Diet plan updated successfully",
+      data,
+    });
+  }
+
+  static async deletePlan(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    await DietBuilderService.deletePlan(user, req.params.id as string);
+
+    return res.json({
+      success: true,
+      message: "Diet plan deleted successfully",
+    });
+  }
 }

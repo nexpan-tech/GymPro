@@ -7,6 +7,9 @@ export const createGymSchema = z.object({
   address: z.string().optional(),
   logo: z.string().optional(),
 
+  // SaaS price per ACTIVE member, per month (INR). Drives subscription billing.
+  pricePerActiveMember: z.number().min(0).optional(),
+
   adminName: z.string().min(2).optional(),
   adminEmail: z.string().email().optional(),
   adminPassword: z.string().min(6).optional(),
@@ -18,6 +21,7 @@ export const updateGymSchema = z.object({
   phone: z.string().optional(),
   address: z.string().optional(),
   logo: z.string().optional(),
+  pricePerActiveMember: z.number().min(0).optional(),
   isActive: z.boolean().optional(),
 });
 

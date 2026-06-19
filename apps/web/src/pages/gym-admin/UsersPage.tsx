@@ -19,12 +19,16 @@ import {
 } from "@/services/user.service";
 
 // Admins page manages STAFF only. Members + Trainers have their own pages.
+// NOTE: Receptionist is RESERVED FOR V2 — hidden from the gym-admin role
+// selector (backend support + Super Admin creation + existing receptionist
+// logins all remain intact; we only stop offering it as a new gym-admin choice).
 const ROLE_OPTIONS: { label: string; value: GymAssignableRole }[] = [
   { label: "Gym Admin", value: "ADMIN" },
-  { label: "Receptionist", value: "RECEPTIONIST" },
+  // { label: "Receptionist", value: "RECEPTIONIST" }, // V2 reserved
 ];
 
-// Roles surfaced on the Admins page (read filter).
+// Roles surfaced on the Admins page (read filter). RECEPTIONIST kept so any
+// existing (or Super-Admin-created) receptionists still appear in the list.
 const STAFF_ROLES = ["ADMIN", "RECEPTIONIST", "BRANCH_MANAGER", "REGIONAL_MANAGER"];
 
 const ROLE_LABELS: Record<string, string> = {
@@ -207,7 +211,7 @@ export default function UsersPage() {
             title={users.length === 0 ? "No users yet" : "No matching users"}
             message={
               users.length === 0
-                ? "Add your first trainer, receptionist, or member."
+                ? "Add your first gym admin, trainer, or member."
                 : "Try a different search."
             }
             action={

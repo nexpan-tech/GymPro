@@ -54,6 +54,31 @@ export class DietController {
     });
   }
 
+  static async getMyToday(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    const day = typeof req.query.day === "string" ? req.query.day : undefined;
+    const today = await DietService.getMyToday(user, day);
+
+    return res.json({
+      success: true,
+      data: today,
+    });
+  }
+
+  static async getMyWeek(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    const week = await DietService.getMyWeek(user);
+
+    return res.json({
+      success: true,
+      data: week,
+    });
+  }
+
   static async getByMember(req: Request, res: Response) {
     const user = requireAuth(req, res);
     if (!user) return;

@@ -33,14 +33,30 @@ export interface ChatMessage {
   sender?: { id: string; name: string; role: string };
 }
 
-export async function getMyThread(): Promise<{ memberId: string; trainerId: string | null; messages: ChatMessage[] }> {
-  const res = await apiClient.get('/communication/messages/me');
+export interface ChatContact {
+  id: string;
+  name: string;
+  role: string;
+  unread: number;
+  lastMessage: string | null;
+  lastAt: string | null;
+}
+
+/** Member's chattable staff (trainer + admins) with unread counts. (Phase F) */
+export async function getChatContacts(): Promise<{ memberId: string; contacts: ChatContact[] }> {
+  const res = await apiClient.get('/communication/contacts');
+  const data = unwrapApiResponse<{ memberId: string; contacts: ChatContact[] }>(res);
+  return { memberId: data?.memberId, contacts: Array.isArray(data?.contacts) ? data.contacts : [] };
+}
+
+export async function getMyThread(withStaffId?: string): Promise<{ memberId: string; trainerId: string | null; messages: ChatMessage[] }> {
+  const res = await apiClient.get(`/communication/messages/me${withStaffId ? `?with=${withStaffId}` : ''}`);
   const data = unwrapApiResponse<{ memberId: string; trainerId: string | null; messages: ChatMessage[] }>(res);
   return { memberId: data?.memberId, trainerId: data?.trainerId ?? null, messages: Array.isArray(data?.messages) ? data.messages : [] };
 }
 
-export async function sendChatMessage(memberId: string, message: string): Promise<ChatMessage> {
-  const res = await apiClient.post('/communication/messages', { memberId, message });
+export async function sendChatMessage(memberId: string, message: string, trainerId?: string): Promise<ChatMessage> {
+  const res = await apiClient.post('/communication/messages', { memberId, message, ...(trainerId ? { trainerId } : {}) });
   return unwrapApiResponse<ChatMessage>(res);
 }
 

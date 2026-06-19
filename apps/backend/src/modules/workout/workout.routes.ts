@@ -4,10 +4,44 @@ import { roleMiddleware } from "../../middleware/role.middleware";
 import { ROLES } from "../../constants/roles";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { WorkoutController } from "./workout.controller";
+import { WorkoutAssignmentController } from "./workout-assignment.controller";
 
 const router = Router();
 
 router.use(authMiddleware);
+
+// ── Calendar-day assignment engine (Phase 1) ──────────────────────────────────
+// Static, member-scoped paths registered BEFORE "/:id" so they aren't swallowed.
+router.post(
+  "/assign",
+  roleMiddleware([ROLES.ADMIN, ROLES.TRAINER]),
+  asyncHandler(WorkoutAssignmentController.assign)
+);
+router.get(
+  "/today",
+  roleMiddleware([ROLES.MEMBER]),
+  asyncHandler(WorkoutAssignmentController.today)
+);
+router.get(
+  "/week",
+  roleMiddleware([ROLES.MEMBER]),
+  asyncHandler(WorkoutAssignmentController.week)
+);
+router.get(
+  "/upcoming",
+  roleMiddleware([ROLES.MEMBER]),
+  asyncHandler(WorkoutAssignmentController.upcoming)
+);
+router.get(
+  "/history",
+  roleMiddleware([ROLES.MEMBER]),
+  asyncHandler(WorkoutAssignmentController.history)
+);
+router.post(
+  "/assignments/:id/complete",
+  roleMiddleware([ROLES.MEMBER]),
+  asyncHandler(WorkoutAssignmentController.complete)
+);
 
 // Plan management — ADMIN + TRAINER only (MEMBER can view + mark completion).
 router.post(

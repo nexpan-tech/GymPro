@@ -31,6 +31,18 @@ router.get(
   BillingController.getInvoices,
 );
 
+// Per-active-member SaaS invoices (Stage 12) — a gym admin's own + PDF download.
+router.get(
+  "/saas-invoices",
+  roleMiddleware([ROLES.ADMIN, ROLES.RECEPTIONIST]),
+  BillingController.mySaaSInvoices,
+);
+router.get(
+  "/saas-invoices/:id/pdf",
+  roleMiddleware([ROLES.ADMIN, ROLES.RECEPTIONIST]),
+  BillingController.mySaaSInvoicePdf,
+);
+
 router.patch(
   "/invoices/:id/paid",
   roleMiddleware([ROLES.ADMIN, ROLES.SUPER_ADMIN]),

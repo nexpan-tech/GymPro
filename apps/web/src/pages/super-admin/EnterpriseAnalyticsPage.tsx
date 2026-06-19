@@ -34,16 +34,25 @@ export default function EnterpriseAnalyticsPage() {
 
         <Card variant="solid" className="p-5">
           <h3 className="mb-3 text-sm font-semibold text-(--text-primary)">Platform revenue trend</h3>
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data?.revenue.revenueTrend ?? []}>
-                <defs><linearGradient id="rev" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#e73725" stopOpacity={0.4} /><stop offset="95%" stopColor="#e73725" stopOpacity={0} /></linearGradient></defs>
-                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip formatter={(value) => inr(Number(value))} />
-                <Area type="monotone" dataKey="revenue" stroke="#e73725" fill="url(#rev)" />
-              </AreaChart>
-            </ResponsiveContainer>
+          {/* Explicit min height + min-w-0 keeps ResponsiveContainer from measuring
+              a collapsed (-1) box; render the chart only when there is data so it
+              never lays out against an empty series. */}
+          <div className="h-56 min-h-[224px] w-full min-w-0">
+            {(data?.revenue.revenueTrend ?? []).length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={data?.revenue.revenueTrend ?? []}>
+                  <defs><linearGradient id="rev" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#e73725" stopOpacity={0.4} /><stop offset="95%" stopColor="#e73725" stopOpacity={0} /></linearGradient></defs>
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip formatter={(value) => inr(Number(value))} />
+                  <Area type="monotone" dataKey="revenue" stroke="#e73725" fill="url(#rev)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-(--text-secondary)">
+                No revenue data yet.
+              </div>
+            )}
           </div>
         </Card>
 

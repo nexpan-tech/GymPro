@@ -188,10 +188,13 @@ export class GamificationController {
   static async leaderboard(req: Request, res: Response) {
     const user = requireAuth(req, res);
     if (!user) return;
+    const period = req.query.period === "MONTH" ? "MONTH" : "ALL";
     const data = await GamificationService.leaderboard(
       user,
       (req.query.scope as string) || "GYM",
       req.query.refId as string | undefined,
+      20,
+      period,
     );
     return res.json({ success: true, data });
   }

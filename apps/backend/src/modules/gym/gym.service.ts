@@ -31,6 +31,7 @@ export class GymService {
         phone: data.phone,
         address: data.address,
         logo: data.logo,
+        pricePerActiveMember: data.pricePerActiveMember ?? 0,
       },
     });
 

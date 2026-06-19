@@ -34,6 +34,7 @@ export interface CreateGymPayload {
   email: string;
   phone?: string;
   address?: string;
+  pricePerActiveMember?: number;
   adminName?: string;
   adminEmail?: string;
   adminPassword?: string;
@@ -49,6 +50,7 @@ export interface UpdateGymPayload {
   email?: string;
   phone?: string;
   address?: string;
+  pricePerActiveMember?: number;
   isActive?: boolean;
 }
 

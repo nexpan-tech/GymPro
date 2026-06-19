@@ -1,117 +1,57 @@
 import { router, useFocusEffect } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import {
-  Bell,
-  Calendar,
-  CheckCircle2,
-  CreditCard,
-  Crown,
-  DoorOpen,
-  Dumbbell,
-  Flame,
-  ImagePlus,
-  LogIn,
-  LogOut,
-  Gift,
-  Medal,
-  Megaphone,
-  MessageSquare,
-  Salad,
-  Sparkles,
-  Star,
-  Target,
-  Trophy,
-  Wallet,
+  Award, Bell, ChevronRight, CreditCard, Dumbbell, Flame, LogIn, LogOut,
+  MessageSquare, Salad, Sparkles, Target, TrendingUp, Trophy,
 } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
-import { Alert, ScrollView, TouchableOpacity, View } from "react-native";
+import { TouchableOpacity, View } from "react-native";
 
 import { attendanceService } from "../../src/services/attendance.service";
-import { memberService } from "../../src/services/member.service";
+import { memberService, type MemberStreak } from "../../src/services/member.service";
 import { membershipService } from "../../src/services/membership.service";
-import { workoutService } from "../../src/services/workout.service";
-import { dietService } from "../../src/services/diet.service";
+import { workoutService, type TodayWorkout } from "../../src/services/workout.service";
+import { dietService, type TodayDiet } from "../../src/services/diet.service";
+import { gamificationService, type LeaderboardRow, type EarnedBadge } from "../../src/services/gamification.service";
+import { getMyGoals, getMySummary, type ProgressGoal, type ProgressSummary } from "../../src/api/progress.api";
+import { getNotifications, type MyNotifications } from "../../src/api/notification.api";
 import { useAuthStore } from "../../src/stores/auth.store";
 import { useTheme } from "../../src/theme";
-import {
-  AppCard,
-  AppScreen,
-  AppText,
-  AppLoadingState,
-  MissionCard,
-} from "../../src/components/ui";
+import { AppCard, AppScreen, AppText, AppLoadingState } from "../../src/components/ui";
 import type { Attendance } from "../../src/types/attendance.types";
 import type { Member } from "../../src/types/member.types";
 
-// ─── helpers (unchanged) ──────────────────────────────────────────────────────
+// ─── helpers ──────────────────────────────────────────────────────────────────
 
 function greet(name: string) {
   const h = new Date().getHours();
-  const salutation =
-    h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
-  return `${salutation}, ${name.split(" ")[0]}`;
+  const s = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+  return `${s}, ${name.split(" ")[0]}`;
 }
-
 function todayLabel() {
-  return new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
+  return new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 }
-
-function isToday(dateStr: string) {
-  const now = new Date();
-  const d = new Date(dateStr);
-  return (
-    d.getFullYear() === now.getFullYear() &&
-    d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate()
-  );
-}
-
 function daysRemaining(endDate?: string | null) {
   if (!endDate) return null;
-  const diff = new Date(endDate).getTime() - Date.now();
-  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  return Math.max(0, Math.ceil((new Date(endDate).getTime() - Date.now()) / 86_400_000));
 }
 
-function membershipProgress(startDate?: string | null, endDate?: string | null) {
-  if (!startDate || !endDate) return 0;
-  const total = new Date(endDate).getTime() - new Date(startDate).getTime();
-  const elapsed = Date.now() - new Date(startDate).getTime();
-  return Math.min(1, Math.max(0, elapsed / total));
+const MOTIVATION = [
+  "Discipline is choosing what you want most over what you want now.",
+  "You don't have to be extreme — just consistent.",
+  "The body achieves what the mind believes.",
+  "Small steps every day add up to big results.",
+  "Showing up is half the battle. You've already won it.",
+  "Your only competition is who you were yesterday.",
+  "Sweat now, shine later.",
+];
+function dailyMotivation() {
+  const start = new Date(new Date().getFullYear(), 0, 0).getTime();
+  const dayOfYear = Math.floor((Date.now() - start) / 86_400_000);
+  return MOTIVATION[dayOfYear % MOTIVATION.length];
 }
 
-function currentStreak(records: Attendance[]) {
-  if (!records.length) return 0;
-  const sorted = [...records].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-  );
-  let streak = 0;
-  let cursor = new Date();
-  cursor.setHours(0, 0, 0, 0);
-  for (const r of sorted) {
-    const d = new Date(r.date);
-    d.setHours(0, 0, 0, 0);
-    const diff = Math.round((cursor.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
-    if (diff === 0 || diff === 1) {
-      streak++;
-      cursor = d;
-    } else {
-      break;
-    }
-  }
-  return streak;
-}
-
-function formatTime(dateStr: string) {
-  return new Date(dateStr).toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-// ─── main screen ─────────────────────────────────────────────────────────────
+// ─── screen ───────────────────────────────────────────────────────────────────
 
 export default function MemberDashboardScreen() {
   const { user } = useAuthStore();
@@ -120,38 +60,45 @@ export default function MemberDashboardScreen() {
 
   const [member, setMember] = useState<Member | null>(null);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
-  const [membership, setMembership] = useState<Awaited<
-    ReturnType<typeof membershipService.getMyMembership>
-  > | null>(null);
-  const [workoutPlan, setWorkoutPlan] = useState<Awaited<
-    ReturnType<typeof workoutService.getByMember>
-  > | null>(null);
-  const [dietPlan, setDietPlan] = useState<Awaited<
-    ReturnType<typeof dietService.getMyPlan>
-  > | null>(null);
+  const [streak, setStreak] = useState<MemberStreak | null>(null);
+  const [membership, setMembership] = useState<Awaited<ReturnType<typeof membershipService.getMyMembership>> | null>(null);
+  const [today, setToday] = useState<TodayWorkout | null>(null);
+  const [diet, setDiet] = useState<TodayDiet | null>(null);
+  const [goals, setGoals] = useState<ProgressGoal[]>([]);
+  const [summary, setSummary] = useState<ProgressSummary | null>(null);
+  const [leaders, setLeaders] = useState<LeaderboardRow[]>([]);
+  const [badges, setBadges] = useState<EarnedBadge[]>([]);
+  const [notifs, setNotifs] = useState<MyNotifications | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadDashboard = useCallback(async () => {
+  const load = useCallback(async () => {
     try {
-      const [profile, records] = await Promise.all([
-        memberService.getMyProfile(),
-        attendanceService.getMyAttendance(),
-      ]);
-
+      const profile = await memberService.getMyProfile();
       setMember(profile);
-      setAttendance(Array.isArray(records) ? records : []);
-
-      if (profile?.id) {
-        const [mem, wp, dp] = await Promise.allSettled([
-          membershipService.getMyMembership(),
-          workoutService.getByMember(profile.id),
-          dietService.getMyPlan(),
-        ]);
-        if (mem.status === "fulfilled") setMembership(mem.value);
-        if (wp.status === "fulfilled") setWorkoutPlan(wp.value);
-        if (dp.status === "fulfilled") setDietPlan(dp.value);
-      }
+      const results = await Promise.allSettled([
+        attendanceService.getMyAttendance(),
+        memberService.getStreak(),
+        membershipService.getMyMembership(),
+        workoutService.getToday(),
+        dietService.getMyToday(),
+        getMyGoals(),
+        getMySummary(),
+        gamificationService.leaderboard(),
+        gamificationService.myBadges(),
+        getNotifications(),
+      ]);
+      const val = <T,>(i: number, d: T): T => (results[i].status === "fulfilled" ? (results[i] as PromiseFulfilledResult<T>).value : d);
+      setAttendance(val<Attendance[]>(0, []));
+      setStreak(val<MemberStreak | null>(1, null));
+      setMembership(val(2, null));
+      setToday(val<TodayWorkout | null>(3, null));
+      setDiet(val<TodayDiet | null>(4, null));
+      setGoals(val<ProgressGoal[]>(5, []));
+      setSummary(val<ProgressSummary | null>(6, null));
+      setLeaders(val<LeaderboardRow[]>(7, []));
+      setBadges(val<EarnedBadge[]>(8, []));
+      setNotifs(val<MyNotifications | null>(9, null));
     } catch (err) {
       console.log("Dashboard load failed", err);
     } finally {
@@ -160,581 +107,279 @@ export default function MemberDashboardScreen() {
     }
   }, []);
 
-  // Refetch whenever the dashboard regains focus (e.g. returning from the
-  // QR scanner) so Recent Check-ins / occupancy never show stale data.
-  useFocusEffect(
-    useCallback(() => {
-      void loadDashboard();
-    }, [loadDashboard]),
-  );
-
-  async function handleRefresh() {
-    setRefreshing(true);
-    await loadDashboard();
-  }
+  useFocusEffect(useCallback(() => { void load(); }, [load]));
 
   const displayName = member?.user?.name || user?.name || "Member";
-  const streak = useMemo(() => currentStreak(attendance), [attendance]);
   const daysLeft = useMemo(() => daysRemaining(membership?.endDate), [membership]);
-  const progress = useMemo(
-    () => membershipProgress(membership?.startDate, membership?.endDate),
-    [membership],
-  );
-  const recentAttendance = useMemo(
-    () =>
-      [...attendance]
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 3),
-    [attendance],
-  );
-  const todayActive = useMemo(
-    () => attendance.find((r) => isToday(r.date) && r.status === "CHECKED_IN") ?? null,
-    [attendance],
-  );
-  const isInside = todayActive !== null;
 
-  const todayDayName = new Date()
-    .toLocaleDateString("en-US", { weekday: "long" })
-    .toLowerCase();
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayRecord = attendance.find((r) => r.date.slice(0, 10) === todayStr);
+  const isInside = todayRecord?.status === "CHECKED_IN";
 
-  // Workout plans store exercises against a numeric dayNumber (1=Mon … 7=Sun).
-  const todayWorkoutNumber = new Date().getDay() === 0 ? 7 : new Date().getDay();
-  const firstWorkoutPlan = workoutPlan?.[0] ?? null;
-  const exerciseCount = firstWorkoutPlan
-    ? firstWorkoutPlan.exercises.filter((e) => e.dayNumber === todayWorkoutNumber)
-        .length
-    : 0;
-
-  // Diet plans store structured meals against a lowercase dayOfWeek.
-  const mealCount = (dietPlan?.meals ?? []).filter(
-    (m) => (m.dayOfWeek ?? "").toLowerCase() === todayDayName,
-  ).length;
+  const assignment = today?.assignments?.[0] ?? null;
+  const exCount = assignment?.workoutPlan.exercises?.length ?? 0;
+  const mealCount = diet?.mealCount ?? 0;
+  const dietKcal = (diet?.meals ?? []).reduce((s, m) => s + (m.calories ?? 0), 0);
+  const topGoal = goals.filter((g) => g.status === "ACTIVE").sort((a, b) => (b.progressPercent ?? 0) - (a.progressPercent ?? 0))[0];
+  const top3 = leaders.slice(0, 3);
+  const myRank = leaders.find((r) => r.memberId === member?.id);
+  const unread = notifs?.unreadCount ?? 0;
+  const consistency = summary?.consistencyScore ?? streak?.thisMonth.consistency ?? 0;
 
   if (loading) {
     return (
       <AppScreen>
-        <View style={{ gap: 8, marginBottom: 8 }}>
-          <AppText variant="overline" color="primary">
-            GymPro Member
-          </AppText>
-          <AppText variant="title">{greet(displayName)}</AppText>
-        </View>
-        <AppLoadingState rows={3} />
+        <AppLoadingState rows={5} />
       </AppScreen>
     );
   }
 
   return (
-    <AppScreen onRefresh={handleRefresh} refreshing={refreshing}>
-      {/* Header */}
-      <View style={{ marginBottom: 4 }}>
-        <AppText variant="overline" color="primary">
-          GymPro Member
-        </AppText>
-        <AppText variant="title" style={{ marginTop: 6 }}>
-          {greet(displayName)}
-        </AppText>
-        <AppText variant="caption" color="textMuted" style={{ marginTop: 4 }}>
-          {todayLabel()}
-        </AppText>
+    <AppScreen onRefresh={() => { setRefreshing(true); void load(); }} refreshing={refreshing}>
+      {/* 1. Greeting + notifications */}
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <View style={{ flex: 1 }}>
+          <AppText variant="heading">{greet(displayName)}</AppText>
+          <AppText variant="caption" color="textMuted">{todayLabel()}</AppText>
+        </View>
+        <TouchableOpacity onPress={() => router.push("/member/notifications")} activeOpacity={0.8} style={{ padding: 8 }}>
+          <Bell color={c.textPrimary} size={22} />
+          {unread > 0 ? (
+            <View style={{ position: "absolute", top: 4, right: 4, minWidth: 16, height: 16, paddingHorizontal: 3, borderRadius: 8, backgroundColor: c.primary, alignItems: "center", justifyContent: "center" }}>
+              <AppText style={{ fontSize: 9, fontWeight: "900", color: c.onPrimary }}>{unread > 9 ? "9+" : unread}</AppText>
+            </View>
+          ) : null}
+        </TouchableOpacity>
       </View>
 
-      {/* ── Today's Mission — premium command hero ─────────────────────────── */}
-      <MissionCard
-        streak={streak}
-        title={
-          streak >= 7
-            ? "Unstoppable. Elite consistency. 🏆"
-            : streak >= 3
-              ? "You're on fire. Keep it going. 🔥"
-              : streak >= 1
-                ? "Momentum is building. Show up again."
-                : "Today's the day. Make it count."
-        }
-        subtitle={`${attendance.length} session${attendance.length === 1 ? "" : "s"} logged · weekly goal ${Math.min(streak, 7)}/7`}
-        ctaLabel={isInside ? "View today's workout" : "Check in to the gym"}
-        onPressCta={() =>
-          router.push(isInside ? "/member/workout" : "/member/scanner?action=checkin")
-        }
-      />
-
-      {/* Stats Row */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 10, paddingBottom: 4 }}
-      >
-        <StatBadge icon={<Flame color={c.primary} size={16} />} label="Streak" value={`${streak}d`} />
-        <StatBadge icon={<Star color={c.warning} size={16} />} label="XP" value={`${attendance.length * 50}`} />
-        <StatBadge icon={<Target color={c.primary} size={16} />} label="Goals" value="0" />
-        <StatBadge
-          icon={<Calendar color={c.success} size={16} />}
-          label="Days Left"
-          value={daysLeft !== null ? `${daysLeft}` : "—"}
-        />
-      </ScrollView>
-
-      {/* Today's Cards */}
-      <View style={{ flexDirection: "row", gap: 12 }}>
-        <AppCard style={{ flex: 1 }}>
-          <View
-            style={{
-              height: 38,
-              width: 38,
-              borderRadius: theme.radius.md,
-              backgroundColor: c.primary,
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: 10,
-            }}
-          >
-            <Dumbbell color={c.onPrimary} size={18} />
+      {/* 2 + 3. Streak hero with daily motivation */}
+      <LinearGradient colors={["#161616", "#010000"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={{ borderRadius: theme.radius.xl, padding: theme.spacing.lg, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+        <View style={{ position: "absolute", top: -40, right: -30, height: 120, width: 120, borderRadius: 999, backgroundColor: c.primary, opacity: 0.22 }} />
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+          <View style={{ height: 64, width: 64, borderRadius: 999, backgroundColor: "rgba(231,55,37,0.18)", borderWidth: 1, borderColor: c.primary, alignItems: "center", justifyContent: "center" }}>
+            <Flame color={c.primary} size={28} />
           </View>
-          <AppText variant="caption" color="textSecondary">
-            Today's Workout
-          </AppText>
-          <AppText variant="subtitle" numberOfLines={1} style={{ marginTop: 4 }}>
-            {firstWorkoutPlan?.title || "Not assigned"}
-          </AppText>
-          {exerciseCount > 0 ? (
-            <AppText variant="caption" color="textMuted" style={{ marginTop: 3 }}>
-              {exerciseCount} exercise{exerciseCount !== 1 ? "s" : ""}
-            </AppText>
-          ) : null}
-          <TouchableOpacity
-            onPress={() => router.push("/member/workout")}
-            activeOpacity={0.8}
-            style={{
-              marginTop: 12,
-              height: 34,
-              borderRadius: theme.radius.sm,
-              backgroundColor: c.primary,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <AppText variant="caption" style={{ color: c.onPrimary }}>
-              Start Workout
-            </AppText>
-          </TouchableOpacity>
-        </AppCard>
-
-        <AppCard style={{ flex: 1 }}>
-          <View
-            style={{
-              height: 38,
-              width: 38,
-              borderRadius: theme.radius.md,
-              backgroundColor: c.muted,
-              borderWidth: 1,
-              borderColor: c.border,
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: 10,
-            }}
-          >
-            <Salad color={c.textPrimary} size={18} />
-          </View>
-          <AppText variant="caption" color="textSecondary">
-            Today's Diet
-          </AppText>
-          <AppText variant="subtitle" numberOfLines={1} style={{ marginTop: 4 }}>
-            {dietPlan?.goal || "Not assigned"}
-          </AppText>
-          {mealCount > 0 ? (
-            <AppText variant="caption" color="textMuted" style={{ marginTop: 3 }}>
-              {mealCount} meal{mealCount !== 1 ? "s" : ""}
-            </AppText>
-          ) : null}
-          <TouchableOpacity
-            onPress={() => router.push("/member/diet")}
-            activeOpacity={0.8}
-            style={{
-              marginTop: 12,
-              height: 34,
-              borderRadius: theme.radius.sm,
-              backgroundColor: "transparent",
-              borderWidth: 1,
-              borderColor: c.border,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <AppText variant="caption" color="textPrimary">
-              View Diet
-            </AppText>
-          </TouchableOpacity>
-        </AppCard>
-      </View>
-
-      {/* Membership Card */}
-      <AppCard variant="elevated">
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-          }}
-        >
           <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <CreditCard color={c.primary} size={18} />
-              <AppText variant="overline" color="primary">
-                Membership
+            <AppText variant="overline" style={{ color: "rgba(255,255,255,0.55)", letterSpacing: 1 }}>Current streak</AppText>
+            <AppText style={{ fontSize: 34, fontWeight: "900", color: "#FFFFFF", lineHeight: 38 }}>
+              {streak?.current ?? 0}<AppText style={{ fontSize: 16, color: "rgba(255,255,255,0.6)" }}> days</AppText>
+            </AppText>
+            <AppText variant="caption" style={{ color: "rgba(255,255,255,0.7)" }}>Best {streak?.best ?? 0} · {consistency}% this month</AppText>
+          </View>
+        </View>
+        <View style={{ marginTop: 14, flexDirection: "row", gap: 8, alignItems: "flex-start" }}>
+          <Sparkles color={c.primary} size={15} style={{ marginTop: 2 }} />
+          <AppText variant="caption" style={{ color: "#FFFFFF", flex: 1, lineHeight: 20 }}>{dailyMotivation()}</AppText>
+        </View>
+      </LinearGradient>
+
+      {/* 4. Today's Workout */}
+      <SectionHeader title="Today's Workout" onPress={() => router.push("/member/workout")} />
+      <TouchableOpacity activeOpacity={0.85} onPress={() => router.push("/member/workout")}>
+        <AppCard variant="elevated">
+          {assignment ? (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+              <View style={{ height: 46, width: 46, borderRadius: theme.radius.md, backgroundColor: c.primarySoft, alignItems: "center", justifyContent: "center" }}>
+                <Dumbbell color={c.primary} size={22} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <AppText variant="bodyStrong">{assignment.workoutPlan.title}</AppText>
+                <AppText variant="caption" color="textMuted">{exCount} exercises · ~{Math.max(15, exCount * 6)} min{assignment.status === "COMPLETED" ? " · ✓ done" : ""}</AppText>
+              </View>
+              <ChevronRight color={c.textMuted} size={20} />
+            </View>
+          ) : (
+            <AppText variant="body" color="textMuted">No workout scheduled today — rest & recover. 🛌</AppText>
+          )}
+        </AppCard>
+      </TouchableOpacity>
+
+      {/* 5. Today's Diet */}
+      <SectionHeader title="Today's Diet" onPress={() => router.push("/member/diet")} />
+      <TouchableOpacity activeOpacity={0.85} onPress={() => router.push("/member/diet")}>
+        <AppCard variant="elevated">
+          {mealCount > 0 ? (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+              <View style={{ height: 46, width: 46, borderRadius: theme.radius.md, backgroundColor: c.primarySoft, alignItems: "center", justifyContent: "center" }}>
+                <Salad color={c.primary} size={22} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <AppText variant="bodyStrong">{diet?.goal || "Today's meals"}</AppText>
+                <AppText variant="caption" color="textMuted">{mealCount} meal{mealCount === 1 ? "" : "s"}{dietKcal > 0 ? ` · ${dietKcal.toLocaleString()} kcal` : ""}</AppText>
+              </View>
+              <ChevronRight color={c.textMuted} size={20} />
+            </View>
+          ) : (
+            <AppText variant="body" color="textMuted">No meals planned for today.</AppText>
+          )}
+        </AppCard>
+      </TouchableOpacity>
+
+      {/* 6. Membership */}
+      <SectionHeader title="Membership" onPress={() => router.push("/member/membership")} />
+      <TouchableOpacity activeOpacity={0.85} onPress={() => router.push("/member/membership")}>
+        <AppCard variant="elevated">
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+            <View style={{ height: 46, width: 46, borderRadius: theme.radius.md, backgroundColor: c.primarySoft, alignItems: "center", justifyContent: "center" }}>
+              <CreditCard color={c.primary} size={22} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <AppText variant="bodyStrong">{membership?.planRef?.name ?? membership?.plan ?? "No active plan"}</AppText>
+              <AppText variant="caption" color={daysLeft !== null && daysLeft < 10 ? "danger" : "textMuted"}>
+                {daysLeft !== null ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} remaining` : "Tap to view details"}
               </AppText>
             </View>
-            <AppText variant="heading" style={{ marginTop: 8 }}>
-              {membership?.planRef?.name ?? membership?.plan ?? "No active plan"}
-            </AppText>
-            <AppText variant="caption" color="textMuted" style={{ marginTop: 4 }}>
-              {daysLeft !== null
-                ? `${daysLeft} day${daysLeft !== 1 ? "s" : ""} remaining`
-                : "—"}
-            </AppText>
-          </View>
-
-          {daysLeft !== null && daysLeft < 30 ? (
-            <TouchableOpacity
-              onPress={() => router.push("/member/renew-membership")}
-              activeOpacity={0.8}
-              style={{
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                borderRadius: theme.radius.sm,
-                backgroundColor: c.dangerSoft,
-                borderWidth: 1,
-                borderColor: c.danger,
-              }}
-            >
-              <AppText variant="label" style={{ color: c.danger }}>
-                Renew
-              </AppText>
-            </TouchableOpacity>
-          ) : null}
-        </View>
-
-        <View
-          style={{
-            marginTop: 16,
-            height: 6,
-            borderRadius: 3,
-            backgroundColor: c.muted,
-            overflow: "hidden",
-          }}
-        >
-          <View
-            style={{
-              height: "100%",
-              width: `${Math.round((1 - progress) * 100)}%`,
-              borderRadius: 3,
-              backgroundColor: daysLeft !== null && daysLeft < 10 ? c.danger : c.primary,
-            }}
-          />
-        </View>
-      </AppCard>
-
-      {/* Attendance — two clear QR actions */}
-      <AppText variant="heading">Attendance</AppText>
-      <AppCard>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 }}>
-          <View
-            style={{
-              height: 44,
-              width: 44,
-              borderRadius: theme.radius.md,
-              backgroundColor: isInside ? c.successSoft : c.muted,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <DoorOpen color={isInside ? c.success : c.textMuted} size={22} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <AppText variant="bodyStrong">
-              Status: {isInside ? "Inside" : "Outside"}
-            </AppText>
-            <AppText variant="caption" color="textSecondary" style={{ marginTop: 2 }}>
-              {isInside && todayActive
-                ? `Checked in at ${formatTime(todayActive.checkInAt || todayActive.date)}`
-                : "You are not checked in"}
-            </AppText>
-          </View>
-        </View>
-
-        <View style={{ flexDirection: "row", gap: 10 }}>
-          <TouchableOpacity
-            disabled={isInside}
-            activeOpacity={0.8}
-            onPress={() => router.push("/member/scanner?action=checkin")}
-            style={{
-              flex: 1,
-              padding: 14,
-              borderRadius: theme.radius.md,
-              borderWidth: 1,
-              borderColor: c.success,
-              backgroundColor: c.muted,
-              opacity: isInside ? 0.45 : 1,
-            }}
-          >
-            <LogIn color={c.success} size={20} />
-            <AppText variant="bodyStrong" style={{ marginTop: 8 }}>
-              Check In
-            </AppText>
-            <AppText variant="caption" color="textSecondary" style={{ marginTop: 2 }}>
-              {isInside ? "Already checked in" : "Scan gym QR to enter"}
-            </AppText>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            disabled={!isInside}
-            activeOpacity={0.8}
-            onPress={() => router.push("/member/scanner?action=checkout")}
-            style={{
-              flex: 1,
-              padding: 14,
-              borderRadius: theme.radius.md,
-              borderWidth: 1,
-              borderColor: c.primary,
-              backgroundColor: c.muted,
-              opacity: !isInside ? 0.45 : 1,
-            }}
-          >
-            <LogOut color={c.primary} size={20} />
-            <AppText variant="bodyStrong" style={{ marginTop: 8 }}>
-              Check Out
-            </AppText>
-            <AppText variant="caption" color="textSecondary" style={{ marginTop: 2 }}>
-              {isInside ? "Scan gym QR to exit" : "No active check-in"}
-            </AppText>
-          </TouchableOpacity>
-        </View>
-      </AppCard>
-
-      {/* Quick Actions */}
-      <AppText variant="heading">Quick Actions</AppText>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-        <QuickAction
-          icon={<Trophy color={c.textMuted} size={22} />}
-          label="Achievements"
-          onPress={() => router.push("/member/achievements")}
-        />
-        <QuickAction
-          icon={<Medal color={c.primary} size={22} />}
-          label="Challenges"
-          onPress={() => router.push("/member/challenges")}
-        />
-        <QuickAction
-          icon={<Gift color={c.primary} size={22} />}
-          label="Rewards"
-          onPress={() => router.push("/member/rewards")}
-        />
-        <QuickAction
-          icon={<Sparkles color={c.primary} size={22} />}
-          label="Insights"
-          onPress={() => router.push("/member/insights")}
-        />
-        <QuickAction
-          icon={<Sparkles color={c.info} size={22} />}
-          label="AI Coach"
-          onPress={() => router.push("/member/coach")}
-        />
-        <QuickAction
-          icon={<Crown color={c.primary} size={22} />}
-          label="Membership"
-          onPress={() => router.push("/member/membership")}
-        />
-        <QuickAction
-          icon={<Wallet color={c.success} size={22} />}
-          label="Payments"
-          onPress={() => router.push("/member/payments")}
-        />
-        <QuickAction
-          icon={<CreditCard color={c.textMuted} size={22} />}
-          label="Renew"
-          onPress={() => router.push("/member/renew-membership")}
-        />
-        <QuickAction
-          icon={<ImagePlus color={c.success} size={22} />}
-          label="Progress"
-          onPress={() => router.push("/member/progress")}
-        />
-        <QuickAction
-          icon={<Bell color={c.warning} size={22} />}
-          label="Alerts"
-          onPress={() => router.push("/member/notifications")}
-        />
-        <QuickAction
-          icon={<Megaphone color={c.info} size={22} />}
-          label="News"
-          onPress={() => router.push("/member/announcements")}
-        />
-        <QuickAction
-          icon={<MessageSquare color={c.success} size={22} />}
-          label="Chat"
-          onPress={() => router.push("/member/chat")}
-        />
-        <QuickAction
-          icon={<Target color={c.textMuted} size={22} />}
-          label="Goals"
-          onPress={() =>
-            Alert.alert(
-              "Coming Soon",
-              "Goals tracking will be available in the next update.",
-            )
-          }
-        />
-      </View>
-
-      {/* Recent Check-ins */}
-      <AppText variant="heading">Recent Check-ins</AppText>
-      {recentAttendance.length === 0 ? (
-        <AppCard>
-          <View style={{ alignItems: "center", paddingVertical: 12, gap: 10 }}>
-            <Calendar color={c.textMuted} size={28} />
-            <AppText
-              variant="bodyStrong"
-              color="textSecondary"
-              style={{ textAlign: "center" }}
-            >
-              No attendance records yet.{"\n"}Scan the QR code to check in.
-            </AppText>
+            <ChevronRight color={c.textMuted} size={20} />
           </View>
         </AppCard>
-      ) : (
-        <View style={{ gap: 8 }}>
-          {recentAttendance.map((record) => (
-            <AppCard key={record.id}>
+      </TouchableOpacity>
+
+      {/* 7 + 8. Progress snapshot + Goal progress (side by side) */}
+      <View style={{ flexDirection: "row", gap: 12 }}>
+        <TouchableOpacity style={{ flex: 1 }} activeOpacity={0.85} onPress={() => router.push("/member/progress")}>
+          <AppCard>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <TrendingUp color={c.primary} size={16} />
+              <AppText variant="overline" color="primary">Progress</AppText>
+            </View>
+            <AppText style={{ fontSize: 26, fontWeight: "900", color: c.textPrimary, marginTop: 6 }}>{consistency}%</AppText>
+            <AppText variant="caption" color="textMuted">consistency</AppText>
+          </AppCard>
+        </TouchableOpacity>
+        <TouchableOpacity style={{ flex: 1 }} activeOpacity={0.85} onPress={() => router.push("/member/goals")}>
+          <AppCard>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Target color={c.primary} size={16} />
+              <AppText variant="overline" color="primary">Top goal</AppText>
+            </View>
+            {topGoal ? (
+              <>
+                <AppText variant="bodyStrong" numberOfLines={1} style={{ marginTop: 6 }}>{topGoal.title}</AppText>
+                <View style={{ marginTop: 8, height: 6, borderRadius: 3, backgroundColor: c.muted, overflow: "hidden" }}>
+                  <View style={{ height: "100%", width: `${Math.min(100, Math.round(topGoal.progressPercent ?? 0))}%`, backgroundColor: c.primary }} />
+                </View>
+              </>
+            ) : (
+              <AppText variant="caption" color="textMuted" style={{ marginTop: 6 }}>Set a goal →</AppText>
+            )}
+          </AppCard>
+        </TouchableOpacity>
+      </View>
+
+      {/* 9. Leaderboard preview */}
+      <SectionHeader title="Leaderboard" onPress={() => router.push("/member/leaderboard")} />
+      <AppCard>
+        {top3.length === 0 ? (
+          <AppText variant="caption" color="textMuted">Earn XP to climb the leaderboard.</AppText>
+        ) : (
+          <View style={{ gap: 10 }}>
+            {top3.map((r) => (
+              <View key={r.memberId} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                <AppText style={{ width: 22, fontWeight: "900", color: r.rank === 1 ? c.primary : c.textSecondary }}>#{r.rank}</AppText>
+                <AppText variant="body" style={{ flex: 1 }} numberOfLines={1}>{r.name}</AppText>
+                <AppText variant="caption" color="textMuted">{r.xp ?? 0} XP</AppText>
+              </View>
+            ))}
+            {myRank && myRank.rank > 3 ? (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 12, borderTopWidth: 1, borderTopColor: c.border, paddingTop: 8 }}>
+                <AppText style={{ width: 22, fontWeight: "900", color: c.primary }}>#{myRank.rank}</AppText>
+                <AppText variant="body" style={{ flex: 1 }}>You</AppText>
+                <AppText variant="caption" color="textMuted">{myRank.xp ?? 0} XP</AppText>
+              </View>
+            ) : null}
+          </View>
+        )}
+      </AppCard>
+
+      {/* 10. Achievements */}
+      <SectionHeader title="Achievements" onPress={() => router.push("/member/achievements")} />
+      <TouchableOpacity activeOpacity={0.85} onPress={() => router.push("/member/achievements")}>
+        <AppCard>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <View style={{ height: 44, width: 44, borderRadius: theme.radius.md, backgroundColor: c.primarySoft, alignItems: "center", justifyContent: "center" }}>
+              <Award color={c.primary} size={20} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <AppText variant="bodyStrong">{badges.length} badge{badges.length === 1 ? "" : "s"} earned</AppText>
+              <AppText variant="caption" color="textMuted" numberOfLines={1}>
+                {badges.length ? badges.slice(0, 3).map((b) => b.badge.name).join(" · ") : "Keep training to earn your first badge."}
+              </AppText>
+            </View>
+            <ChevronRight color={c.textMuted} size={20} />
+          </View>
+        </AppCard>
+      </TouchableOpacity>
+
+      {/* 11. Attendance status */}
+      <SectionHeader title="Attendance" />
+      <View style={{ flexDirection: "row", gap: 12 }}>
+        <TouchableOpacity style={{ flex: 1 }} activeOpacity={0.85} onPress={() => router.push("/member/scanner?action=checkin")}>
+          <AppCard style={{ borderColor: isInside ? c.success : c.border }}>
+            <LogIn color={isInside ? c.success : c.primary} size={20} />
+            <AppText variant="bodyStrong" style={{ marginTop: 8 }}>{isInside ? "Checked in" : "Check in"}</AppText>
+            <AppText variant="caption" color="textMuted">{isInside && todayRecord ? new Date(todayRecord.checkInAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Scan gym QR"}</AppText>
+          </AppCard>
+        </TouchableOpacity>
+        <TouchableOpacity style={{ flex: 1 }} activeOpacity={0.85} disabled={!isInside} onPress={() => router.push("/member/scanner?action=checkout")}>
+          <AppCard style={{ opacity: isInside ? 1 : 0.5 }}>
+            <LogOut color={c.textSecondary} size={20} />
+            <AppText variant="bodyStrong" style={{ marginTop: 8 }}>Check out</AppText>
+            <AppText variant="caption" color="textMuted">{isInside ? "Tap to scan" : "After check-in"}</AppText>
+          </AppCard>
+        </TouchableOpacity>
+      </View>
+
+      {/* 12. Notifications preview */}
+      {notifs && notifs.items.length > 0 ? (
+        <>
+          <SectionHeader title="Latest" onPress={() => router.push("/member/notifications")} />
+          <TouchableOpacity activeOpacity={0.85} onPress={() => router.push("/member/notifications")}>
+            <AppCard>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                <View
-                  style={{
-                    height: 40,
-                    width: 40,
-                    borderRadius: theme.radius.md,
-                    backgroundColor: c.muted,
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <CheckCircle2
-                    color={isToday(record.date) ? c.success : c.primary}
-                    size={20}
-                  />
-                </View>
+                <Bell color={c.primary} size={18} />
                 <View style={{ flex: 1 }}>
-                  <AppText variant="bodyStrong">
-                    {new Date(record.date).toLocaleDateString("en-US", {
-                      weekday: "short",
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </AppText>
-                  <AppText variant="caption" color="textMuted" style={{ marginTop: 2 }}>
-                    In {formatTime(record.checkInAt || record.date)}
-                    {record.checkOutAt ? ` · Out ${formatTime(record.checkOutAt)}` : ""}
-                  </AppText>
-                </View>
-                <View
-                  style={{
-                    paddingHorizontal: 10,
-                    paddingVertical: 4,
-                    borderRadius: theme.radius.sm,
-                    backgroundColor:
-                      record.status === "CHECKED_IN" ? c.successSoft : c.muted,
-                    borderWidth: 1,
-                    borderColor:
-                      record.status === "CHECKED_IN" ? c.success : c.border,
-                  }}
-                >
-                  <AppText
-                    variant="caption"
-                    style={{
-                      color:
-                        record.status === "CHECKED_IN" ? c.success : c.textSecondary,
-                    }}
-                  >
-                    {record.status === "CHECKED_IN" ? "Inside" : "Left"}
-                  </AppText>
+                  <AppText variant="bodyStrong" numberOfLines={1}>{notifs.items[0].title}</AppText>
+                  <AppText variant="caption" color="textMuted" numberOfLines={1}>{notifs.items[0].body}</AppText>
                 </View>
               </View>
             </AppCard>
-          ))}
-        </View>
-      )}
+          </TouchableOpacity>
+        </>
+      ) : null}
+
+      {/* 13. Quick actions */}
+      <SectionHeader title="Quick Actions" />
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+        {[
+          { icon: <Target color={c.primary} size={20} />, label: "Goals", to: "/member/goals" },
+          { icon: <TrendingUp color={c.primary} size={20} />, label: "Progress", to: "/member/progress" },
+          { icon: <Trophy color={c.primary} size={20} />, label: "Leaderboard", to: "/member/leaderboard" },
+          { icon: <MessageSquare color={c.primary} size={20} />, label: "Chat", to: "/member/chat" },
+          { icon: <CreditCard color={c.primary} size={20} />, label: "Membership", to: "/member/membership" },
+          { icon: <Award color={c.primary} size={20} />, label: "Rewards", to: "/member/rewards" },
+        ].map((a) => (
+          <TouchableOpacity key={a.label} activeOpacity={0.85} onPress={() => router.push(a.to as never)} style={{ width: "30%", flexGrow: 1 }}>
+            <AppCard style={{ alignItems: "center", paddingVertical: 16 }}>
+              {a.icon}
+              <AppText variant="caption" style={{ marginTop: 6 }}>{a.label}</AppText>
+            </AppCard>
+          </TouchableOpacity>
+        ))}
+      </View>
     </AppScreen>
   );
 }
 
-// ─── local components ─────────────────────────────────────────────────────────
-
-function StatBadge({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
-  const { theme } = useTheme();
-  const c = theme.colors;
+function SectionHeader({ title, onPress }: { title: string; onPress?: () => void }) {
   return (
-    <View
-      style={{
-        backgroundColor: c.surface,
-        borderWidth: 1,
-        borderColor: c.border,
-        borderRadius: theme.radius.lg,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        alignItems: "center",
-        minWidth: 76,
-        gap: 4,
-      }}
-    >
-      {icon}
-      <AppText style={{ fontSize: 18, fontWeight: "900", marginTop: 2 }}>
-        {value}
-      </AppText>
-      <AppText variant="caption" color="textMuted">
-        {label}
-      </AppText>
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
+      <AppText variant="heading">{title}</AppText>
+      {onPress ? (
+        <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+          <AppText variant="label" color="primary">See all</AppText>
+        </TouchableOpacity>
+      ) : null}
     </View>
-  );
-}
-
-function QuickAction({
-  icon,
-  label,
-  onPress,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onPress: () => void;
-}) {
-  const { theme } = useTheme();
-  const c = theme.colors;
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.8}
-      style={{
-        width: "22%",
-        aspectRatio: 1,
-        backgroundColor: c.surface,
-        borderWidth: 1,
-        borderColor: c.border,
-        borderRadius: theme.radius.lg,
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 6,
-        flexGrow: 1,
-        paddingVertical: 14,
-      }}
-    >
-      {icon}
-      <AppText variant="caption" color="textSecondary">
-        {label}
-      </AppText>
-    </TouchableOpacity>
   );
 }

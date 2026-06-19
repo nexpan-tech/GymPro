@@ -15,7 +15,7 @@ export type AuditActionType =
 export interface AuditLog {
   id: string;
   gymId: string | null;
-  userId: string | null;
+  userId?: string | null;
   action: AuditActionType;
   entityType?: string | null;
   entityId?: string | null;
@@ -25,6 +25,12 @@ export interface AuditLog {
   userAgent?: string | null;
   metadata?: Record<string, unknown> | null;
   createdAt: string;
+  // Enriched fields from the platform audit feed.
+  event?: string | null;
+  actorName?: string | null;
+  actorEmail?: string | null;
+  actorRole?: string | null;
+  gymName?: string | null;
 }
 
 // ─── Service ─────────────────────────────────────────────────────────────────

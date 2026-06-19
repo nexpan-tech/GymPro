@@ -92,11 +92,8 @@ export default function AuditLogsPage() {
       if (sinceTime && new Date(log.createdAt).getTime() < sinceTime) return false;
       if (query) {
         const haystack = [
-          log.entityType,
-          log.path,
-          log.gymId,
-          log.userId,
-          log.action,
+          log.event, log.entityType, log.path, log.gymName, log.gymId,
+          log.actorName, log.actorEmail, log.action,
         ]
           .filter(Boolean)
           .join(" ")
@@ -107,6 +104,28 @@ export default function AuditLogsPage() {
     });
   }, [logs, search, actionFilter, since]);
 
+  function exportCsv() {
+    const headers = ["Time", "Action", "Event", "Entity", "Gym", "Actor", "Email", "IP"];
+    const rows = filtered.map((l) => [
+      new Date(l.createdAt).toISOString(),
+      l.action,
+      l.event ?? "",
+      l.entityType ?? "",
+      l.gymName ?? l.gymId ?? "",
+      l.actorName ?? l.userId ?? "",
+      l.actorEmail ?? "",
+      l.ipAddress ?? "",
+    ]);
+    const esc = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+    const csv = [headers, ...rows].map((r) => r.map(esc).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `audit-logs-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <Page
       title="Audit Logs"
@@ -116,9 +135,10 @@ export default function AuditLogsPage() {
           : "Activity recorded for your gym."
       }
       action={
-        <Button variant="secondary" onClick={() => void loadLogs()}>
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={exportCsv} disabled={filtered.length === 0}>Export CSV</Button>
+          <Button variant="secondary" onClick={() => void loadLogs()}>Refresh</Button>
+        </div>
       }
     >
       <div className="space-y-6">
@@ -181,10 +201,10 @@ export default function AuditLogsPage() {
                   <tr>
                     <th className="px-5 py-3 font-medium">Time</th>
                     <th className="px-5 py-3 font-medium">Action</th>
-                    <th className="px-5 py-3 font-medium">Entity</th>
-                    <th className="px-5 py-3 font-medium">Path</th>
+                    <th className="px-5 py-3 font-medium">Event / Entity</th>
                     {isSuperAdmin && <th className="px-5 py-3 font-medium">Gym</th>}
                     <th className="px-5 py-3 font-medium">Actor</th>
+                    <th className="px-5 py-3 font-medium">IP</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -196,21 +216,24 @@ export default function AuditLogsPage() {
                       <td className="px-5 py-3">
                         <Badge variant={actionVariant(log.action)}>{log.action}</Badge>
                       </td>
-                      <td className="px-5 py-3 text-(--text-primary)">
-                        {log.entityType ?? "—"}
-                      </td>
-                      <td className="px-5 py-3 font-mono text-xs text-(--text-secondary)">
-                        {log.method ? `${log.method} ` : ""}
-                        {log.path ?? "—"}
+                      <td className="px-5 py-3">
+                        <div className="font-semibold text-(--text-primary)">
+                          {log.event ?? log.entityType ?? log.path ?? "—"}
+                        </div>
+                        {log.entityType && log.event && (
+                          <div className="text-xs text-(--text-muted)">{log.entityType}</div>
+                        )}
                       </td>
                       {isSuperAdmin && (
                         <td className="px-5 py-3 text-xs text-(--text-secondary)">
-                          {log.gymId ?? "—"}
+                          {log.gymName ?? log.gymId ?? "—"}
                         </td>
                       )}
                       <td className="px-5 py-3 text-xs text-(--text-secondary)">
-                        {log.userId ?? "—"}
+                        {log.actorName ?? log.userId ?? "—"}
+                        {log.actorEmail && <div className="text-(--text-muted)">{log.actorEmail}</div>}
                       </td>
+                      <td className="px-5 py-3 font-mono text-xs text-(--text-muted)">{log.ipAddress ?? "—"}</td>
                     </tr>
                   ))}
                 </tbody>

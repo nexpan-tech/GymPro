@@ -90,6 +90,18 @@ export class MemberController {
     });
   }
 
+  static async streak(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    const summary = await MemberService.getStreak(user);
+
+    return res.json({
+      success: true,
+      data: summary,
+    });
+  }
+
   static async getById(req: Request, res: Response) {
     const user = requireAuth(req, res);
     if (!user) return;

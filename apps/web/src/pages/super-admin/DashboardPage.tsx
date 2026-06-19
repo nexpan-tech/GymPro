@@ -46,7 +46,7 @@ import {
   type StatusTone,
   EmptyMomentumState,
 } from "@/components/premium";
-import { analyticsService } from "@/services/analytics.service";
+import { superAdminService, type PlatformDashboard } from "@/services/superAdmin.service";
 import { cn } from "@/lib/cn";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -67,7 +67,7 @@ interface GymRow {
   id: string;
   name: string;
   owner: string;
-  plan: "Basic" | "Pro" | "Enterprise";
+  plan: string;
   joined: string;
   status: "active" | "trial" | "suspended";
 }
@@ -103,146 +103,65 @@ interface SuperAdminDashboard {
   activity: ActivityEvent[];
 }
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+// ─── Real-data adapter ────────────────────────────────────────────────────────
+// Maps the platform API payload onto this page's view-model. No mock data.
 
-const MOCK_DASHBOARD: SuperAdminDashboard = {
-  kpis: {
-    totalGyms: 247,
-    totalMembers: 38_914,
-    mrr: 128_450,
-    activeSubscriptions: 231,
-    gymChange: 12.4,
-    memberChange: 8.7,
-    mrrChange: 22.1,
-    subChange: 9.3,
-  },
-  revenue: [
-    { month: "Jun '24", revenue: 68_200, gyms: 178 },
-    { month: "Jul '24", revenue: 74_800, gyms: 185 },
-    { month: "Aug '24", revenue: 79_100, gyms: 192 },
-    { month: "Sep '24", revenue: 83_500, gyms: 198 },
-    { month: "Oct '24", revenue: 91_200, gyms: 206 },
-    { month: "Nov '24", revenue: 97_600, gyms: 212 },
-    { month: "Dec '24", revenue: 104_300, gyms: 219 },
-    { month: "Jan '25", revenue: 109_800, gyms: 224 },
-    { month: "Feb '25", revenue: 113_200, gyms: 228 },
-    { month: "Mar '25", revenue: 118_900, gyms: 234 },
-    { month: "Apr '25", revenue: 123_700, gyms: 240 },
-    { month: "May '25", revenue: 128_450, gyms: 247 },
-  ],
-  subscriptionsByPlan: [
-    { name: "Basic", value: 94, color: "#e73725" },
-    { name: "Pro", value: 112, color: "#e73725" },
-    { name: "Enterprise", value: 25, color: "#767676" },
-  ],
-  recentGyms: [
-    {
-      id: "1",
-      name: "FitZone Powai",
-      owner: "Arjun Mehta",
-      plan: "Pro",
-      joined: "28 May 2025",
-      status: "active",
+function pctChange(series: number[]): number {
+  if (series.length < 2) return 0;
+  const prev = series[series.length - 2];
+  const curr = series[series.length - 1];
+  if (prev === 0) return curr > 0 ? 100 : 0;
+  return Math.round(((curr - prev) / prev) * 1000) / 10;
+}
+
+function adaptDashboard(d: PlatformDashboard, monitoring: any): SuperAdminDashboard {
+  const revenue: RevenuePoint[] = d.revenueTrend.map((t, i) => ({
+    month: t.month,
+    revenue: t.revenue,
+    gyms: d.gymTrend[i]?.count ?? 0,
+  }));
+  const recentGyms: GymRow[] = d.recentGyms.map((g) => ({
+    id: g.gymId,
+    name: g.name,
+    owner: `${g.activeMembers} active members`,
+    plan: g.monthlyAmount > 0 ? `₹${g.monthlyAmount}/mo` : "Unpriced",
+    joined: new Date(g.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }),
+    status: g.isActive ? "active" : "suspended",
+  }));
+  const svc = monitoring?.services;
+  const health: HealthItem[] = svc
+    ? [
+        { label: "Backend API", status: svc.backend?.status === "healthy" ? "operational" : "down", latency: "—" },
+        { label: "Database", status: svc.database?.status === "healthy" ? "operational" : "down" },
+        { label: "Redis Cache", status: svc.redis?.status === "healthy" ? "operational" : "degraded" },
+        { label: "Job Queue", status: svc.queue?.status === "healthy" ? "operational" : "degraded" },
+      ]
+    : [];
+  const activity: ActivityEvent[] = d.recentBilling.map((b) => ({
+    id: b.id,
+    icon: "payment",
+    message: `${b.gymName} — ${b.invoiceNumber} (${b.status.toLowerCase()})`,
+    time: new Date(b.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }),
+  }));
+  return {
+    kpis: {
+      totalGyms: d.kpis.totalGyms,
+      totalMembers: d.kpis.totalMembers,
+      mrr: d.kpis.mrr,
+      activeSubscriptions: d.kpis.activeGyms,
+      gymChange: pctChange(d.gymTrend.map((t) => t.count)),
+      memberChange: pctChange(d.memberTrend.map((t) => t.count)),
+      mrrChange: pctChange(d.revenueTrend.map((t) => t.revenue)),
+      subChange: pctChange(d.gymTrend.map((t) => t.count)),
     },
-    {
-      id: "2",
-      name: "IronHouse Delhi",
-      owner: "Priya Sharma",
-      plan: "Enterprise",
-      joined: "26 May 2025",
-      status: "active",
-    },
-    {
-      id: "3",
-      name: "PulseGym Bangalore",
-      owner: "Kavya Nair",
-      plan: "Basic",
-      joined: "24 May 2025",
-      status: "trial",
-    },
-    {
-      id: "4",
-      name: "Alpha Fitness Pune",
-      owner: "Rahul Desai",
-      plan: "Pro",
-      joined: "22 May 2025",
-      status: "active",
-    },
-    {
-      id: "5",
-      name: "SweatBox Mumbai",
-      owner: "Sneha Iyer",
-      plan: "Basic",
-      joined: "19 May 2025",
-      status: "suspended",
-    },
-    {
-      id: "6",
-      name: "Elev8 Hyderabad",
-      owner: "Vikram Rao",
-      plan: "Pro",
-      joined: "17 May 2025",
-      status: "active",
-    },
-  ],
-  health: [
-    { label: "Backend API", status: "operational", latency: "48 ms" },
-    { label: "Redis Cache", status: "operational", latency: "2 ms" },
-    { label: "Job Queue", status: "operational", latency: "—" },
-    { label: "Database", status: "operational", latency: "12 ms" },
-    { label: "Metrics / Prometheus", status: "degraded", latency: "320 ms" },
-  ],
-  activity: [
-    {
-      id: "a1",
-      icon: "gym",
-      message: "FitZone Powai registered on the Pro plan",
-      time: "2 min ago",
-    },
-    {
-      id: "a2",
-      icon: "payment",
-      message: "Payment of ₹4,999 received from IronHouse Delhi",
-      time: "18 min ago",
-    },
-    {
-      id: "a3",
-      icon: "member",
-      message: "950 new members joined across the platform today",
-      time: "1 hr ago",
-    },
-    {
-      id: "a4",
-      icon: "system",
-      message: "Prometheus scrape interval reduced to 15 s",
-      time: "2 hr ago",
-    },
-    {
-      id: "a5",
-      icon: "gym",
-      message: "Alpha Fitness Pune upgraded from Basic → Pro",
-      time: "3 hr ago",
-    },
-    {
-      id: "a6",
-      icon: "alert",
-      message: "SweatBox Mumbai subscription suspended — payment failed",
-      time: "5 hr ago",
-    },
-    {
-      id: "a7",
-      icon: "payment",
-      message: "Batch invoice run completed — 231 subscriptions billed",
-      time: "8 hr ago",
-    },
-    {
-      id: "a8",
-      icon: "member",
-      message: "PulseGym Bangalore trial started — 14 days remaining",
-      time: "Yesterday",
-    },
-  ],
-};
+    revenue,
+    // Per-active-member billing has no flat plan slices — show a real empty state.
+    subscriptionsByPlan: [],
+    recentGyms,
+    health,
+    activity,
+  };
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -302,11 +221,9 @@ const healthServiceIconMap: Record<string, ReactNode> = {
 
 // ─── Plan badge variant ───────────────────────────────────────────────────────
 
-const planVariant: Record<GymRow["plan"], StatusTone> = {
-  Basic: "neutral",
-  Pro: "active",
-  Enterprise: "completed",
-};
+// Per-member billing has no plan tiers; the "plan" cell shows the gym's monthly
+// SaaS amount as a neutral pill.
+const planVariant = (_plan: string): StatusTone => "neutral";
 
 const statusVariant: Record<GymRow["status"], StatusTone> = {
   active: "active",
@@ -395,20 +312,13 @@ function ChartSkeleton({ className }: { className?: string }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-// Simulates a real async fetch; swaps in mock data so the page is fully
-// functional even before the backend super-admin endpoint is live.
+// Real platform data — /super-admin/dashboard + /super-admin/monitoring.
 async function fetchSuperAdminDashboard(): Promise<SuperAdminDashboard> {
-  try {
-    // Attempt real API call — analyticsService.getSuperAdminAnalytics()
-    // We ignore the response shape here and fall through to mock data since
-    // the super-admin endpoint may not be wired yet.
-    await analyticsService.getSuperAdminAnalytics();
-  } catch {
-    // Silently fall through to mock data
-  }
-  // Simulate realistic network latency for local dev
-  await new Promise((r) => setTimeout(r, 800));
-  return MOCK_DASHBOARD;
+  const [dashboard, monitoring] = await Promise.all([
+    superAdminService.getDashboard(),
+    superAdminService.getMonitoring().catch(() => null),
+  ]);
+  return adaptDashboard(dashboard, monitoring);
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -794,7 +704,7 @@ export default function DashboardPage() {
                             {gym.owner}
                           </td>
                           <td className="px-6 py-3.5">
-                            <StatusPill tone={planVariant[gym.plan]} size="sm">
+                            <StatusPill tone={planVariant(gym.plan)} size="sm">
                               {gym.plan}
                             </StatusPill>
                           </td>

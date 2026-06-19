@@ -48,6 +48,20 @@ router.get(
   asyncHandler(DietController.getMy)
 );
 
+// Member self-service — today's meals (day-of-week filtered; ?day=<local weekday>).
+router.get(
+  "/my/today",
+  roleMiddleware([ROLES.ADMIN, ROLES.TRAINER, ROLES.MEMBER]),
+  asyncHandler(DietController.getMyToday)
+);
+
+// Member self-service — full Mon–Sun diet week.
+router.get(
+  "/my/week",
+  roleMiddleware([ROLES.ADMIN, ROLES.TRAINER, ROLES.MEMBER]),
+  asyncHandler(DietController.getMyWeek)
+);
+
 router.get(
   "/:memberId",
   roleMiddleware([ROLES.ADMIN, ROLES.TRAINER, ROLES.MEMBER]),

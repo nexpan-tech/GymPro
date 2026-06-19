@@ -97,4 +97,30 @@ export const memberService = {
     const res = await api.get<ApiResponse<Member>>('/members/me')
     return res.data.data ?? null
   },
+
+  /**
+   * Attendance streak summary — backend operational-day engine (Sundays
+   * excluded). Single source of truth shared by web + mobile.
+   */
+  getStreak: async (): Promise<MemberStreak> => {
+    const res = await api.get<ApiResponse<MemberStreak>>('/members/streak')
+    return res.data.data
+  },
+}
+
+export interface PeriodStreak {
+  attended: number
+  operationalDays: number
+  consistency: number
+  streak: number
+}
+
+export interface MemberStreak {
+  current: number
+  best: number
+  thisMonth: PeriodStreak
+  thisYear: PeriodStreak
+  lastAttendedDate: string | null
+  totalDaysAttended: number
+  closedWeekdays: number[]
 }

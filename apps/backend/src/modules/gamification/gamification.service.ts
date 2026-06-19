@@ -346,7 +346,13 @@ export class GamificationService {
    * Leaderboards — scope GYM (points), BRANCH (points within a branch), or
    * CHALLENGE (challenge progress). Always gym-scoped (no cross-gym leakage).
    */
-  static async leaderboard(user: AuthUser, scope: string, refId?: string, limit = 20) {
+  static async leaderboard(
+    user: AuthUser,
+    scope: string,
+    refId?: string,
+    limit = 20,
+    period: "ALL" | "MONTH" = "ALL",
+  ) {
     if (!user.gymId) throw new AppError("Gym context missing", 403);
 
     if (scope === "CHALLENGE") {
@@ -368,11 +374,43 @@ export class GamificationService {
       }));
     }
 
-    // GYM / BRANCH — rank members by lifetime points (MemberXP).
+    // GYM / BRANCH scope. Members in scope:
     const memberWhere =
       scope === "BRANCH" && refId ? { gymId: user.gymId, branchId: refId } : { gymId: user.gymId };
     const members = await prisma.member.findMany({ where: memberWhere, select: { id: true } });
     const memberIds = members.map((m) => m.id);
+
+    if (period === "MONTH") {
+      // Rank by points EARNED this month (from the PointTransaction ledger).
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+      const grouped = await prisma.pointTransaction.groupBy({
+        by: ["memberId"],
+        where: { gymId: user.gymId, memberId: { in: memberIds }, createdAt: { gte: monthStart } },
+        _sum: { points: true },
+        orderBy: { _sum: { points: "desc" } },
+        take: limit,
+      });
+      const rows = await prisma.member.findMany({
+        where: { id: { in: grouped.map((g) => g.memberId) } },
+        include: { user: true, memberXp: true },
+      });
+      const byId = new Map(rows.map((m) => [m.id, m]));
+      return grouped.map((g, i) => {
+        const m = byId.get(g.memberId);
+        return {
+          rank: i + 1,
+          memberId: g.memberId,
+          name: m?.user.name ?? "Member",
+          xp: g._sum.points ?? 0,
+          level: m?.memberXp?.level ?? 1,
+          streak: m?.memberXp?.streak ?? 0,
+        };
+      });
+    }
+
+    // ALL-time — rank members by lifetime points (MemberXP).
     const xps = await prisma.memberXP.findMany({
       where: { gymId: user.gymId, memberId: { in: memberIds } },
       include: { member: { include: { user: true } } },

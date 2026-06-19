@@ -1,29 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
-import { analyticsService } from "@/services/analytics.service";
-import type { DashboardAnalytics } from "@/types/analytics.types";
+import { Navigate } from "react-router-dom";
 
+/**
+ * Super-admin "Revenue Analytics" consolidates into Enterprise Analytics, which
+ * is backed by SUPER_ADMIN-scoped endpoints (enterpriseService.overview).
+ *
+ * The previous debug stub here called the gym-admin `/analytics/dashboard`
+ * endpoint, which is restricted to ADMIN/RECEPTIONIST/TRAINER and returned 403
+ * for a super admin. Redirecting avoids that cross-role call entirely.
+ */
 export default function AnalyticsPage() {
-  const [data, setData] = useState<DashboardAnalytics | null>(null);
-
-  const loadDashboardAnalytics = useCallback(async () => {
-    const response = await analyticsService.getDashboard();
-    setData(response.data ?? null);
-  }, []);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadDashboardAnalytics();
-  }, [loadDashboardAnalytics]);
-
-  if (!data) return <div className="p-6">Loading...</div>;
-
-  return (
-    <div className="p-6">
-      <h1 className="text-xl font-bold mb-4">Analytics</h1>
-
-      <pre className="text-sm bg-muted p-4 rounded">
-        {JSON.stringify(data, null, 2)}
-      </pre>
-    </div>
-  );
+  return <Navigate to="/super-admin/enterprise" replace />;
 }

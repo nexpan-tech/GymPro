@@ -358,7 +358,10 @@ enum GymSubscriptionStatus {
 enum SaaSInvoiceStatus {
   DRAFT
   ISSUED
+  PENDING
+  SENT
   PAID
+  OVERDUE
   FAILED
   CANCELLED
 }
@@ -412,6 +415,10 @@ model Gym {
   gstPercent Float  @default(18)
   stateCode  String?
 
+  // Stage 11 — SaaS billing. GymPro's price per ACTIVE member, per month (INR).
+  // Each gym is priced independently; monthly SaaS = activeMembers × this.
+  pricePerActiveMember Float @default(0)
+
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   auditLogs AuditLog[]
@@ -429,6 +436,11 @@ model Gym {
   attendances     Attendance[]
   dietPlans       DietPlan[]
   workoutPlans    WorkoutPlan[]
+  workoutAssignments WorkoutAssignment[]
+  personalWorkouts           PersonalWorkout[]
+  personalWorkoutCompletions PersonalWorkoutCompletion[]
+  personalDiets              PersonalDiet[]
+  waterLogs                  WaterLog[]
   notifications   Notification[]
   payments        Payment[]
 
@@ -508,6 +520,7 @@ model User {
   recordedMeasurements BodyMeasurement[] @relation("RecordedMeasurements")
 
   trainerWorkoutPlans WorkoutPlan[] @relation("TrainerWorkoutPlans")
+  trainerAssignments  WorkoutAssignment[] @relation("TrainerAssignments")
 
   trainerMessages  TrainerMessage[]  @relation("TrainerMessages")
   sentMessages     TrainerMessage[]  @relation("MessageSender")
@@ -565,6 +578,7 @@ model Member {
   dues      Due[]
 
   workoutPlans    WorkoutPlan[]
+  workoutAssignments WorkoutAssignment[]
   communityGroups CommunityGroupMember[]
 
   challengeParticipants ChallengeParticipant[]
@@ -600,6 +614,18 @@ model Member {
 
   branchId String?
   branch   Branch? @relation(fields: [branchId], references: [id])
+
+  // Personal Fitness Planner (member-owned, private)
+  personalWorkouts           PersonalWorkout[]
+  personalWorkoutCompletions PersonalWorkoutCompletion[]
+  personalDiets              PersonalDiet[]
+  waterLogs                  WaterLog[]
+
+  // Performance indexes on the most-queried multi-tenant table.
+  @@index([gymId])
+  @@index([status])
+  @@index([trainerId])
+  @@index([branchId])
 }
 
 //////////////////////////////////////////////////////
@@ -1079,6 +1105,7 @@ model WorkoutPlan {
   exercises WorkoutExercise[]
 
   completions WorkoutCompletion[]
+  assignments WorkoutAssignment[]
 
   @@index([gymId])
   @@index([trainerId])
@@ -1714,8 +1741,10 @@ model SaaSInvoice {
   gymId String
   gym   Gym    @relation(fields: [gymId], references: [id])
 
-  subscriptionId String
-  subscription   GymSubscription @relation(fields: [subscriptionId], references: [id])
+  // Optional: per-active-member SaaS invoices (Stage 11) are issued directly
+  // against a gym and may not be tied to a flat-plan GymSubscription.
+  subscriptionId String?
+  subscription   GymSubscription? @relation(fields: [subscriptionId], references: [id])
 
   invoiceNumber String @unique
 
@@ -1732,12 +1761,68 @@ model SaaSInvoice {
   retryCount  Int       @default(0)
   lastRetryAt DateTime?
 
+  // Stage 11 — per-active-member billing snapshot + delivery tracking.
+  billingMonth      String?   // "YYYY-MM"
+  activeMemberCount Int?
+  pricePerMember    Float?
+  gstPercent        Float?
+  emailStatus       String?   // SENT | SKIPPED | FAILED
+  sentAt            DateTime?
+
+  // Stage 12 — production hardening.
+  pdfUrl         String?  // download path for the generated GST PDF
+  // Frozen copy of the platform billing identity at issue time, so historical
+  // invoices/PDFs never change when settings are later edited.
+  sellerSnapshot Json?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([gymId])
   @@index([subscriptionId])
   @@index([status])
+  @@index([billingMonth])
+  // DB-level guarantee: one invoice per gym per billing month (race-safe).
+  // NOTE: deploy this unique index with `prisma db push --accept-data-loss`
+  // (Prisma flags every unique-index addition as potential data loss; it is
+  // safe here because new rows are one-per-gym-per-month and legacy rows have
+  // NULL billingMonth, which Postgres treats as distinct). Application-level
+  // idempotency (findFirst guard + P2002 catch) protects correctness either way.
+  @@unique([gymId, billingMonth])
+}
+
+// Stage 12 — platform (Nexpan Tech) billing identity. Singleton: one active row.
+// Drives invoice branding, GST defaults, bank details, and numbering. Editing
+// it never mutates already-issued invoices (they carry a sellerSnapshot).
+model PlatformBillingSettings {
+  id String @id @default(cuid())
+
+  companyName    String  @default("Nexpan Tech")
+  companyLogo    String?
+  companyAddress String?
+  companyEmail   String?
+  companyPhone   String?
+  companyWebsite String?
+
+  gstNumber         String?
+  defaultGstPercent Float   @default(18)
+  panNumber         String?
+  cinNumber         String?
+
+  accountName   String?
+  accountNumber String?
+  bankName      String?
+  ifscCode      String?
+  upiId         String?
+
+  invoicePrefix String  @default("SAAS")
+  invoiceFooter String? @default("Thank you for your business. For support contact support@nexpan.in")
+  paymentTerms  String?
+  dueDays       Int     @default(15)
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model WhiteLabelSetting {
@@ -1780,6 +1865,11 @@ model FeatureFlag {
   category    String? // e.g. "Engagement", "Billing", "Core"
   // Default rollout when a gym has no explicit assignment.
   defaultEnabled Boolean @default(true)
+
+  // Stage 11 — full management surface (super-admin Feature Flags page).
+  rolloutPercentage Int?     // 0..100, gradual global rollout (optional)
+  environment       String?  // e.g. "production" | "staging" | "all"
+  isActive          Boolean  @default(true) // soft-deactivate without deleting
 
   assignments FeatureFlagAssignment[]
 
@@ -2026,4 +2116,179 @@ model AuditLog {
   @@index([userId])
   @@index([action])
   @@index([createdAt])
+}
+
+/// Calendar-day workout scheduling. A trainer assigns a WorkoutPlan (optionally a
+/// specific program dayNumber) to a member for a specific date. The member's
+/// "today's workout" is the assignment whose scheduledDate is today; future
+/// assignments are hidden, completed ones show a done state, and past
+/// uncompleted ones become history. This is the source of truth for #3.
+model WorkoutAssignment {
+  id            String   @id @default(uuid())
+  gymId         String
+  gym           Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  memberId      String
+  member        Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  workoutPlanId String
+  workoutPlan   WorkoutPlan @relation(fields: [workoutPlanId], references: [id], onDelete: Cascade)
+  trainerId     String?
+  trainer       User?    @relation("TrainerAssignments", fields: [trainerId], references: [id], onDelete: SetNull)
+
+  scheduledDate DateTime // normalized to the start of the calendar day
+  dayNumber     Int?     // optional: which program day of the plan to show
+  status        WorkoutAssignmentStatus @default(SCHEDULED)
+  completedAt   DateTime?
+  notes         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([memberId, scheduledDate, workoutPlanId])
+  @@index([gymId])
+  @@index([memberId, scheduledDate])
+  @@index([scheduledDate])
+  @@index([status])
+}
+
+enum WorkoutAssignmentStatus {
+  SCHEDULED
+  COMPLETED
+  EXPIRED
+  SKIPPED
+}
+
+// ─── Personal Fitness Planner (V1) ───────────────────────────────────────────
+// Member-owned, private, editable plans — COMPLETELY separate from trainer
+// WorkoutPlan/DietPlan. Never overwrites or merges with trainer plans; trainer
+// plans always render first. Reuses MealType / DifficultyLevel enums.
+
+model PersonalWorkout {
+  id       String @id @default(uuid())
+  gymId    String
+  gym      Gym    @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  title      String
+  category   String?          // STRENGTH|CARDIO|MOBILITY|YOGA|STRETCHING|RUNNING|CYCLING|HIIT|CROSSFIT|OTHER
+  difficulty DifficultyLevel?
+  tags       String[]         @default([])
+  notes      String?
+
+  isTemplate Boolean @default(false)
+  isFavorite Boolean @default(false)
+  isArchived Boolean @default(false)
+
+  scheduledDate DateTime?
+  dayOfWeek     String?
+  estMinutes    Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  exercises   PersonalWorkoutExercise[]
+  completions PersonalWorkoutCompletion[]
+
+  @@index([gymId])
+  @@index([memberId])
+  @@index([memberId, isArchived])
+  @@index([scheduledDate])
+}
+
+model PersonalWorkoutExercise {
+  id                String          @id @default(uuid())
+  personalWorkoutId String
+  workout           PersonalWorkout @relation(fields: [personalWorkoutId], references: [id], onDelete: Cascade)
+
+  exerciseId  String?
+  name        String
+  sets        Int     @default(3)
+  reps        String  @default("10")
+  restSeconds Int?
+  notes       String?
+  order       Int     @default(0)
+
+  @@index([personalWorkoutId])
+}
+
+model PersonalWorkoutCompletion {
+  id       String @id @default(uuid())
+  gymId    String
+  gym      Gym    @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  personalWorkoutId String
+  personalWorkout   PersonalWorkout @relation(fields: [personalWorkoutId], references: [id], onDelete: Cascade)
+
+  completedAt     DateTime @default(now())
+  durationMinutes Int?
+  notes           String?
+
+  @@index([gymId])
+  @@index([memberId])
+  @@index([personalWorkoutId])
+}
+
+model PersonalDiet {
+  id       String @id @default(uuid())
+  gymId    String
+  gym      Gym    @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  title    String
+  category String?
+  tags     String[] @default([])
+  notes    String?
+
+  isTemplate Boolean @default(false)
+  isFavorite Boolean @default(false)
+  isArchived Boolean @default(false)
+
+  dayOfWeek String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  meals PersonalMeal[]
+
+  @@index([gymId])
+  @@index([memberId])
+  @@index([memberId, isArchived])
+}
+
+model PersonalMeal {
+  id             String       @id @default(uuid())
+  personalDietId String
+  diet           PersonalDiet @relation(fields: [personalDietId], references: [id], onDelete: Cascade)
+
+  mealType MealType
+  title    String
+  calories Int?
+  protein  Float?
+  carbs    Float?
+  fats     Float?
+  time     String?
+  notes    String?
+  order    Int     @default(0)
+
+  @@index([personalDietId])
+}
+
+model WaterLog {
+  id       String @id @default(uuid())
+  gymId    String
+  gym      Gym    @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  date    DateTime
+  glasses Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([memberId, date])
+  @@index([gymId])
 }

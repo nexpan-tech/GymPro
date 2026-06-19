@@ -175,22 +175,70 @@ export class CommunicationService {
   }
 
   /** Member self thread: their conversation with their assigned trainer (auto-marks read). */
-  static async getMyThread(user: AuthUser) {
+  static async getMyThread(user: AuthUser, withStaffId?: string) {
     if (user.role !== "MEMBER") throw new AppError("Member-only route", 403);
     if (!user.gymId) throw new AppError("Gym context missing", 403);
     const member = await prisma.member.findFirst({ where: { userId: user.id, gymId: user.gymId } });
     if (!member) throw new AppError("Member profile not found", 404);
 
+    // Optionally scope to a single staff contact (trainer OR admin).
+    const where: Record<string, unknown> = { gymId: user.gymId, memberId: member.id };
+    if (withStaffId) where.trainerId = withStaffId;
+
     const messages = await prisma.trainerMessage.findMany({
-      where: { gymId: user.gymId, memberId: member.id },
+      where,
       include: { sender: { select: { id: true, name: true, role: true } } },
       orderBy: { createdAt: "asc" },
     });
     await prisma.trainerMessage.updateMany({
-      where: { gymId: user.gymId, memberId: member.id, senderId: { not: user.id }, isRead: false },
+      where: { ...where, senderId: { not: user.id }, isRead: false },
       data: { isRead: true, readAt: new Date() },
     });
-    return { memberId: member.id, trainerId: member.trainerId, messages };
+    // Read receipt → tell the staff contact their messages were seen.
+    if (withStaffId) emitToUser(withStaffId, SOCKET_EVENTS.CHAT_READ, { memberId: member.id, readerId: user.id });
+    return { memberId: member.id, trainerId: withStaffId ?? member.trainerId, messages };
+  }
+
+  /**
+   * The member's chattable staff: their assigned trainer + the gym's admins /
+   * receptionists. Each carries an unread count + last-message preview so the
+   * client can render a contacts list. (Phase F)
+   */
+  static async getContacts(user: AuthUser) {
+    if (user.role !== "MEMBER") throw new AppError("Member-only route", 403);
+    if (!user.gymId) throw new AppError("Gym context missing", 403);
+    const member = await prisma.member.findFirst({
+      where: { userId: user.id, gymId: user.gymId },
+      include: { trainer: { select: { id: true, name: true, role: true } } },
+    });
+    if (!member) throw new AppError("Member profile not found", 404);
+
+    const admins = await prisma.user.findMany({
+      where: { gymId: user.gymId, role: { in: ["ADMIN", "RECEPTIONIST"] }, isActive: true },
+      select: { id: true, name: true, role: true },
+    });
+
+    const seen = new Set<string>();
+    const staff = [...(member.trainer ? [member.trainer] : []), ...admins].filter(
+      (s) => s && !seen.has(s.id) && seen.add(s.id),
+    );
+
+    const contacts = await Promise.all(
+      staff.map(async (s) => {
+        const [unread, last] = await Promise.all([
+          prisma.trainerMessage.count({
+            where: { gymId: user.gymId!, memberId: member.id, trainerId: s.id, senderId: { not: user.id }, isRead: false },
+          }),
+          prisma.trainerMessage.findFirst({
+            where: { gymId: user.gymId!, memberId: member.id, trainerId: s.id },
+            orderBy: { createdAt: "desc" },
+            select: { message: true, createdAt: true },
+          }),
+        ]);
+        return { id: s.id, name: s.name, role: s.role, unread, lastMessage: last?.message ?? null, lastAt: last?.createdAt ?? null };
+      }),
+    );
+    return { memberId: member.id, contacts };
   }
 
   /** Trainer/admin thread list: assigned members with last message + unread count. */

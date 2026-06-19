@@ -6,6 +6,7 @@ const { prismaMock } = vi.hoisted(() => ({
     memberXP: { findMany: vi.fn() },
     challenge: { findFirst: vi.fn() },
     challengeParticipant: { findMany: vi.fn() },
+    pointTransaction: { groupBy: vi.fn() },
   },
 }))
 
@@ -50,5 +51,26 @@ describe('GamificationService.leaderboard (Stage 8)', () => {
 
   it('CHALLENGE scope requires a challengeId', async () => {
     await expect(GamificationService.leaderboard(user, 'CHALLENGE')).rejects.toThrow()
+  })
+
+  it('MONTH period ranks by points earned this month (PointTransaction ledger)', async () => {
+    // First member.findMany → scope members; second → name/level/streak lookup.
+    prismaMock.member.findMany
+      .mockResolvedValueOnce([{ id: 'm1' }, { id: 'm2' }])
+      .mockResolvedValueOnce([
+        { id: 'm1', user: { name: 'Asha' }, memberXp: { level: 3, streak: 5 } },
+        { id: 'm2', user: { name: 'Ben' }, memberXp: { level: 2, streak: 1 } },
+      ])
+    prismaMock.pointTransaction.groupBy.mockResolvedValue([
+      { memberId: 'm1', _sum: { points: 120 } },
+      { memberId: 'm2', _sum: { points: 60 } },
+    ])
+    const rows = await GamificationService.leaderboard(user, 'GYM', undefined, 20, 'MONTH')
+    expect(rows[0]).toMatchObject({ rank: 1, name: 'Asha', xp: 120, level: 3, streak: 5 })
+    expect(rows[1]).toMatchObject({ rank: 2, name: 'Ben', xp: 60 })
+    // It queried the ledger windowed to the current month.
+    const where = prismaMock.pointTransaction.groupBy.mock.calls[0][0].where
+    expect(where.gymId).toBe('g1')
+    expect(where.createdAt.gte).toBeInstanceOf(Date)
   })
 })

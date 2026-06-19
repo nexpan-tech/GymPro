@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { prismaMock, billingMock, retentionMock, gamificationMock } = vi.hoisted(() => ({
+const { prismaMock, billingMock, retentionMock, gamificationMock, revenueMock } = vi.hoisted(() => ({
   prismaMock: {
     deliveryLog: { findMany: vi.fn() },
     announcement: { count: vi.fn() },
@@ -9,12 +9,15 @@ const { prismaMock, billingMock, retentionMock, gamificationMock } = vi.hoisted(
   billingMock: { overview: vi.fn(), revenueTrend: vi.fn() },
   retentionMock: { getPlatformOverview: vi.fn() },
   gamificationMock: { getPlatformEngagement: vi.fn() },
+  revenueMock: { summary: vi.fn(), revenueTrend: vi.fn() },
 }))
 
 vi.mock('../../config/db', () => ({ prisma: prismaMock }))
 vi.mock('../../modules/billing/billing.analytics.service', () => ({ BillingAnalyticsService: billingMock }))
 vi.mock('../../modules/retention/retention.service', () => ({ RetentionService: retentionMock }))
 vi.mock('../../modules/gamification/gamification.service', () => ({ GamificationService: gamificationMock }))
+// Stage 12 — revenue (MRR/ARR/trend) now comes from the single source of truth.
+vi.mock('../../modules/super-admin/revenue.service', () => ({ RevenueSummaryService: revenueMock }))
 
 import { EnterpriseService } from '../../modules/enterprise/enterprise.service'
 
@@ -22,6 +25,8 @@ beforeEach(() => {
   vi.clearAllMocks()
   billingMock.overview.mockResolvedValue({ mrr: 50000, arr: 600000, activeGyms: 12, trialGyms: 3, churnRate: 4 })
   billingMock.revenueTrend.mockResolvedValue([{ month: '2026-06', revenue: 50000 }])
+  revenueMock.summary.mockResolvedValue({ mrr: 50000, arr: 600000, paid: 0, pending: 0, overdue: 0 })
+  revenueMock.revenueTrend.mockResolvedValue([{ month: '2026-06', revenue: 50000 }])
   retentionMock.getPlatformOverview.mockResolvedValue({
     totalGyms: 15, totalMembers: 800, atRiskMembers: 40, retentionRate: 82, churnRate: 5,
     leadConversionRate: 30, trialConversionRate: 45, perGym: [{ gymId: 'g1', name: 'Gym A', members: 100, atRisk: 5, leadConversionRate: 40 }],

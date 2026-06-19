@@ -13,8 +13,10 @@ const STAFF = [ROLES.ADMIN, ROLES.RECEPTIONIST];
 const CHAT = [ROLES.MEMBER, ROLES.TRAINER, ...STAFF];
 
 // ── Trainer-member chat ──
-// Member self thread (their assigned trainer). Static path before "/member/:id".
+// Member self thread (optionally scoped to one staff contact via ?with=staffId).
 router.get("/messages/me", roleMiddleware([ROLES.MEMBER]), CommunicationController.getMyThread);
+// Member's chattable staff (assigned trainer + gym admins) with unread counts.
+router.get("/contacts", roleMiddleware([ROLES.MEMBER]), CommunicationController.getContacts);
 // Trainer/admin thread list.
 router.get("/threads", roleMiddleware([ROLES.TRAINER, ...STAFF]), CommunicationController.getThreads);
 

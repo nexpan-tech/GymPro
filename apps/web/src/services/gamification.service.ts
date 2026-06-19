@@ -109,8 +109,14 @@ export const gamificationService = {
   // Member
   mySummary: async (memberId?: string): Promise<MemberSummary> =>
     unwrap<MemberSummary>(await api.get(`/gamification/me/summary${memberId ? `?memberId=${memberId}` : ""}`)),
-  leaderboard: async (scope: "GYM" | "BRANCH" | "CHALLENGE" = "GYM", refId?: string): Promise<LeaderboardRow[]> =>
-    unwrap<LeaderboardRow[]>(await api.get(`/gamification/leaderboard?scope=${scope}${refId ? `&refId=${refId}` : ""}`)) ?? [],
+  leaderboard: async (
+    scope: "GYM" | "BRANCH" | "CHALLENGE" = "GYM",
+    refId?: string,
+    period: "ALL" | "MONTH" = "ALL",
+  ): Promise<LeaderboardRow[]> =>
+    unwrap<LeaderboardRow[]>(
+      await api.get(`/gamification/leaderboard?scope=${scope}&period=${period}${refId ? `&refId=${refId}` : ""}`),
+    ) ?? [],
   analytics: async (): Promise<EngagementAnalytics> =>
     unwrap<EngagementAnalytics>(await api.get("/gamification/analytics")),
   trainerMembers: async (): Promise<TrainerMemberRow[]> =>

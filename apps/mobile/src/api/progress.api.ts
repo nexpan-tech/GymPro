@@ -73,6 +73,15 @@ export async function getMySummary(): Promise<ProgressSummary> {
 export async function getMyGoals(): Promise<ProgressGoal[]> {
   return unwrapListResponse<ProgressGoal>(await apiClient.get('/progress/my/goals'));
 }
+export async function createMyGoal(data: { title: string; targetValue: number; metric?: string; unit?: string; startValue?: number; currentValue?: number }): Promise<ProgressGoal> {
+  return unwrapApiResponse<ProgressGoal>(await apiClient.post('/progress/my/goals', data));
+}
+export async function updateMyGoal(goalId: string, data: Record<string, unknown>): Promise<ProgressGoal> {
+  return unwrapApiResponse<ProgressGoal>(await apiClient.patch(`/progress/my/goals/${goalId}`, data));
+}
+export async function deleteMyGoal(goalId: string): Promise<void> {
+  await apiClient.delete(`/progress/my/goals/${goalId}`);
+}
 export async function createMyEntry(data: CreateProgressEntry): Promise<ProgressEntry> {
   return unwrapApiResponse<ProgressEntry>(await apiClient.post('/progress/my', data));
 }

@@ -2,6 +2,7 @@ import { Server } from "socket.io";
 import { Server as HttpServer } from "http";
 import { verifySocketToken, SocketUser } from "./socket-auth";
 import { SOCKET_EVENTS } from "./socket-events";
+import { addConnection, removeConnection, setStatus, getMany, type PresenceStatus } from "./presence";
 import { createAdapter } from "@socket.io/redis-adapter";
 import { createRedisConnection } from "../config/redis";
 import { instrumentSocketWithMetrics } from "../utils/socket-metrics";
@@ -79,8 +80,39 @@ export function initSocket(server: HttpServer) {
       gymId: user.gymId,
     });
 
+    // ── Phase L — presence ────────────────────────────────────────────────────
+    const status = addConnection(user.id, user.gymId ?? null);
+    broadcastPresence(user.gymId ?? null, user.id, status);
+
+    // Client signals active/away (e.g. on app blur/focus or inactivity timer).
+    socket.on("presence:set", (raw: unknown) => {
+      const next = raw === "away" ? "away" : "online";
+      const s = setStatus(user.id, next);
+      broadcastPresence(user.gymId ?? null, user.id, s);
+    });
+
+    // Client asks for the current status of a set of users (e.g. chat contacts).
+    socket.on("presence:get", (raw: unknown, ack?: (res: Record<string, PresenceStatus>) => void) => {
+      const ids = Array.isArray(raw) ? raw.filter((x): x is string => typeof x === "string") : [];
+      const map = getMany(ids);
+      if (typeof ack === "function") ack(map);
+      else socket.emit("presence:state", map);
+    });
+
+    // ── Phase L — typing indicators (realtime only, never persisted) ──────────
+    socket.on("chat:typing", (raw: unknown) => {
+      const p = (raw ?? {}) as { toUserId?: string; memberId?: string; isTyping?: boolean };
+      if (!p.toUserId) return;
+      emitToUser(p.toUserId, SOCKET_EVENTS.CHAT_TYPING, {
+        fromUserId: user.id,
+        memberId: p.memberId ?? null,
+        isTyping: !!p.isTyping,
+      });
+    });
+
     socket.on("disconnect", () => {
-      console.log(`Socket disconnected: ${user.id}`);
+      const s = removeConnection(user.id);
+      broadcastPresence(user.gymId ?? null, user.id, s);
     });
   });
 
@@ -107,6 +139,13 @@ export function emitNotificationToUser(userId: string, payload: any) {
 
 export function emitDashboardUpdate(gymId: string, payload: any) {
   emitToGym(gymId, SOCKET_EVENTS.DASHBOARD_UPDATE, payload);
+}
+
+/** Phase L — fan a presence change out to everyone in the user's gym. */
+export function broadcastPresence(gymId: string | null, userId: string, status: string) {
+  const payload = { userId, status };
+  if (gymId) emitToGym(gymId, SOCKET_EVENTS.PRESENCE_UPDATE, payload);
+  else io?.to(`user:${userId}`).emit(SOCKET_EVENTS.PRESENCE_UPDATE, payload);
 }
 
 // ── Stage 9 — communication emit helpers ──────────────────────────────────────

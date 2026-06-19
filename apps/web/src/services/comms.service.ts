@@ -59,6 +59,14 @@ export interface ChatMessage {
   createdAt: string;
   sender?: { id: string; name: string; role: string };
 }
+export interface ChatContact {
+  id: string;
+  name: string;
+  role: string;
+  unread: number;
+  lastMessage: string | null;
+  lastAt: string | null;
+}
 
 function unwrap<T>(res: { data: { data?: T } | T }): T {
   return ((res.data as { data?: T }).data ?? res.data) as T;
@@ -93,9 +101,13 @@ export const chatService = {
   threads: async (): Promise<ChatThread[]> => unwrap<ChatThread[]>(await api.get("/communication/threads")) ?? [],
   memberMessages: async (memberId: string): Promise<ChatMessage[]> =>
     unwrap<ChatMessage[]>(await api.get(`/communication/messages/member/${memberId}`)) ?? [],
-  myThread: async (): Promise<{ memberId: string; trainerId: string | null; messages: ChatMessage[] }> =>
-    unwrap(await api.get("/communication/messages/me")),
-  send: async (payload: { memberId: string; message: string }): Promise<ChatMessage> =>
+  // Member's chattable staff (trainer + admins) with unread counts. (Phase F)
+  contacts: async (): Promise<{ memberId: string; contacts: ChatContact[] }> =>
+    unwrap(await api.get("/communication/contacts")),
+  // Optionally scope to one staff contact via `?with=`.
+  myThread: async (withStaffId?: string): Promise<{ memberId: string; trainerId: string | null; messages: ChatMessage[] }> =>
+    unwrap(await api.get(`/communication/messages/me${withStaffId ? `?with=${withStaffId}` : ""}`)),
+  send: async (payload: { memberId: string; message: string; trainerId?: string }): Promise<ChatMessage> =>
     unwrap<ChatMessage>(await api.post("/communication/messages", payload)),
   markRead: async (memberId: string): Promise<unknown> => unwrap(await api.patch(`/communication/messages/member/${memberId}/read`, {})),
 

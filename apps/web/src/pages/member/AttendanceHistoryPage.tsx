@@ -1,18 +1,24 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarCheck } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { CalendarCheck, Flame, Trophy, CalendarRange, Percent } from "lucide-react";
 import PageHeader from "@/components/common/PageHeader";
 import { Card, CardContent } from "@/components/ui/Card";
 import { attendanceService } from "@/services/attendance.service";
+import { memberService, type MemberStreak } from "@/services/member.service";
 import type { Attendance } from "@/types/attendance.types";
 
 export default function AttendanceHistoryPage() {
   const [records, setRecords] = useState<Attendance[]>([]);
+  const [streak, setStreak] = useState<MemberStreak | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadAttendance = useCallback(async () => {
     try {
-      const data = await attendanceService.getMyAttendance();
+      const [data, streakData] = await Promise.all([
+        attendanceService.getMyAttendance(),
+        memberService.getStreak().catch(() => null),
+      ]);
       setRecords(Array.isArray(data) ? data : []);
+      setStreak(streakData);
     } catch (error) {
       console.error("Failed to load attendance", error);
       setRecords([]);
@@ -25,21 +31,16 @@ export default function AttendanceHistoryPage() {
     void loadAttendance();
   }, [loadAttendance]);
 
-  const thisMonthCount = useMemo(() => {
-    const now = new Date();
-
-    return records.filter((record) => {
-      const date = new Date(record.date);
-      return (
-        date.getMonth() === now.getMonth() &&
-        date.getFullYear() === now.getFullYear()
-      );
-    }).length;
-  }, [records]);
-
   if (loading) {
     return <div className="text-(--text-secondary)">Loading attendance...</div>;
   }
+
+  const streakCards = [
+    { label: "Current Streak", value: streak?.current ?? 0, suffix: "days", Icon: Flame, accent: true },
+    { label: "Best Streak", value: streak?.best ?? 0, suffix: "days", Icon: Trophy, accent: false },
+    { label: "Monthly Streak", value: streak?.thisMonth.streak ?? 0, suffix: "days", Icon: CalendarRange, accent: false },
+    { label: "Attendance Rate", value: streak?.thisMonth.consistency ?? 0, suffix: "%", Icon: Percent, accent: false },
+  ];
 
   return (
     <div className="space-y-6">
@@ -48,34 +49,23 @@ export default function AttendanceHistoryPage() {
         description="View your gym check-ins and monthly consistency."
       />
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card variant="premium" padding="md">
-          <p className="text-sm font-semibold text-(--text-secondary)">
-            This Month
-          </p>
-          <h2 className="mt-2 text-3xl font-black text-(--text-primary)">
-            {thisMonthCount}
-          </h2>
-        </Card>
-
-        <Card variant="glass" padding="md">
-          <p className="text-sm font-semibold text-(--text-secondary)">
-            Total Check-ins
-          </p>
-          <h2 className="mt-2 text-3xl font-black text-(--text-primary)">
-            {records.length}
-          </h2>
-        </Card>
-
-        <Card variant="glass" padding="md">
-          <p className="text-sm font-semibold text-(--text-secondary)">
-            Status
-          </p>
-          <h2 className="mt-2 text-3xl font-black text-muted-foreground">
-            Active
-          </h2>
-        </Card>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {streakCards.map(({ label, value, suffix, Icon, accent }) => (
+          <Card key={label} variant={accent ? "premium" : "glass"} padding="md">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-(--text-secondary)">{label}</p>
+              <Icon className={`h-4 w-4 ${accent ? "text-(--flame)" : "text-(--text-muted)"}`} />
+            </div>
+            <h2 className="mt-2 text-3xl font-black text-(--text-primary)">
+              {value}
+              <span className="ml-1 text-base font-semibold text-(--text-secondary)">{suffix}</span>
+            </h2>
+          </Card>
+        ))}
       </div>
+      <p className="-mt-2 text-xs text-(--text-muted)">
+        Streaks count operational days only — Sundays don't break your streak.
+      </p>
 
       <Card variant="glass">
         <CardContent className="p-0">

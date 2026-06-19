@@ -5,6 +5,8 @@ export async function sendEmail(input: {
   to: string;
   subject: string;
   html: string;
+  /** Optional file attachments (e.g. invoice PDFs). */
+  attachments?: { filename: string; content: Buffer | string; contentType?: string }[];
 }) {
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
     logger.warn("SMTP not configured. Email skipped.", {
@@ -22,6 +24,7 @@ export async function sendEmail(input: {
     to: input.to,
     subject: input.subject,
     html: input.html,
+    ...(input.attachments ? { attachments: input.attachments } : {}),
   });
 
   logger.info("Email sent", {

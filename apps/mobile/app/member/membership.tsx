@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { CheckCircle2, Crown, Dumbbell, Salad, Sparkles, TrendingUp, Trophy } from "lucide-react-native";
+import { CheckCircle2, Crown, Dumbbell, Salad, Snowflake, Sparkles, TrendingUp, Trophy } from "lucide-react-native";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 
@@ -96,6 +96,8 @@ export default function MembershipScreen() {
   const isActive = status === "ACTIVE";
   const days = current?.daysRemaining ?? 0;
   const remaining = 1 - periodProgress(current);
+  // Every membership (current + past) that has a recorded freeze window.
+  const freezeHistory = [...(current ? [current] : []), ...history].filter((m) => m.freezeStartDate);
 
   const confidence = !current
     ? "Choose a plan to unlock everything GymPro has to offer."
@@ -248,28 +250,43 @@ export default function MembershipScreen() {
         </AppCard>
       ) : null}
 
+      {/* Freeze history — every membership that was frozen */}
+      {freezeHistory.length > 0 && (
+        <View style={{ marginTop: 4, gap: 12 }}>
+          <AppText variant="heading">Freeze history</AppText>
+          {freezeHistory.map((m) => (
+            <AppCard key={`fz-${m.id}`}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <Snowflake color={c.primary} size={16} />
+                <AppText variant="bodyStrong" style={{ flex: 1 }}>{planLabel(m)}</AppText>
+              </View>
+              <Row label="Frozen" value={`${fmt(m.freezeStartDate ?? undefined)} → ${fmt(m.freezeEndDate ?? undefined)}`} />
+            </AppCard>
+          ))}
+        </View>
+      )}
+
+      {/* Membership history timeline */}
       {history.length > 0 && (
         <View style={{ marginTop: 4, gap: 12 }}>
           <AppText variant="heading">History</AppText>
-          {history.map((m) => (
-            <AppCard key={m.id}>
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: 8,
-                }}
-              >
-                <AppText variant="bodyStrong">{planLabel(m)}</AppText>
-                <AppBadge
-                  label={m.effectiveStatus ?? m.status ?? "—"}
-                  tone={toneFor(m.effectiveStatus ?? m.status)}
-                />
+          {history.map((m, i) => (
+            <View key={m.id} style={{ flexDirection: "row", gap: 12 }}>
+              {/* timeline rail */}
+              <View style={{ alignItems: "center", width: 14 }}>
+                <View style={{ height: 12, width: 12, borderRadius: 6, backgroundColor: c.primary, marginTop: 6 }} />
+                {i < history.length - 1 ? <View style={{ flex: 1, width: 2, backgroundColor: c.border, marginTop: 2 }} /> : null}
               </View>
-              <Row label="Period" value={`${fmt(m.startDate)} → ${fmt(m.endDate)}`} />
-              <Row label="Amount" value={`₹${m.amount ?? 0}`} />
-            </AppCard>
+              <AppCard style={{ flex: 1 }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <AppText variant="bodyStrong">{planLabel(m)}</AppText>
+                  <AppBadge label={m.effectiveStatus ?? m.status ?? "—"} tone={toneFor(m.effectiveStatus ?? m.status)} />
+                </View>
+                <Row label="Period" value={`${fmt(m.startDate)} → ${fmt(m.endDate)}`} />
+                <Row label="Amount" value={`₹${m.amount ?? 0}`} />
+                <Row label="Payment" value={m.paymentStatus ?? "—"} />
+              </AppCard>
+            </View>
           ))}
         </View>
       )}

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { BillingService } from "./billing.service";
+import { SaaSBillingService } from "../super-admin/saas-billing.service";
 
 function requireAuth(req: Request, res: Response) {
   if (!req.user) {
@@ -11,6 +12,24 @@ function requireAuth(req: Request, res: Response) {
 }
 
 export class BillingController {
+  /** A gym admin's own per-active-member SaaS invoices. */
+  static async mySaaSInvoices(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const data = await SaaSBillingService.listInvoices({ gymId: user.gymId ?? undefined });
+    return res.json({ success: true, data });
+  }
+
+  /** Download a gym admin's own SaaS invoice PDF (scoped to their gym). */
+  static async mySaaSInvoicePdf(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const { buffer, filename } = await SaaSBillingService.getInvoicePdf(req.params.id as string, user.id);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    return res.send(buffer);
+  }
+
   static async createPlan(req: Request, res: Response) {
     const data = await BillingService.createPlan(req.body);
 

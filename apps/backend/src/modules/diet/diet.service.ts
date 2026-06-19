@@ -25,6 +25,24 @@ function dayKey(date: Date) {
   return startOfDay(date).toISOString().slice(0, 10);
 }
 
+// Canonical weekday vocabulary used across diet (lowercase English day names),
+// matching DietMeal.dayOfWeek and the legacy monday..sunday plan fields.
+const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const;
+
+function serverWeekday(date = new Date()): string {
+  return WEEKDAYS[date.getDay()];
+}
+
+/** Accept a client-supplied weekday (any case / 3-letter form) → canonical name, or null. */
+function normalizeWeekday(day?: string): string | null {
+  if (!day) return null;
+  const d = day.trim().toLowerCase();
+  const exact = WEEKDAYS.find((w) => w === d);
+  if (exact) return exact;
+  const abbrev = WEEKDAYS.find((w) => w.slice(0, 3) === d.slice(0, 3));
+  return abbrev ?? null;
+}
+
 /**
  * Builds the last `days` calendar-day buckets (oldest → newest, ending today)
  * with a completion count per day, plus the current consecutive-day streak.
@@ -184,6 +202,92 @@ export class DietService {
         member: { include: { user: true, trainer: true } },
       },
     });
+  }
+
+  /**
+   * The logged-in member's full Mon–Sun diet week — each day with its meals
+   * (breakfast/lunch/dinner/snacks) and macro totals. Source = TRAINER for now;
+   * PERSONAL diets land in a later phase. (Phase D — does not touch /diet/my/today.)
+   */
+  static async getMyWeek(user: AuthUser) {
+    const gymId = requireGym(user);
+    const member = await prisma.member.findFirst({ where: { userId: user.id, gymId } });
+    if (!member) throw new AppError("Member profile not found", 404);
+
+    const plan = await prisma.dietPlan.findFirst({
+      where: { gymId, memberId: member.id },
+      include: { meals: { orderBy: [{ mealType: "asc" }, { time: "asc" }] } },
+    });
+
+    const ORDER = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+    const today = serverWeekday();
+
+    const days = ORDER.map((day) => {
+      const meals = (plan?.meals ?? []).filter((m) => (m.dayOfWeek ?? "").toLowerCase() === day);
+      const dayPlanText = (plan as Record<string, unknown> | null)?.[day] as string | null | undefined;
+      const totals = meals.reduce(
+        (a, m) => ({
+          kcal: a.kcal + (m.calories ?? 0),
+          protein: a.protein + (m.protein ?? 0),
+          carbs: a.carbs + (m.carbs ?? 0),
+          fats: a.fats + (m.fats ?? 0),
+        }),
+        { kcal: 0, protein: 0, carbs: 0, fats: 0 },
+      );
+      return {
+        day,
+        isToday: day === today,
+        mealCount: meals.length,
+        meals,
+        totals,
+        dayPlanText: dayPlanText ?? null,
+        source: meals.length > 0 || dayPlanText ? "TRAINER" : null,
+      };
+    });
+
+    return { planId: plan?.id ?? null, goal: plan?.goal ?? null, days };
+  }
+
+  /**
+   * The logged-in member's meals for a single day of the week — the "today"
+   * view (#4/#8). The client passes its LOCAL weekday via `day` (lowercase, e.g.
+   * "monday") so the view matches the member's local date regardless of server
+   * timezone; it falls back to the server's weekday. Returns both the structured
+   * DietMeal rows for that day and the legacy day-string field, plus the full
+   * week's day list so the client can offer history/upcoming navigation.
+   */
+  static async getMyToday(user: AuthUser, day?: string) {
+    const gymId = requireGym(user);
+
+    const member = await prisma.member.findFirst({
+      where: { userId: user.id, gymId },
+    });
+    if (!member) {
+      throw new AppError("Member profile not found", 404);
+    }
+
+    const plan = await prisma.dietPlan.findFirst({
+      where: { gymId, memberId: member.id },
+      include: { meals: { orderBy: [{ mealType: "asc" }, { time: "asc" }] } },
+    });
+
+    const today = normalizeWeekday(day) ?? serverWeekday();
+
+    if (!plan) {
+      return { day: today, plan: null, meals: [], dayPlanText: null, mealCount: 0, goal: null };
+    }
+
+    const meals = plan.meals.filter((m) => (m.dayOfWeek ?? "").toLowerCase() === today);
+    const dayPlanText = (plan as Record<string, unknown>)[today] as string | null | undefined;
+
+    return {
+      day: today,
+      planId: plan.id,
+      goal: plan.goal ?? null,
+      meals,
+      dayPlanText: dayPlanText ?? null,
+      mealCount: meals.length,
+    };
   }
 
   static async update(

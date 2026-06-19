@@ -17,6 +17,7 @@ router.get("/my/monthly-report", asyncHandler(ProgressController.getMonthlyRepor
 router.get("/my/goals", asyncHandler(ProgressController.listGoals));
 router.post("/my/goals", asyncHandler(ProgressController.createGoal));
 router.patch("/my/goals/:goalId", asyncHandler(ProgressController.updateGoal));
+router.delete("/my/goals/:goalId", asyncHandler(ProgressController.deleteGoal));
 
 // ── Trainer / Admin (specific member) ────────────────────────────────────────
 router.get("/member/:memberId", asyncHandler(ProgressController.getTimeline));
@@ -28,6 +29,7 @@ router.get("/member/:memberId/monthly-report", asyncHandler(ProgressController.g
 router.get("/member/:memberId/goals", asyncHandler(ProgressController.listGoals));
 router.post("/member/:memberId/goals", asyncHandler(ProgressController.createGoal));
 router.patch("/member/:memberId/goals/:goalId", asyncHandler(ProgressController.updateGoal));
+router.delete("/member/:memberId/goals/:goalId", asyncHandler(ProgressController.deleteGoal));
 
 // ── Entry delete (access enforced via the entry's member) ────────────────────
 router.delete("/entries/:id", asyncHandler(ProgressController.deleteEntry));

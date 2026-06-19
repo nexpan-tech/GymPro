@@ -1,9 +1,9 @@
 import { Tabs } from "expo-router";
 import {
-  BarChart2,
   Dumbbell,
   Home,
   Salad,
+  Trophy,
   User,
 } from "lucide-react-native";
 
@@ -55,12 +55,10 @@ export default function MemberTabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="progress"
+        name="leaderboard"
         options={{
-          title: "Progress",
-          tabBarIcon: ({ color, size }) => (
-            <BarChart2 color={color} size={size} />
-          ),
+          title: "Leaderboard",
+          tabBarIcon: ({ color, size }) => <Trophy color={color} size={size} />,
         }}
       />
       <Tabs.Screen
@@ -86,6 +84,11 @@ export default function MemberTabsLayout() {
       <Tabs.Screen name="payments" options={{ href: null }} />
       <Tabs.Screen name="invoices" options={{ href: null }} />
       <Tabs.Screen name="notifications" options={{ href: null }} />
+      {/* Phase E — Progress, Goals & Chat are reachable from Home / links, not the tab bar. */}
+      <Tabs.Screen name="progress" options={{ href: null }} />
+      <Tabs.Screen name="goals" options={{ href: null }} />
+      <Tabs.Screen name="personal-workouts" options={{ href: null }} />
+      <Tabs.Screen name="personal-diets" options={{ href: null }} />
     </Tabs>
   );
 }

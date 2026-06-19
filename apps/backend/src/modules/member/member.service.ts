@@ -3,6 +3,7 @@ import { Role } from "@prisma/client";
 import { hashPassword } from "../../utils/password";
 import { AppError } from "../../utils/response";
 import { requireGym } from "../../utils/tenant";
+import { computeAttendanceStreaks } from "../attendance/attendance-streak";
 import {
   CreateMemberInput,
   UpdateMemberInput,
@@ -149,6 +150,31 @@ export class MemberService {
     }
 
     return member;
+  }
+
+  /**
+   * The logged-in member's attendance streak summary — derived live from
+   * Attendance rows (the single source of truth) using the shared operational-
+   * day engine. Sundays (and any future configured closed days) never break a
+   * streak. Returns current / best / monthly / yearly figures.
+   */
+  static async getStreak(user: AuthUser) {
+    const gymId = requireGym(user);
+
+    const member = await prisma.member.findFirst({
+      where: { userId: user.id, gymId },
+      select: { id: true },
+    });
+    if (!member) {
+      throw new AppError("Member profile not found", 404);
+    }
+
+    const rows = await prisma.attendance.findMany({
+      where: { gymId, memberId: member.id },
+      select: { date: true },
+    });
+
+    return computeAttendanceStreaks(rows.map((r) => r.date));
   }
 
   static async getById(user: AuthUser, id: string) {

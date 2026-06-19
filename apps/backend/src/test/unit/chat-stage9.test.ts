@@ -3,7 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const { prismaMock, socketMock } = vi.hoisted(() => ({
   prismaMock: {
     member: { findFirst: vi.fn() },
-    trainerMessage: { create: vi.fn(), findMany: vi.fn(), updateMany: vi.fn() },
+    user: { findMany: vi.fn() },
+    trainerMessage: { create: vi.fn(), findMany: vi.fn(), updateMany: vi.fn(), count: vi.fn(), findFirst: vi.fn() },
   },
   socketMock: { emitChatMessage: vi.fn(), emitToUser: vi.fn(), emitToStaff: vi.fn() },
 }))
@@ -48,5 +49,28 @@ describe('Trainer-member chat (Stage 9)', () => {
     // marks messages NOT sent by the caller.
     expect(prismaMock.trainerMessage.updateMany.mock.calls[0][0].where.senderId).toEqual({ not: 'mu1' })
     expect(socketMock.emitToUser).toHaveBeenCalled()
+  })
+
+  it('getContacts returns the assigned trainer + gym admins with unread counts (Phase F)', async () => {
+    prismaMock.member.findFirst.mockResolvedValue({ id: 'm1', gymId: 'g1', userId: 'mu1', trainer: { id: 'tr1', name: 'Coach', role: 'TRAINER' } })
+    prismaMock.user.findMany.mockResolvedValue([{ id: 'ad1', name: 'Admin A', role: 'ADMIN' }])
+    prismaMock.trainerMessage.count.mockResolvedValue(2)
+    prismaMock.trainerMessage.findFirst.mockResolvedValue({ message: 'hey', createdAt: new Date() })
+
+    const res = await CommunicationService.getContacts(member)
+    expect(res.contacts.map((c: any) => c.id)).toEqual(['tr1', 'ad1'])
+    expect(res.contacts[0]).toMatchObject({ role: 'TRAINER', unread: 2, lastMessage: 'hey' })
+    // Admins fetched for the caller's gym only.
+    expect(prismaMock.user.findMany.mock.calls[0][0].where.gymId).toBe('g1')
+  })
+
+  it('getMyThread can scope to a single staff contact via withStaffId (Phase F)', async () => {
+    prismaMock.member.findFirst.mockResolvedValue({ id: 'm1', gymId: 'g1', userId: 'mu1', trainerId: 'tr1' })
+    prismaMock.trainerMessage.findMany.mockResolvedValue([])
+    prismaMock.trainerMessage.updateMany.mockResolvedValue({ count: 0 })
+    await CommunicationService.getMyThread(member, 'ad1')
+    expect(prismaMock.trainerMessage.findMany.mock.calls[0][0].where.trainerId).toBe('ad1')
+    // Read receipt emitted to that staff contact.
+    expect(socketMock.emitToUser).toHaveBeenCalledWith('ad1', expect.anything(), expect.objectContaining({ memberId: 'm1' }))
   })
 })

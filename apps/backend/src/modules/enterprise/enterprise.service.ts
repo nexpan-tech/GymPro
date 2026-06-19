@@ -2,6 +2,7 @@ import { prisma } from "../../config/db";
 import { BillingAnalyticsService } from "../billing/billing.analytics.service";
 import { RetentionService } from "../retention/retention.service";
 import { GamificationService } from "../gamification/gamification.service";
+import { RevenueSummaryService } from "../super-admin/revenue.service";
 
 /**
  * Stage 10 — unified ENTERPRISE analytics aggregator (SUPER_ADMIN, platform-wide).
@@ -11,19 +12,21 @@ import { GamificationService } from "../gamification/gamification.service";
 export class EnterpriseService {
   static async overview() {
     const now = new Date();
-    const [billing, retention, engagement, revenueTrend, comms, counts] = await Promise.all([
-      BillingAnalyticsService.overview(), // mrr/arr/activeGyms/trialGyms/churnRate
+    const [billing, retention, engagement, revSummary, revenueTrend, comms, counts] = await Promise.all([
+      BillingAnalyticsService.overview(), // activeGyms/trialGyms/churnRate (subscription-based)
       RetentionService.getPlatformOverview(), // retention/churn/lead+trial conversion/perGym
       GamificationService.getPlatformEngagement(), // challenges/redemptions/referrals/points
-      BillingAnalyticsService.revenueTrend(6),
+      RevenueSummaryService.summary(), // SSOT — per-active-member MRR/ARR
+      RevenueSummaryService.revenueTrend(6), // SSOT — paid SaaS invoice revenue/month
       this.communicationRollup(),
       this.platformCounts(now),
     ]);
 
     return {
       revenue: {
-        mrr: billing.mrr,
-        arr: billing.arr,
+        // Single source of truth: same MRR/ARR the Dashboard + Billing show.
+        mrr: revSummary.mrr,
+        arr: revSummary.arr,
         churnRate: billing.churnRate,
         revenueTrend,
       },

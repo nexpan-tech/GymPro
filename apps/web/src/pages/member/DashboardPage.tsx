@@ -119,19 +119,6 @@ function buildProgressData(attendance: Attendance[], member: Member | null) {
   return data;
 }
 
-/** Count non-empty day slots in a workout/diet plan */
-function countActiveDays(plan: Record<string, string | null | undefined>): number {
-  const days = [
-    "monday",
-    "tuesday",
-    "wednesday",
-    "thursday",
-    "friday",
-    "saturday",
-    "sunday",
-  ];
-  return days.filter((d) => !!plan[d]).length;
-}
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 
@@ -329,7 +316,7 @@ function TodayWorkoutCard({
                 variant="primary"
                 fullWidth
                 iconRight={<ArrowRight />}
-                onClick={() => navigate("/member/workout")}
+                onClick={() => navigate("/member/workout-plan")}
               >
                 Start Workout
               </Button>
@@ -344,7 +331,7 @@ function TodayWorkoutCard({
               <Button
                 variant="secondary"
                 fullWidth
-                onClick={() => navigate("/member/workout")}
+                onClick={() => navigate("/member/workout-plan")}
               >
                 View Plans
               </Button>
@@ -403,7 +390,7 @@ function TodayDietCard({
                 variant="success"
                 fullWidth
                 iconRight={<ArrowRight />}
-                onClick={() => navigate("/member/diet")}
+                onClick={() => navigate("/member/diet-plan")}
               >
                 View Diet Plan
               </Button>
@@ -418,7 +405,7 @@ function TodayDietCard({
               <Button
                 variant="secondary"
                 fullWidth
-                onClick={() => navigate("/member/diet")}
+                onClick={() => navigate("/member/diet-plan")}
               >
                 Explore Nutrition
               </Button>
@@ -1066,15 +1053,15 @@ export default function MemberDashboardPage() {
     enabled: !!memberId,
   });
 
-  const { data: workoutPlan, isLoading: workoutLoading } = useQuery({
-    queryKey: ["member-workout", memberData?.id],
-    queryFn: () => workoutService.getByMember(memberData!.id),
+  const { data: todayWorkout, isLoading: workoutLoading } = useQuery({
+    queryKey: ["member-workout-today", memberData?.id],
+    queryFn: () => workoutService.getToday(),
     enabled: !!memberData?.id,
   });
 
-  const { data: dietPlan, isLoading: dietLoading } = useQuery({
-    queryKey: ["member-diet", memberData?.id],
-    queryFn: () => dietService.getByMember(memberData!.id),
+  const { data: dietToday, isLoading: dietLoading } = useQuery({
+    queryKey: ["member-diet-today", memberData?.id],
+    queryFn: () => dietService.getMyToday(),
     enabled: !!memberData?.id,
   });
 
@@ -1095,19 +1082,25 @@ export default function MemberDashboardPage() {
     [attendance, memberData]
   );
 
-  const workoutCardData = workoutPlan
+  // Phase 1 — today's assigned workout is the single source of truth, so the
+  // card can never show the wrong day.
+  const todaysAssignment = todayWorkout?.assignments?.[0] ?? null;
+  const workoutExerciseCount = todaysAssignment?.workoutPlan.exercises?.length ?? 0;
+  const workoutCardData = todaysAssignment
     ? {
-        goal: workoutPlan.goal ?? null,
-        exerciseCount: countActiveDays(workoutPlan as unknown as Record<string, string | null | undefined>),
-        duration: "45–60 min",
+        goal: todaysAssignment.workoutPlan.title ?? null,
+        exerciseCount: workoutExerciseCount,
+        duration: `~${Math.max(15, workoutExerciseCount * 6)} min`,
       }
     : null;
 
-  const dietCardData = dietPlan
+  // Phase 2 — today's meals only (day-of-week filtered on the backend).
+  const dietKcal = (dietToday?.meals ?? []).reduce((s, m) => s + (m.calories ?? 0), 0);
+  const dietCardData = dietToday && dietToday.mealCount > 0
     ? {
-        goal: dietPlan.goal ?? null,
-        mealCount: countActiveDays(dietPlan as unknown as Record<string, string | null | undefined>),
-        calories: "~2,200 kcal",
+        goal: dietToday.goal ?? null,
+        mealCount: dietToday.mealCount,
+        calories: dietKcal > 0 ? `~${dietKcal.toLocaleString()} kcal` : "Today's meals",
       }
     : null;
 

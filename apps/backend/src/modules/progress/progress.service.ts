@@ -384,6 +384,20 @@ export class ProgressService {
     });
   }
 
+  static async deleteGoal(user: AuthUser, memberId: string, goalId: string) {
+    await this.getMemberForAccess(user, memberId);
+    if (user.role === "RECEPTIONIST") {
+      throw new AppError("Receptionists cannot delete goals", 403);
+    }
+    const goal = await prisma.goal.findFirst({
+      where: { id: goalId, gymId: user.gymId!, memberId },
+    });
+    if (!goal) throw new AppError("Goal not found", 404);
+
+    await prisma.goal.delete({ where: { id: goalId } });
+    return { id: goalId };
+  }
+
   // ── Self (MEMBER) wrappers ──────────────────────────────────────────────────
   static async myMemberId(user: AuthUser) {
     return (await this.resolveMyMember(user)).id;

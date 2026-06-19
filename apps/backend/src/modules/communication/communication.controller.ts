@@ -87,7 +87,15 @@ export class CommunicationController {
   static async getMyThread(req: Request, res: Response) {
     const user = requireAuth(req, res);
     if (!user) return;
-    const data = await CommunicationService.getMyThread(user);
+    const withStaffId = typeof req.query.with === "string" ? req.query.with : undefined;
+    const data = await CommunicationService.getMyThread(user, withStaffId);
+    return res.json({ success: true, data });
+  }
+
+  static async getContacts(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const data = await CommunicationService.getContacts(user);
     return res.json({ success: true, data });
   }
 
