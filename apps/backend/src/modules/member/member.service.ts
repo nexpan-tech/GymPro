@@ -4,6 +4,8 @@ import { hashPassword } from "../../utils/password";
 import { AppError } from "../../utils/response";
 import { requireGym } from "../../utils/tenant";
 import { computeAttendanceStreaks } from "../attendance/attendance-streak";
+import { LicenseService } from "../license/license.service";
+import { ReferralService } from "../referral/referral.service";
 import {
   CreateMemberInput,
   UpdateMemberInput,
@@ -59,6 +61,11 @@ async function assertTrainerInGym(gymId: string, trainerId?: string | null) {
 
 export class MemberService {
   static async create(gymId: string, data: CreateMemberInput) {
+    // SaaS license enforcement: a new member is created ACTIVE (Member.status
+    // default), so it consumes a license slot. Block at capacity. No-op for
+    // gyms without a capped license (backward compatible).
+    await LicenseService.assertCapacity(gymId);
+
     const existingUser = await prisma.user.findUnique({
       where: { email: data.email },
     });
@@ -70,9 +77,15 @@ export class MemberService {
     await assertBranchInGym(gymId, data.branchId);
     await assertTrainerInGym(gymId, data.trainerId);
 
+    // Validate any referral code BEFORE creating the member, so an invalid /
+    // self / duplicate / cross-gym referral fails cleanly with no partial state.
+    const referrer = data.referralCode
+      ? await ReferralService.resolveReferrerForRegistration(gymId, data.referralCode, data.email)
+      : null;
+
     const passwordHash = await hashPassword(data.password);
 
-    return prisma.$transaction(async (tx) => {
+    const member = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           name: data.name,
@@ -107,6 +120,17 @@ export class MemberService {
         include: memberInclude,
       });
     });
+
+    // Record the PENDING referral after the member exists. Best-effort — a
+    // referral hiccup must never fail member creation. Stays PENDING until the
+    // member activates their first membership (the only thing that completes it).
+    if (referrer) {
+      await ReferralService.recordPendingReferral(gymId, referrer, {
+        id: member.id, name: data.name, email: data.email, phone: data.phone,
+      }).catch(() => undefined);
+    }
+
+    return member;
   }
 
   static async getAll(user: AuthUser, branchId?: string) {

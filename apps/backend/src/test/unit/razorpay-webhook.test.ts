@@ -10,7 +10,7 @@ beforeAll(() => {
 
 describe('RazorpayProvider — signature verification (HMAC)', () => {
   it('verifyPayment accepts a correctly-signed handshake', async () => {
-    const { RazorpayProvider } = await import('../../modules/payment/gateways/razorpay.provider')
+    const { RazorpayProvider } = await import('../../modules/payment/gateways/razorpay.provider.js')
     const p = new RazorpayProvider()
     const orderId = 'order_ABC'
     const paymentId = 'pay_XYZ'
@@ -20,7 +20,7 @@ describe('RazorpayProvider — signature verification (HMAC)', () => {
   })
 
   it('verifyWebhookSignature validates HMAC over the raw body', async () => {
-    const { RazorpayProvider } = await import('../../modules/payment/gateways/razorpay.provider')
+    const { RazorpayProvider } = await import('../../modules/payment/gateways/razorpay.provider.js')
     const p = new RazorpayProvider()
     const body = JSON.stringify({ event: 'payment.captured', payload: {} })
     const sig = crypto.createHmac('sha256', 'test_webhook_secret').update(body).digest('hex')
@@ -30,14 +30,14 @@ describe('RazorpayProvider — signature verification (HMAC)', () => {
   })
 
   it('isConfigured reflects credentials', async () => {
-    const { RazorpayProvider } = await import('../../modules/payment/gateways/razorpay.provider')
+    const { RazorpayProvider } = await import('../../modules/payment/gateways/razorpay.provider.js')
     expect(new RazorpayProvider().isConfigured()).toBe(true)
   })
 })
 
 describe('StripeProvider — stub', () => {
   it('is not configured and rejects verification', async () => {
-    const { StripeProvider } = await import('../../modules/payment/gateways/stripe.provider')
+    const { StripeProvider } = await import('../../modules/payment/gateways/stripe.provider.js')
     const s = new StripeProvider()
     expect(s.isConfigured()).toBe(false)
     expect(s.verifyPayment({ orderId: 'o', paymentId: 'p', signature: 's' })).toBe(false)
@@ -47,7 +47,7 @@ describe('StripeProvider — stub', () => {
 
 describe('getPaymentGateway selector', () => {
   it('returns Razorpay by default and Stripe when asked', async () => {
-    const { getPaymentGateway } = await import('../../modules/payment/gateways')
+    const { getPaymentGateway } = await import('../../modules/payment/gateways/index.js')
     expect(getPaymentGateway().name).toBe('RAZORPAY')
     expect(getPaymentGateway('STRIPE').name).toBe('STRIPE')
     expect(getPaymentGateway('unknown').name).toBe('RAZORPAY')

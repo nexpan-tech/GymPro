@@ -14,7 +14,7 @@ const SUPER_ADMIN_NAV: NavItem[] = [
   { label: "Dashboard",        path: "/super-admin/dashboard",  icon: "LayoutDashboard", group: "Platform" },
   { label: "Gyms",             path: "/super-admin/gyms",       icon: "Building2",       group: "Platform" },
   { label: "Subscriptions",    path: "/super-admin/plans",      icon: "CreditCard",      group: "Platform" },
-  { label: "SaaS Billing",     path: "/super-admin/billing",    icon: "Receipt",         group: "Platform" },
+  { label: "License Management", path: "/super-admin/billing",   icon: "Receipt",         group: "Platform" },
 
   // Analytics
   { label: "Enterprise Analytics", path: "/super-admin/enterprise", icon: "Building2",   group: "Analytics" },

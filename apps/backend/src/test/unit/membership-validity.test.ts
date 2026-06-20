@@ -25,7 +25,7 @@ const { prismaMock } = vi.hoisted(() => {
     prismaMock: {
       _tx: tx,
       member: { findFirst: vi.fn() },
-      membership: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
+      membership: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn(), count: vi.fn().mockResolvedValue(0) },
       gymMembershipPlan: { findFirst: vi.fn() },
       ...engagement,
       $transaction: vi.fn(async (fn: any) => fn(tx)),

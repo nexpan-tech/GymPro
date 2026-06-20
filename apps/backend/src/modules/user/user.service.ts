@@ -1,6 +1,7 @@
 import { prisma } from "../../config/db";
 import { hashPassword } from "../../utils/password";
 import { AppError } from "../../utils/response";
+import { LicenseService } from "../license/license.service";
 import type { CreateUserInput, UpdateUserInput } from "./user.validation";
 
 type UserRole =
@@ -40,6 +41,12 @@ export const createUser = async (
       `Gym admins cannot create users with the role ${payload.role}`,
       403
     );
+  }
+
+  // SaaS license enforcement: staff roles consume the staff seat cap. Members
+  // are capped separately by MemberService, so they are excluded here.
+  if (payload.role !== "MEMBER") {
+    await LicenseService.assertStaffCapacity(gymId);
   }
 
   const existing = await prisma.user.findUnique({

@@ -7,7 +7,10 @@ const { prismaMock } = vi.hoisted(() => ({
       findFirst: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      count: vi.fn(),
     },
+    // License staff-capacity enforcement runs on createUser; default = unlicensed.
+    gymSubscription: { findFirst: vi.fn() },
   },
 }))
 
@@ -23,6 +26,7 @@ const GYM = 'gym-1'
 beforeEach(() => {
   vi.clearAllMocks()
   prismaMock.user.findUnique.mockResolvedValue(null)
+  prismaMock.gymSubscription.findFirst.mockResolvedValue(null) // unlicensed → staff cap is a no-op
   prismaMock.user.create.mockImplementation(async ({ data }: any) => ({
     id: 'new-user',
     ...data,

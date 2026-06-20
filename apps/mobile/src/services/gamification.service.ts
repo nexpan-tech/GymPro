@@ -65,6 +65,13 @@ export interface ReferralInfo {
   converted: number;
   rewardPerConversion: number;
 }
+export interface Referral {
+  id: string;
+  inviteeName?: string | null;
+  status: string;
+  convertedAt?: string | null;
+  createdAt: string;
+}
 
 function unwrap<T>(res: { data: { data?: T } | T }): T {
   return ((res.data as { data?: T }).data ?? res.data) as T;
@@ -83,4 +90,5 @@ export const gamificationService = {
   challengeLeaderboard: async (id: string): Promise<LeaderboardRow[]> =>
     unwrap<LeaderboardRow[]>(await api.get(`/community/challenges/${id}/leaderboard`)) ?? [],
   myReferralCode: async (): Promise<ReferralInfo> => unwrap<ReferralInfo>(await api.get("/referrals/me/code")),
+  myReferrals: async (): Promise<Referral[]> => unwrap<Referral[]>(await api.get("/referrals/me")) ?? [],
 };

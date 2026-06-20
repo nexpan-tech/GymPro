@@ -1,1 +1,27 @@
 node_modules
+
+# Dependencies (nested workspaces)
+**/node_modules
+
+# Build output
+dist
+build
+**/dist
+**/.expo
+*.tsbuildinfo
+
+# Environment / secrets — never commit real values.
+# Keep only the *.example templates tracked.
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!.env.*.example
+!**/.env.example
+!**/.env.*.example
+
+# Logs & local
+*.log
+.DS_Store
+coverage

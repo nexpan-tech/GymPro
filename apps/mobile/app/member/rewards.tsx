@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { Gift, Lock, Sparkles, Star } from "lucide-react-native";
+import { Gift, Lock, Sparkles, Star, Crown, CalendarClock } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Share, View } from "react-native";
 
@@ -9,7 +9,21 @@ import {
   type Reward,
   type Redemption,
   type ReferralInfo,
+  type Referral,
 } from "../../src/services/gamification.service";
+
+// UI-only referral levels from successful (converted) referral count.
+const REF_LEVELS = [
+  { name: "Bronze", min: 0 }, { name: "Silver", min: 3 }, { name: "Gold", min: 10 },
+  { name: "Diamond", min: 25 }, { name: "Elite", min: 50 },
+] as const;
+function refLevel(converted: number) {
+  let i = 0;
+  for (let k = 0; k < REF_LEVELS.length; k++) if (converted >= REF_LEVELS[k].min) i = k;
+  const next = REF_LEVELS[i + 1] ?? null;
+  return { name: REF_LEVELS[i].name, toNext: next ? Math.max(0, next.min - converted) : 0, next: next?.name ?? null };
+}
+const isSuccessful = (s: string) => s === "CONVERTED" || s === "REWARDED";
 import { useTheme } from "../../src/theme";
 import {
   AppBadge,
@@ -32,18 +46,20 @@ export default function RewardsScreen() {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
   const [referral, setReferral] = useState<ReferralInfo | null>(null);
+  const [referrals, setReferrals] = useState<Referral[]>([]);
   const [loading, setLoading] = useState(true);
   const [redeeming, setRedeeming] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [s, r, d, ref] = await Promise.all([
+      const [s, r, d, ref, refs] = await Promise.all([
         gamificationService.mySummary().catch(() => null),
         gamificationService.rewards().catch(() => []),
         gamificationService.myRedemptions().catch(() => []),
         gamificationService.myReferralCode().catch(() => null),
+        gamificationService.myReferrals().catch(() => [] as Referral[]),
       ]);
-      setSummary(s); setRewards(r); setRedemptions(d); setReferral(ref);
+      setSummary(s); setRewards(r); setRedemptions(d); setReferral(ref); setReferrals(refs);
     } finally {
       setLoading(false);
     }
@@ -147,18 +163,76 @@ export default function RewardsScreen() {
         ) : null}
       </AppCard>
 
-      {/* Referral code */}
-      {referral && (
-        <AppCard>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <View>
-              <AppText variant="caption" color="textSecondary">Your referral code</AppText>
-              <AppText style={{ fontSize: 20, fontWeight: "900", marginTop: 2 }}>{referral.code}</AppText>
-              <AppText variant="caption" color="textMuted">{referral.converted} converted · +{referral.rewardPerConversion} pts each</AppText>
+      {/* Referral hero */}
+      {referral && (() => {
+        const lvl = refLevel(referral.converted);
+        const pending = Math.max(0, referral.total - referral.converted);
+        return (
+          <AppCard variant="elevated">
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <Crown color={c.primary} size={14} />
+                  <AppText variant="overline" color="primary">{lvl.name} Referrer</AppText>
+                </View>
+                <AppText variant="caption" color="textSecondary" style={{ marginTop: 6 }}>Your referral code</AppText>
+                <AppText style={{ fontSize: 26, fontWeight: "900", letterSpacing: 2, marginTop: 2 }}>{referral.code}</AppText>
+                <AppText variant="caption" color="textMuted" style={{ marginTop: 2 }}>+{referral.rewardPerConversion} pts when a friend joins & activates their first membership</AppText>
+              </View>
+              <AppButton size="sm" onPress={shareCode}>Share</AppButton>
             </View>
-            <AppButton size="sm" variant="secondary" onPress={shareCode}>Share</AppButton>
-          </View>
-        </AppCard>
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>
+              <ScorePill value={`${referral.total}`} label="Total" />
+              <ScorePill value={`${pending}`} label="Pending" />
+              <ScorePill value={`${referral.converted}`} label="Successful" emphasis />
+            </View>
+            {lvl.next ? (
+              <AppText variant="caption" color="textMuted" style={{ marginTop: 10 }}>{lvl.toNext} more successful referral{lvl.toNext === 1 ? "" : "s"} → {lvl.next}</AppText>
+            ) : (
+              <AppText variant="caption" color="primary" style={{ marginTop: 10 }}>🏆 Elite tier — you're a top referrer!</AppText>
+            )}
+          </AppCard>
+        );
+      })()}
+
+      {/* Referral history */}
+      {referral && (
+        <>
+          <AppText variant="heading" style={{ marginTop: 8 }}>Referral history</AppText>
+          {referrals.length === 0 ? (
+            <AppEmptyState emoji="🤝" title="No referrals yet" description="Share your code — you earn points when a friend joins and activates their first membership." />
+          ) : (
+            <View style={{ gap: 8 }}>
+              {referrals.map((rf) => (
+                <AppCard key={rf.id}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                    <View style={{ flex: 1 }}>
+                      <AppText variant="bodyStrong" numberOfLines={1}>{rf.inviteeName ?? "Invited friend"}</AppText>
+                      <AppText variant="caption" color="textMuted">
+                        Registered {new Date(rf.createdAt).toLocaleDateString()}{rf.convertedAt ? ` · activated ${new Date(rf.convertedAt).toLocaleDateString()}` : ""}
+                      </AppText>
+                    </View>
+                    <AppBadge
+                      label={isSuccessful(rf.status) ? "Successful" : rf.status.charAt(0) + rf.status.slice(1).toLowerCase()}
+                      tone={isSuccessful(rf.status) ? "success" : rf.status === "PENDING" ? "warning" : "neutral"}
+                    />
+                  </View>
+                </AppCard>
+              ))}
+            </View>
+          )}
+
+          {/* Campaign empty state — no fake live campaigns */}
+          <AppCard>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <CalendarClock color={c.textMuted} size={18} />
+              <AppText variant="bodyStrong">Active campaigns</AppText>
+            </View>
+            <AppText variant="caption" color="textMuted" style={{ marginTop: 6 }}>
+              When your gym runs a referral campaign, the countdown, campaign leaderboard, and bonus rewards will appear here.
+            </AppText>
+          </AppCard>
+        </>
       )}
 
       {/* Rewards */}

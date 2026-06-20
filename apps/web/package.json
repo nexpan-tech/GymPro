@@ -15,15 +15,16 @@
     "@tanstack/react-query-devtools": "^5.100.10",
     "axios": "^1.16.0",
     "clsx": "^2.1.1",
-    "tailwind-merge": "^2.5.0",
     "framer-motion": "^12.39.0",
     "lucide-react": "^1.14.0",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.15.0",
     "recharts": "^3.8.1",
-    "zod": "^4.4.3",
     "socket.io-client": "^4.8.1",
+    "tailwind-merge": "^2.5.0",
+    "zod": "^4.4.3",
     "zustand": "^5.0.13"
   },
   "devDependencies": {

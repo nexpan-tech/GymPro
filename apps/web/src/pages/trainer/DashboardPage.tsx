@@ -270,158 +270,8 @@ function NotificationIcon({ title }: { title: string }) {
   return <Bell className="h-4 w-4 text-primary" />;
 }
 
-// ─── Mock data generators (fallback when API returns empty) ───────────────────
-// These produce deterministic data so the UI is always illustrative.
-
-function buildMockSessions(_trainerId: string): ScheduledSession[] {
-  const now = new Date();
-  return [
-    {
-      id: "s1",
-      memberName: "Arjun Mehta",
-      memberId: "m1",
-      scheduledAt: new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
-        9,
-        0
-      ).toISOString(),
-      status: "COMPLETED",
-      workoutName: "Upper Body Strength",
-    },
-    {
-      id: "s2",
-      memberName: "Priya Sharma",
-      memberId: "m2",
-      scheduledAt: new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
-        10,
-        30
-      ).toISOString(),
-      status: "IN_PROGRESS",
-      workoutName: "HIIT Cardio Blast",
-    },
-    {
-      id: "s3",
-      memberName: "Rohan Verma",
-      memberId: "m3",
-      scheduledAt: new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
-        12,
-        0
-      ).toISOString(),
-      status: "SCHEDULED",
-      workoutName: "Core & Flexibility",
-    },
-    {
-      id: "s4",
-      memberName: "Ananya Bose",
-      memberId: "m4",
-      scheduledAt: new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
-        15,
-        0
-      ).toISOString(),
-      status: "SCHEDULED",
-      workoutName: "Lower Body Power",
-    },
-    {
-      id: "s5",
-      memberName: "Karan Singh",
-      memberId: "m5",
-      scheduledAt: new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
-        17,
-        30
-      ).toISOString(),
-      status: "SCHEDULED",
-      workoutName: "Full Body Circuit",
-    },
-  ];
-}
-
-function buildMockCompletions(): WorkoutCompleted[] {
-  const now = new Date();
-  return [
-    {
-      id: "wc1",
-      memberName: "Arjun Mehta",
-      memberId: "m1",
-      workoutName: "Upper Body Strength",
-      completedAt: new Date(now.getTime() - 1 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "wc2",
-      memberName: "Priya Sharma",
-      memberId: "m2",
-      workoutName: "HIIT Cardio Blast",
-      completedAt: new Date(now.getTime() - 2.5 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "wc3",
-      memberName: "Deepika Nair",
-      memberId: "m6",
-      workoutName: "Yoga Flow",
-      completedAt: new Date(now.getTime() - 4 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "wc4",
-      memberName: "Rahul Joshi",
-      memberId: "m7",
-      workoutName: "Leg Day",
-      completedAt: new Date(now.getTime() - 5.5 * 60 * 60 * 1000).toISOString(),
-    },
-  ];
-}
-
-function buildMockProgress(): MemberProgress[] {
-  return [
-    {
-      memberId: "m1",
-      memberName: "Arjun Mehta",
-      weightChange: -2.4,
-      goalProgress: 74,
-      goalType: "Weight Loss",
-    },
-    {
-      memberId: "m2",
-      memberName: "Priya Sharma",
-      weightChange: 1.1,
-      goalProgress: 88,
-      goalType: "Muscle Gain",
-    },
-    {
-      memberId: "m3",
-      memberName: "Rohan Verma",
-      weightChange: -0.8,
-      goalProgress: 61,
-      goalType: "Endurance",
-    },
-    {
-      memberId: "m4",
-      memberName: "Ananya Bose",
-      weightChange: -3.2,
-      goalProgress: 92,
-      goalType: "Weight Loss",
-    },
-    {
-      memberId: "m5",
-      memberName: "Karan Singh",
-      weightChange: 0.5,
-      goalProgress: 45,
-      goalType: "Strength",
-    },
-  ];
-}
+// Mock data generators were removed for production — the trainer dashboard
+// shows real member data and honest empty states (no fabricated members).
 
 // ─── Member Row ───────────────────────────────────────────────────────────────
 
@@ -786,11 +636,12 @@ export default function TrainerDashboardPage() {
     ).length
   );
 
-  // ── Mock data for schedule, completions, progress ─────────────────────────
-  // In production these would be real API calls.
-  const todaySessions = buildMockSessions(trainerId);
-  const recentCompletions = buildMockCompletions();
-  const memberProgressList = buildMockProgress();
+  // Schedule / completions / progress feeds: no fabricated data in production.
+  // These render their honest empty states until a real feed is wired
+  // (workout-completion + progress endpoints per the trainer's members).
+  const todaySessions: ScheduledSession[] = [];
+  const recentCompletions: WorkoutCompleted[] = [];
+  const memberProgressList: MemberProgress[] = [];
 
   // ── Greeting ───────────────────────────────────────────────────────────────
   const hour = new Date().getHours();

@@ -11,7 +11,9 @@ const { prismaMock } = vi.hoisted(() => {
       _tx: tx,
       user: { findUnique: vi.fn(), findFirst: vi.fn() },
       branch: { findFirst: vi.fn() },
-      member: { findFirst: vi.fn(), findMany: vi.fn(), update: vi.fn() },
+      member: { findFirst: vi.fn(), findMany: vi.fn(), update: vi.fn(), count: vi.fn() },
+      // License enforcement (assertCapacity) runs on create; default = unlicensed (no cap).
+      gymSubscription: { findFirst: vi.fn() },
       $transaction: vi.fn(async (fn: any) => fn(tx)),
     },
   }
@@ -30,6 +32,7 @@ const admin = { id: 'admin-1', role: Role.ADMIN, gymId: GYM }
 beforeEach(() => {
   vi.clearAllMocks()
   prismaMock.user.findUnique.mockResolvedValue(null)
+  prismaMock.gymSubscription.findFirst.mockResolvedValue(null) // unlicensed → capacity check is a no-op
   prismaMock._tx.user.create.mockResolvedValue({ id: 'user-1', email: 'm@gym.com' })
   prismaMock._tx.member.create.mockImplementation(async ({ data }: any) => ({ id: 'member-1', ...data }))
 })

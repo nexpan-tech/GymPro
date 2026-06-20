@@ -1,6 +1,7 @@
 import { prisma } from "../../config/db";
 import { AppError } from "../../utils/response";
 import { CacheService } from "../../cache/cache.service";
+import { LicenseService } from "../license/license.service";
 
 type AuthUser = {
   id: string;
@@ -11,6 +12,9 @@ type AuthUser = {
 export class BranchService {
   static async create(user: AuthUser, data: any) {
     if (!user.gymId) throw new AppError("Gym context missing", 403);
+
+    // SaaS license enforcement: block when the gym is at its branch cap.
+    await LicenseService.assertBranchCapacity(user.gymId);
 
     const branch = await prisma.branch.create({
       data: {

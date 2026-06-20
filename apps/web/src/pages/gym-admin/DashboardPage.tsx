@@ -53,6 +53,7 @@ import { trainerService } from "@/services/trainer.service";
 import type { DashboardAnalytics } from "@/types/analytics.types";
 import type { Member } from "@/types/member.types";
 import type { Trainer } from "@/types/user.types";
+import OnboardingChecklist from "@/components/gym-admin/OnboardingChecklist";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -322,6 +323,9 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
+
+      {/* First-customer onboarding checklist — auto-hides once set up. */}
+      <OnboardingChecklist />
 
       {/* ── Command-center Hero ───────────────────────────────────────────── */}
       <CommandHero

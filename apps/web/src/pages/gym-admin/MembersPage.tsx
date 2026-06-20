@@ -26,14 +26,14 @@ interface FormState {
   name: string; email: string; password: string; phone: string; gender: string;
   dateOfBirth: string; address: string; fitnessGoal: string; branchId: string;
   trainerId: string; emergencyContactName: string; emergencyContactPhone: string;
-  healthNotes: string; injuryNotes: string; medicalConditions: string;
+  healthNotes: string; injuryNotes: string; medicalConditions: string; referralCode: string;
 }
 
 const emptyForm: FormState = {
   name: "", email: "", password: "", phone: "", gender: "", dateOfBirth: "",
   address: "", fitnessGoal: "", branchId: "", trainerId: "",
   emergencyContactName: "", emergencyContactPhone: "", healthNotes: "",
-  injuryNotes: "", medicalConditions: "",
+  injuryNotes: "", medicalConditions: "", referralCode: "",
 };
 
 const GENDER_OPTIONS = [
@@ -157,7 +157,7 @@ export default function MembersPage() {
       emergencyContactName: m.emergencyContactName ?? "",
       emergencyContactPhone: m.emergencyContactPhone ?? "",
       healthNotes: m.healthNotes ?? "", injuryNotes: m.injuryNotes ?? "",
-      medicalConditions: m.medicalConditions ?? "",
+      medicalConditions: m.medicalConditions ?? "", referralCode: "",
     });
     setFormErrors({}); setFormOpen(true);
   }
@@ -187,6 +187,8 @@ export default function MembersPage() {
     if (form.healthNotes.trim()) p.healthNotes = form.healthNotes.trim();
     if (form.injuryNotes.trim()) p.injuryNotes = form.injuryNotes.trim();
     if (form.medicalConditions.trim()) p.medicalConditions = form.medicalConditions.trim();
+    // Referral code is capture-once at registration only (never on edit).
+    if (!editingId && form.referralCode.trim()) p.referralCode = form.referralCode.trim();
     return p;
   }
 
@@ -466,6 +468,9 @@ export default function MembersPage() {
             <Input label="Date of birth" type="date" value={form.dateOfBirth} onChange={(e) => set("dateOfBirth", e.target.value)} />
             <Input label="Address" value={form.address} onChange={(e) => set("address", e.target.value)} />
             <Input label="Fitness goal" value={form.fitnessGoal} onChange={(e) => set("fitnessGoal", e.target.value)} />
+            {!editingId && (
+              <Input label="Referral code (optional)" value={form.referralCode} onChange={(e) => set("referralCode", e.target.value)} placeholder="e.g. REF-AB12CD — who referred them" />
+            )}
           </Section>
 
           <Section title="Assignment">

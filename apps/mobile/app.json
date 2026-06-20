@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "mobile",
+    "name": "GymPro",
     "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -24,9 +24,9 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.CAMERA",
+        "android.permission.CAMERA"
+      ],
+      "blockedPermissions": [
         "android.permission.RECORD_AUDIO"
       ],
       "package": "com.anonymous.mobile"

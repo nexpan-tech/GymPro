@@ -1,6 +1,7 @@
 import { prisma } from "../../config/db";
 import { MembershipPlan, MembershipStatus } from "@prisma/client";
 import { GamificationEvents } from "../gamification/engagement-events.service";
+import { ReferralService } from "../referral/referral.service";
 import { AppError } from "../../utils/response";
 import {
   CreateMembershipInput,
@@ -77,6 +78,12 @@ export class MembershipService {
       throw new AppError("Member not found in this gym", 404);
     }
 
+    // Is this the member's FIRST membership? Only the first activation can
+    // complete a passive referral (registration alone never does).
+    const priorMembershipCount = await prisma.membership.count({
+      where: { gymId, memberId: data.memberId },
+    });
+
     let durationDays: number;
     let amount: number;
     let planId: string | null = null;
@@ -114,6 +121,12 @@ export class MembershipService {
       },
       include: membershipInclude,
     });
+
+    // Passive referral completion: a referral becomes Successful only when the
+    // referred member activates their FIRST membership. Best-effort.
+    if (priorMembershipCount === 0) {
+      await ReferralService.onFirstMembershipActivated(gymId, data.memberId).catch(() => undefined);
+    }
 
     return this.decorate(membership);
   }

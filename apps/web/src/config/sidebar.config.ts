@@ -36,7 +36,7 @@ export const sidebarConfig: SidebarConfig = {
     { label: "Gyms", path: "/super-admin/gyms", icon: Building2 },
     { label: "Plans", path: "/super-admin/plans", icon: CreditCard },
     { label: "Analytics", path: "/super-admin/analytics", icon: BarChart3 },
-    { label: "Billing", path: "/super-admin/billing", icon: FileText },
+    { label: "Licenses", path: "/super-admin/billing", icon: FileText },
     { label: "Audit Logs", path: "/super-admin/audit", icon: ScrollText },
     { label: "Settings", path: "/super-admin/settings", icon: Settings },
   ],

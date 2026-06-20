@@ -23,6 +23,10 @@ export const createMemberSchema = z.object({
   healthNotes: z.string().optional(),
   injuryNotes: z.string().optional(),
   medicalConditions: z.string().optional(),
+
+  // Passive referral capture — optional code of an existing member who referred
+  // this person. Validated server-side (same gym, not self, not duplicate).
+  referralCode: z.string().min(3).max(24).optional(),
 });
 
 export const updateMemberSchema = createMemberSchema.partial().extend({
