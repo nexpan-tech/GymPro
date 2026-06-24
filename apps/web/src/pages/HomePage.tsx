@@ -22,9 +22,9 @@ const FEATURES = [
 ];
 
 const PLANS = [
-  { name: "Launch", price: "₹1,499", members: "100 members", branches: "1 branch", highlight: false },
-  { name: "Scale", price: "₹2,999", members: "250 members", branches: "3 branches", highlight: true },
-  { name: "Elite", price: "₹4,999", members: "500 members", branches: "10 branches", highlight: false },
+  { name: "Starter", price: "₹999", members: "100 members", branches: "1 branch", highlight: false },
+  { name: "Growth", price: "₹1,999", members: "300 members", branches: "3 branches", highlight: true },
+  { name: "Professional", price: "₹3,999", members: "700 members", branches: "10 branches", highlight: false },
   { name: "Enterprise", price: "Custom", members: "Unlimited", branches: "Unlimited", highlight: false },
 ];
 

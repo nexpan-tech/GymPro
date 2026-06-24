@@ -18,7 +18,7 @@ const { prismaMock } = vi.hoisted(() => {
     notification: { create: vi.fn().mockResolvedValue({ id: 'n', type: 'GENERAL' }) },
   }
   const tx = {
-    membership: { update: vi.fn(), create: vi.fn() },
+    membership: { update: vi.fn(), create: vi.fn(), updateMany: vi.fn() },
     ...engagement,
   }
   return {
@@ -45,6 +45,7 @@ beforeEach(() => {
   prismaMock.membership.update.mockImplementation(async ({ data }: any) => ({ id: 'ms-1', endDate: new Date(), status: 'ACTIVE', ...data }))
   prismaMock._tx.membership.create.mockImplementation(async ({ data }: any) => ({ id: 'new-1', ...data }))
   prismaMock._tx.membership.update.mockResolvedValue({})
+  prismaMock._tx.membership.updateMany.mockResolvedValue({ count: 0 })
 })
 
 describe('computeStatus', () => {
@@ -71,11 +72,17 @@ describe('create — end date calculation from plan', () => {
       memberId: 'member-1', planId: 'plan-1', startDate: '2026-01-01',
     } as any)
 
-    const data = prismaMock.membership.create.mock.calls[0][0].data
+    // create() now runs inside a $transaction (to supersede any prior active
+    // membership first), so the insert goes through the tx client.
+    const data = prismaMock._tx.membership.create.mock.calls[0][0].data
     expect(data.amount).toBe(1000)
     const start = new Date('2026-01-01').getTime()
     expect(new Date(data.endDate).getTime()).toBe(start + 30 * 86_400_000)
     expect(data.status).toBe('ACTIVE')
+    // The member's existing open memberships are ended (one-active invariant).
+    expect(prismaMock._tx.membership.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: 'EXPIRED' }) }),
+    )
   })
 
   it('blocks assigning a plan from another gym', async () => {
@@ -157,8 +164,10 @@ describe('renew', () => {
 
     await MembershipService.renew(GYM, 'old-1', {})
 
-    expect(prismaMock._tx.membership.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'old-1' }, data: { status: 'EXPIRED' } })
+    // renew now ends ALL of the member's open memberships (one-active invariant)
+    // via updateMany, then creates the new ACTIVE one chained from the old.
+    expect(prismaMock._tx.membership.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: 'EXPIRED' }) })
     )
     const created = prismaMock._tx.membership.create.mock.calls[0][0].data
     expect(created.renewedFromId).toBe('old-1')

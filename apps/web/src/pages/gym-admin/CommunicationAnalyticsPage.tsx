@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Send, CheckCheck, XCircle, Clock, RefreshCw } from "lucide-react";
 import Page from "@/components/ui/Page";
 import { Card } from "@/components/ui/Card";
@@ -26,6 +26,19 @@ export default function CommunicationAnalyticsPage() {
     setAnalytics(a); setLogs(l); setQueues(q); setDlq(d); setLoading(false);
   }
   useEffect(() => { void load(); }, []);
+
+  // Defensive de-dupe (the backend also de-dupes): collapse rows that are the
+  // same channel + recipient + title within the same minute so a real delivery
+  // never appears twice in the table.
+  const visibleLogs = useMemo(() => {
+    const seen = new Set<string>();
+    return logs.filter((l) => {
+      const key = `${l.channel}|${l.recipientAddr ?? ""}|${l.title ?? ""}|${(l.createdAt ?? "").slice(0, 16)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [logs]);
 
   async function retry(id: string) {
     try { await commsService.retryDlq(id); toast.success("Requeued"); void load(); }
@@ -90,14 +103,14 @@ export default function CommunicationAnalyticsPage() {
         {/* Delivery logs */}
         <Card variant="solid" className="overflow-hidden p-0">
           <div className="border-b border-border px-5 py-3 text-sm font-semibold text-(--text-primary)">Recent deliveries</div>
-          {logs.length === 0 ? <p className="px-5 py-6 text-sm text-(--text-secondary)">No delivery logs yet.</p> : (
+          {visibleLogs.length === 0 ? <p className="px-5 py-6 text-sm text-(--text-secondary)">No delivery logs yet.</p> : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-border text-xs uppercase tracking-wide text-(--text-secondary)">
                   <tr><th className="px-4 py-2">Channel</th><th className="px-4 py-2">Status</th><th className="px-4 py-2">Recipient</th><th className="px-4 py-2">Title</th><th className="px-4 py-2">When</th></tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {logs.map((l) => (
+                  {visibleLogs.map((l) => (
                     <tr key={l.id}>
                       <td className="px-4 py-2">{l.channel}</td>
                       <td className="px-4 py-2"><Badge variant={l.status === "FAILED" ? "danger" : l.status === "SKIPPED" ? "warning" : "success"}>{l.status}</Badge></td>

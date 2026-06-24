@@ -14,7 +14,7 @@ import { workoutService, type TodayWorkout } from "../../src/services/workout.se
 import { dietService, type TodayDiet } from "../../src/services/diet.service";
 import { gamificationService, type LeaderboardRow, type EarnedBadge } from "../../src/services/gamification.service";
 import { getMyGoals, getMySummary, type ProgressGoal, type ProgressSummary } from "../../src/api/progress.api";
-import { getNotifications, type MyNotifications } from "../../src/api/notification.api";
+import { getMyNotifications, type MyNotifications } from "../../src/api/notification.api";
 import { useAuthStore } from "../../src/stores/auth.store";
 import { useTheme } from "../../src/theme";
 import { AppCard, AppScreen, AppText, AppLoadingState } from "../../src/components/ui";
@@ -86,7 +86,7 @@ export default function MemberDashboardScreen() {
         getMySummary(),
         gamificationService.leaderboard(),
         gamificationService.myBadges(),
-        getNotifications(),
+        getMyNotifications(),
       ]);
       const val = <T,>(i: number, d: T): T => (results[i].status === "fulfilled" ? (results[i] as PromiseFulfilledResult<T>).value : d);
       setAttendance(val<Attendance[]>(0, []));
@@ -124,6 +124,8 @@ export default function MemberDashboardScreen() {
   const top3 = leaders.slice(0, 3);
   const myRank = leaders.find((r) => r.memberId === member?.id);
   const unread = notifs?.unreadCount ?? 0;
+  // Never call .length on a possibly-undefined field — always an array.
+  const notificationItems = Array.isArray(notifs?.items) ? notifs.items : [];
   const consistency = summary?.consistencyScore ?? streak?.thisMonth.consistency ?? 0;
 
   if (loading) {
@@ -331,7 +333,7 @@ export default function MemberDashboardScreen() {
       </View>
 
       {/* 12. Notifications preview */}
-      {notifs && notifs.items.length > 0 ? (
+      {notificationItems.length > 0 ? (
         <>
           <SectionHeader title="Latest" onPress={() => router.push("/member/notifications")} />
           <TouchableOpacity activeOpacity={0.85} onPress={() => router.push("/member/notifications")}>
@@ -339,8 +341,8 @@ export default function MemberDashboardScreen() {
               <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                 <Bell color={c.primary} size={18} />
                 <View style={{ flex: 1 }}>
-                  <AppText variant="bodyStrong" numberOfLines={1}>{notifs.items[0].title}</AppText>
-                  <AppText variant="caption" color="textMuted" numberOfLines={1}>{notifs.items[0].body}</AppText>
+                  <AppText variant="bodyStrong" numberOfLines={1}>{notificationItems[0].title}</AppText>
+                  <AppText variant="caption" color="textMuted" numberOfLines={1}>{notificationItems[0].body}</AppText>
                 </View>
               </View>
             </AppCard>

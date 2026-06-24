@@ -44,11 +44,13 @@ import {
   UserCheck,
   Flag,
   Palette,
+  LifeBuoy,
   type LucideIcon,
 } from "lucide-react";
 
 import { getNavItems, getRoleLabel, getRoleBadgeColor } from "@/config/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
 // ── Icon registry ─────────────────────────────────────────────────────────────
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -91,6 +93,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   UserCheck,
   Flag,
   Palette,
+  LifeBuoy,
 };
 
 function resolveIcon(name: string): LucideIcon {
@@ -129,7 +132,9 @@ export default function Sidebar({
   const overlayRef = useRef<HTMLDivElement>(null);
 
   const role = user?.role ?? "MEMBER";
-  const navItems = getNavItems(role);
+  const { isEnabled } = useFeatureFlags();
+  // Hide nav items whose feature is explicitly disabled for this gym (fail-open).
+  const navItems = getNavItems(role).filter((item) => isEnabled(item.featureKey));
   const roleLabel = getRoleLabel(role);
   const roleBadgeClass = getRoleBadgeColor(role);
 

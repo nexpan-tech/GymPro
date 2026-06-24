@@ -9,15 +9,25 @@ import { processScoreRecompute } from "./scoreRecompute.job";
 import { processChurnRiskAlerts } from "./churnRisk.job";
 import { processTrialConversionReminders } from "./trialConversion.job";
 import { processMonthlyBilling } from "./monthlyBilling.job";
+import { processLicenseLifecycle } from "./licenseLifecycle.job";
 
 export function startSchedulers() {
   logger.info("Automation schedulers initialized");
 
   // ── Stage 12 — automated monthly SaaS billing ──────────────────────────────
-  // 00:05 on the 1st of every month: generate GST invoices for all active gyms.
+  // 00:05 on the 1st of every month: generate flat license invoices for all
+  // active-licensed gyms.
   cron.schedule("5 0 1 * *", async () => {
     logger.info("Running automated monthly SaaS billing");
     await processMonthlyBilling();
+  });
+
+  // ── License lifecycle automation ───────────────────────────────────────────
+  // 01:00 daily: expire lapsed trials, move ended terms to PAST_DUE, suspend
+  // after the grace period, and send trial/renewal reminder emails.
+  cron.schedule("0 1 * * *", async () => {
+    logger.info("Running license lifecycle automation");
+    await processLicenseLifecycle();
   });
 
   // Every day at 8:00 AM

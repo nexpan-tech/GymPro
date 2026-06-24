@@ -3,7 +3,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const { prismaMock, sendEmailMock, auditMock, pdfMock } = vi.hoisted(() => {
   const prismaMock: any = {
     member: { groupBy: vi.fn() },
-    gym: { findMany: vi.fn() },
+    gym: { findMany: vi.fn(), count: vi.fn() },
+    gymSubscription: { findMany: vi.fn() },
     user: { findFirst: vi.fn() },
     platformBillingSettings: { findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
     saaSInvoice: { findFirst: vi.fn(), findUnique: vi.fn(), create: vi.fn(), update: vi.fn(), findMany: vi.fn() },
@@ -117,25 +118,26 @@ describe("#4 PlatformSettingsService", () => {
   });
 });
 
-describe("#5 RevenueSummaryService — single source of truth", () => {
-  it("MRR = Σ(active members × price); ARR = MRR × 12", async () => {
-    prismaMock.member.groupBy.mockResolvedValue([
-      { gymId: "g1", _count: { _all: 20 } },
-      { gymId: "g2", _count: { _all: 5 } },
+describe("#5 RevenueSummaryService — single source of truth (license-based)", () => {
+  it("MRR = Σ ACTIVE license monthly price (yearly ÷ 12); ARR = MRR × 12", async () => {
+    const future = new Date(Date.now() + 90 * 86400000);
+    prismaMock.gymSubscription.findMany.mockResolvedValue([
+      { gymId: "g1", status: "ACTIVE", endDate: future, createdAt: new Date(), plan: { name: "Growth", price: 1999, interval: "MONTHLY" }, gym: { name: "G1" } },
+      { gymId: "g2", status: "ACTIVE", endDate: future, createdAt: new Date(), plan: { name: "Enterprise Yearly", price: 24000, interval: "YEARLY" }, gym: { name: "G2" } },
     ]);
-    prismaMock.gym.findMany.mockResolvedValue([
-      { id: "g1", pricePerActiveMember: 20 },
-      { id: "g2", pricePerActiveMember: 50 },
-    ]);
+    prismaMock.gym.count.mockResolvedValue(2);
     prismaMock.saaSInvoice.findMany.mockResolvedValue([]);
     const s = await RevenueSummaryService.summary();
-    expect(s.mrr).toBe(650);
-    expect(s.arr).toBe(7800);
+    expect(s.mrr).toBe(1999 + 2000); // yearly 24000 ÷ 12 = 2000
+    expect(s.arr).toBe((1999 + 2000) * 12);
   });
 
   it("SaaSBillingService.revenueSummary delegates to the SSOT (same numbers everywhere)", async () => {
-    prismaMock.member.groupBy.mockResolvedValue([{ gymId: "g1", _count: { _all: 10 } }]);
-    prismaMock.gym.findMany.mockResolvedValue([{ id: "g1", pricePerActiveMember: 30 }]);
+    const future = new Date(Date.now() + 90 * 86400000);
+    prismaMock.gymSubscription.findMany.mockResolvedValue([
+      { gymId: "g1", status: "ACTIVE", endDate: future, createdAt: new Date(), plan: { name: "Starter", price: 999, interval: "MONTHLY" }, gym: { name: "G1" } },
+    ]);
+    prismaMock.gym.count.mockResolvedValue(1);
     prismaMock.saaSInvoice.findMany.mockResolvedValue([]);
     const a = await RevenueSummaryService.summary();
     const b = await SaaSBillingService.revenueSummary();

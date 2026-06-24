@@ -239,6 +239,7 @@ export class AuthService {
     return true;
   }
 
+
   static async me(id: string) {
     const user = await prisma.user.findUnique({
       where: { id },

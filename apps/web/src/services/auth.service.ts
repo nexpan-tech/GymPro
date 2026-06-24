@@ -21,11 +21,6 @@ export interface AuthTokens {
   user: User
 }
 
-export interface ChangePasswordPayload {
-  currentPassword: string
-  newPassword: string
-}
-
 export interface ForgotPasswordPayload {
   email: string
 }
@@ -73,14 +68,6 @@ export const authService = {
     const refreshToken = localStorage.getItem('refreshToken')
     const res = await api.post<ApiResponse<{ accessToken: string }>>('/auth/refresh', { refreshToken })
     localStorage.setItem('accessToken', res.data.data.accessToken)
-    return res.data
-  },
-
-  /**
-   * Change authenticated user's password.
-   */
-  changePassword: async (payload: ChangePasswordPayload): Promise<ApiResponse<null>> => {
-    const res = await api.post<ApiResponse<null>>('/auth/change-password', payload)
     return res.data
   },
 

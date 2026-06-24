@@ -71,9 +71,10 @@ router.put(
 );
 
 router.post(
+  // Password resets are Gym-Admin only (role hierarchy) — NOT receptionists.
   "/:id/reset-password",
   authMiddleware,
-  roleMiddleware([ROLES.ADMIN, ROLES.RECEPTIONIST]),
+  roleMiddleware([ROLES.ADMIN]),
   MemberController.resetPassword
 );
 

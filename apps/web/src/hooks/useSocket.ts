@@ -120,10 +120,16 @@ function ensureSocket(
   // Warn once, not on every retry — keeps the console clean if the realtime
   // backend is unavailable in dev.
   sock.on("connect_error", (err) => {
+    const isAuthError = /unauthor/i.test(err.message);
     if (!warnedOnce) {
-      console.warn("[GymPro Socket] Realtime unavailable:", err.message);
+      console.warn(`[GymPro Socket] Realtime unavailable${isAuthError ? " (auth)" : ""}:`, err.message);
       warnedOnce = true;
     }
+    // An auth rejection (missing/invalid/expired token) will never succeed by
+    // retrying the SAME token, so stop the reconnect loop — otherwise each
+    // bounded attempt re-fails and spams the console. A refreshed/new token
+    // rebuilds the socket via ensureSocket() (token-change path above).
+    if (isAuthError) sock.disconnect();
     notifyState(false);
   });
 

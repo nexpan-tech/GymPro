@@ -34,7 +34,9 @@ export interface CreateGymPayload {
   email: string;
   phone?: string;
   address?: string;
-  pricePerActiveMember?: number;
+  /** SaaS license plan assigned on creation (every gym gets one license). */
+  planId?: string;
+  trialDays?: number;
   adminName?: string;
   adminEmail?: string;
   adminPassword?: string;

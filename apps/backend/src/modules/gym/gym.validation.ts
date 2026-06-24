@@ -7,8 +7,14 @@ export const createGymSchema = z.object({
   address: z.string().optional(),
   logo: z.string().optional(),
 
-  // SaaS price per ACTIVE member, per month (INR). Drives subscription billing.
+  // Legacy per-member price — retained for backward-compat, no longer used for
+  // billing (license-based now). New gyms should pass `planId` instead.
   pricePerActiveMember: z.number().min(0).optional(),
+
+  // SaaS license: the plan to assign on creation (every gym gets exactly one
+  // license). Optional — if omitted, the cheapest active plan is auto-assigned.
+  planId: z.string().min(1).optional(),
+  trialDays: z.number().int().min(0).max(365).optional(),
 
   adminName: z.string().min(2).optional(),
   adminEmail: z.string().email().optional(),

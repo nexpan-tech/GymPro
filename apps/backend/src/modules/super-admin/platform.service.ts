@@ -4,6 +4,8 @@ import { notificationQueue } from "../../queues/notification.queue";
 import { smsQueue } from "../../queues/sms.queue";
 import { deadLetterQueue } from "../../queues/dlq";
 import { getQueueStats } from "../../queues/queueMonitor";
+import { AppError } from "../../utils/response";
+import { hashPassword, assertStrongPassword } from "../../utils/password";
 
 /**
  * Platform-wide operational data for the SUPER_ADMIN console. Every number is
@@ -266,5 +268,44 @@ export class PlatformService {
 
   static async queue() {
     return this.queueStats();
+  }
+
+  /**
+   * SUPER_ADMIN: reset a GYM ADMIN's login password (role hierarchy — only a
+   * super admin may reset gym-admin accounts). Targets the gym's admin; when a
+   * gym has multiple admins, `userId` selects which one. Hashes + overwrites the
+   * single stored hash and invalidates the admin's sessions. Never echoes the
+   * password.
+   */
+  static async resetGymAdminPassword(gymId: string, password: string, userId?: string) {
+    const gym = await prisma.gym.findUnique({ where: { id: gymId }, select: { id: true } });
+    if (!gym) throw new AppError("Gym not found", 404);
+
+    const admins = await prisma.user.findMany({
+      where: { gymId, role: "ADMIN" },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, email: true, name: true },
+    });
+    if (admins.length === 0) throw new AppError("This gym has no admin account to reset", 404);
+
+    let target: { id: string; email: string; name: string };
+    if (userId) {
+      const found = admins.find((a) => a.id === userId);
+      if (!found) throw new AppError("That admin does not belong to this gym", 404);
+      target = found;
+    } else if (admins.length === 1) {
+      target = admins[0];
+    } else {
+      throw new AppError("This gym has multiple admins — specify which admin to reset (userId)", 400, {
+        admins: admins.map((a) => ({ id: a.id, email: a.email, name: a.name })),
+      });
+    }
+
+    const passwordHash = await hashPassword(assertStrongPassword(password));
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: target.id }, data: { passwordHash } }),
+      prisma.session.updateMany({ where: { userId: target.id, revokedAt: null }, data: { revokedAt: new Date() } }),
+    ]);
+    return { userId: target.id, email: target.email, name: target.name };
   }
 }

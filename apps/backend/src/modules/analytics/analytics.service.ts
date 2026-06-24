@@ -7,47 +7,60 @@ export class AnalyticsService {
    * Dashboard overview
    */
   async getDashboard(gymId: string) {
-    const totalMembers = await prisma.member.count({
-      where: { gymId },
-    });
+    const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const activeMemberships = await prisma.membership.count({
-      where: {
-        gymId,
-        endDate: {
-          gte: new Date(),
-        },
-      },
-    });
+    const [
+      totalMembers,
+      activeMembers,
+      totalMemberships,
+      activeMemberships,
+      usersByRoleRaw,
+      todayAttendance,
+      monthlyPaid,
+      membershipRevenue,
+      openDues,
+    ] = await Promise.all([
+      // MEMBERS = the Member table only. Trainers/receptionists/admins are User
+      // rows (role-based) and are NEVER counted as members.
+      prisma.member.count({ where: { gymId } }),
+      prisma.member.count({ where: { gymId, status: "ACTIVE" } }),
+      prisma.membership.count({ where: { gymId } }),
+      prisma.membership.count({ where: { gymId, status: "ACTIVE", endDate: { gte: now } } }),
+      prisma.user.groupBy({ by: ["role"], where: { gymId }, _count: { id: true } }),
+      prisma.attendance.count({ where: { gymId, date: { gte: todayStart } } }),
+      prisma.payment.aggregate({ where: { gymId, status: "PAID", paidAt: { gte: monthStart } }, _sum: { amount: true } }),
+      prisma.membership.aggregate({ where: { gymId }, _sum: { amount: true } }),
+      prisma.due.findMany({ where: { gymId, status: { in: ["PENDING", "PARTIAL", "OVERDUE"] } }, select: { amount: true, paidAmount: true } }),
+    ]);
 
-    const revenueResult = await prisma.membership.aggregate({
-      where: { gymId },
-      _sum: {
-        amount: true,
-      },
-    });
+    const roleCount = (r: string) => usersByRoleRaw.find((u) => u.role === r)?._count.id ?? 0;
+    const trainers = roleCount("TRAINER");
+    const receptionists = roleCount("RECEPTIONIST");
+    const admins = roleCount("ADMIN");
+    const pendingDues = openDues.reduce((s, d) => s + Math.max(0, d.amount - (d.paidAmount ?? 0)), 0);
 
-    const totalRevenue = revenueResult._sum?.amount ?? 0;
-
-    const usersByRoleRaw = await prisma.user.groupBy({
-      by: ["role"],
-      where: {
-        gymId,
-      },
-      _count: {
-        id: true,
-      },
-    });
-
-    const usersByRole = usersByRoleRaw.map((item) => ({
-      role: item.role,
-      count: item._count.id,
-    }));
+    const usersByRole = usersByRoleRaw.map((item) => ({ role: item.role, count: item._count.id }));
 
     return {
+      // ── Members (Member role only) ──
       totalMembers,
+      activeMembers,
+      // ── Staff breakdown (Users, by role — separate from members) ──
+      trainers,
+      receptionists,
+      admins,
+      staff: trainers + receptionists + admins,
+      // ── Memberships ──
+      totalMemberships,
       activeMemberships,
-      totalRevenue,
+      // ── Money + activity ──
+      monthlyRevenue: monthlyPaid._sum?.amount ?? 0,
+      totalRevenue: membershipRevenue._sum?.amount ?? 0,
+      todayAttendance,
+      pendingDues: Math.round((pendingDues + Number.EPSILON) * 100) / 100,
       usersByRole,
     };
   }

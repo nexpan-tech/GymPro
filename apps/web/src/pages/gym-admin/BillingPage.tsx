@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import EmptyState from "@/components/common/EmptyState";
 import { invoiceService, type Invoice } from "@/services/invoice.service";
 import { licenseService, type GymLicenseDetail } from "@/services/license.service";
+import { planPriceLabel, planAmountLabel } from "@/lib/pricing";
 
 const inr = (n: number) => `₹${n.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
 const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—");
@@ -71,7 +72,7 @@ export default function BillingPage() {
               <div className="mt-3 space-y-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <p className="text-lg font-bold text-(--text-primary)">{license.license.name}</p>
-                  <p className="text-sm font-semibold text-(--text-primary)">{inr(license.license.monthlyPrice)}<span className="text-xs font-normal text-(--text-secondary)">/{license.license.interval === "YEARLY" ? "yr" : "mo"}</span></p>
+                  <p className="text-sm font-semibold text-(--text-primary)">{planPriceLabel(license.license.monthlyPrice, license.license.interval)}</p>
                 </div>
                 {/* Capacity utilization */}
                 <div>
@@ -105,7 +106,7 @@ export default function BillingPage() {
                   <div><span className="text-(--text-secondary)">Remaining: </span><strong className="text-(--text-primary)">{license.usage.remaining ?? "∞"}</strong></div>
                   <div><span className="text-(--text-secondary)">Renews: </span><strong className="text-(--text-primary)">{fmtDate(license.license.renewalDate)}</strong></div>
                   <div><span className="text-(--text-secondary)">Billing: </span><strong className="text-(--text-primary)">{license.billing.billingStatus}</strong></div>
-                  <div><span className="text-(--text-secondary)">Next: </span><strong className="text-(--text-primary)">{inr(license.billing.nextInvoiceTotal)}</strong></div>
+                  <div><span className="text-(--text-secondary)">Next: </span><strong className="text-(--text-primary)">{planAmountLabel(license.billing.nextInvoiceTotal)}</strong></div>
                 </div>
                 {license.usage.tier !== "HEALTHY" && (
                   <p className="rounded-xl bg-(--surface-secondary) p-3 text-xs text-(--text-secondary)">

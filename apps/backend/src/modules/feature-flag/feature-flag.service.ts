@@ -3,15 +3,39 @@ import { AppError } from "../../utils/response";
 
 type AuthUser = { id: string; role: string; gymId: string | null };
 
-/** Stage 10 — platform feature catalogue. Defaults are seeded on first use. */
+/**
+ * Platform feature catalogue. Defaults are seeded on first use and are
+ * idempotently upserted by key, so this list can grow safely over releases
+ * without touching the schema. Keys here are the contract used by
+ * `featureEnabled()` / `requireFeature()` (backend) and the web sidebar gating.
+ */
 export const FEATURE_CATALOGUE: { key: string; label: string; category: string; description: string }[] = [
-  { key: "gamification", label: "Gamification", category: "Engagement", description: "Points, streaks, badges, leaderboards." },
-  { key: "crm", label: "CRM & Leads", category: "Growth", description: "Lead pipeline, trials, conversion." },
-  { key: "community", label: "Community & Challenges", category: "Community", description: "Groups and challenges." },
-  { key: "chat", label: "Trainer Chat", category: "Communication", description: "Trainer-member messaging." },
-  { key: "ai", label: "AI Insights", category: "Intelligence", description: "Recommendations, forecasts, insights." },
-  { key: "billing", label: "Billing & Payments", category: "Billing", description: "Member billing and invoices." },
-  { key: "progress", label: "Progress Tracking", category: "Core", description: "Body measurements and goals." },
+  // Engagement
+  { key: "gamification", label: "Gamification & Rewards", category: "Engagement", description: "Points, streaks, badges and reward redemptions." },
+  { key: "leaderboard", label: "Leaderboard", category: "Engagement", description: "Gym, branch and challenge leaderboards." },
+  { key: "community", label: "Community & Challenges", category: "Engagement", description: "Community groups and challenges." },
+  { key: "referral", label: "Referral System", category: "Engagement", description: "Member referral codes, rewards and tracking." },
+  { key: "goals", label: "Goals", category: "Engagement", description: "Member goal setting and tracking." },
+  // Growth & Intelligence
+  { key: "crm", label: "CRM & Leads", category: "Growth", description: "Lead pipeline, trials and conversion." },
+  { key: "retention", label: "Retention & Churn", category: "Growth", description: "Risk scoring, churn and renewal predictions." },
+  { key: "automation", label: "Automation", category: "Growth", description: "Automated campaigns and lifecycle workflows." },
+  { key: "ai", label: "AI Insights", category: "Intelligence", description: "Recommendations, forecasts and insights." },
+  { key: "analytics", label: "Analytics", category: "Intelligence", description: "Dashboards and analytics across the gym." },
+  { key: "reports", label: "Reports", category: "Intelligence", description: "Standard exportable reports." },
+  { key: "advanced-reports", label: "Advanced Reports", category: "Intelligence", description: "Custom and scheduled advanced reporting." },
+  // Programs
+  { key: "workout-builder", label: "Workout Builder", category: "Programs", description: "Build and assign workout plans." },
+  { key: "diet-builder", label: "Diet Builder", category: "Programs", description: "Build and assign diet plans." },
+  { key: "personal-plans", label: "Personal Plans", category: "Programs", description: "Per-member personalised workout and diet plans." },
+  { key: "progress", label: "Progress Tracking", category: "Programs", description: "Body measurements and progress charts." },
+  // Communication
+  { key: "chat", label: "Chat", category: "Communication", description: "Trainer-member and admin messaging." },
+  { key: "announcements", label: "Announcements & Broadcast", category: "Communication", description: "Targeted announcements and broadcasts." },
+  // Billing & Platform
+  { key: "billing", label: "Billing & Payments", category: "Billing", description: "Member billing, invoices and payments." },
+  { key: "white-label", label: "White Label", category: "Platform", description: "Custom branding and white-labelling." },
+  { key: "api-access", label: "API Access", category: "Platform", description: "Programmatic API access for the gym." },
 ];
 
 export class FeatureFlagService {
@@ -29,7 +53,17 @@ export class FeatureFlagService {
 
   static async catalogue() {
     const flags = await prisma.featureFlag.findMany({ orderBy: { category: "asc" } });
-    return flags.length ? flags : this.seed();
+    // Idempotently backfill any catalogue entries missing from the DB (e.g. new
+    // features added in a release) so the catalogue is always complete without a
+    // manual re-seed. Additive only — never edits/removes existing flags.
+    const have = new Set(flags.map((f) => f.key));
+    const missing = FEATURE_CATALOGUE.filter((f) => !have.has(f.key));
+    if (missing.length === 0) return flags;
+    await prisma.featureFlag.createMany({
+      data: missing.map((f) => ({ key: f.key, label: f.label, category: f.category, description: f.description, defaultEnabled: true })),
+      skipDuplicates: true,
+    });
+    return prisma.featureFlag.findMany({ orderBy: { category: "asc" } });
   }
 
   /** Effective flags for a gym (assignment override else default). */

@@ -31,6 +31,7 @@ export interface TrainerStats {
   sessionsThisMonth?: number | null;
 }
 
+
 export const trainerApi = {
   getMyProfile: async (): Promise<User> => {
     const res = await api.get("/auth/me");

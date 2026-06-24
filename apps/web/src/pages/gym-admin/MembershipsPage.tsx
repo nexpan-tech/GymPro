@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus, RefreshCw, Snowflake, Clock, Users, AlertTriangle, CalendarClock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Plus, RefreshCw, Snowflake, Clock, Users, AlertTriangle, CalendarClock, Phone } from "lucide-react";
 import Page from "@/components/ui/Page";
 import { Card } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -41,10 +42,12 @@ const emptyPlan = { name: "", description: "", durationDays: "30", price: "", is
 export default function MembershipsPage() {
   const toast = useToast();
 
+  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("memberships");
   const [view, setView] = useState<"current" | "history">("current");
   const [analytics, setAnalytics] = useState<MembershipAnalytics | null>(null);
   const [memberships, setMemberships] = useState<MembershipRecord[]>([]);
+  const [renewals, setRenewals] = useState<MembershipRecord[]>([]);
   const [plans, setPlans] = useState<MembershipPlan[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,14 +74,18 @@ export default function MembershipsPage() {
     try {
       setLoading(true);
       setError(null);
-      const [a, ms, pl] = await Promise.all([
+      const [a, ms, pl, current] = await Promise.all([
         membershipService.analytics(),
         membershipService.list({ currentOnly: view === "current" }),
         membershipService.listPlans(true),
+        // Always-current set for the "Upcoming Renewals This Week" section,
+        // independent of the table's current/history toggle.
+        view === "current" ? Promise.resolve(null) : membershipService.list({ currentOnly: true }),
       ]);
       setAnalytics(a);
       setMemberships(ms);
       setPlans(pl);
+      setRenewals(current ?? ms);
     } catch (err) {
       console.error(err);
       setError("We couldn't load membership data.");
@@ -93,6 +100,17 @@ export default function MembershipsPage() {
   }, [load]);
 
   const activePlans = useMemo(() => plans.filter((p) => p.isActive), [plans]);
+
+  // Upcoming Renewals This Week — active memberships expiring within 7 days,
+  // nearest-expiry first. Derived from the always-current set (independent of
+  // the table's current/history toggle).
+  const upcomingRenewals = useMemo(
+    () =>
+      renewals
+        .filter((m) => m.effectiveStatus === "ACTIVE" && m.daysRemaining >= 0 && m.daysRemaining <= 7)
+        .sort((a, b) => a.daysRemaining - b.daysRemaining),
+    [renewals],
+  );
 
   // ── Plan handlers ──────────────────────────────────────────────────────────
   function openCreatePlan() {
@@ -247,6 +265,60 @@ export default function MembershipsPage() {
             metricLabel="due"
             action={<Button size="sm" variant="secondary" onClick={() => setView("current")}>Review current</Button>}
           />
+        )}
+
+        {/* ── Renewal Dues This Week (always visible, real data) ──────────── */}
+        {!loading && (
+          <Card variant="solid" className="overflow-hidden p-0">
+            <div className="flex items-center justify-between border-b border-border px-5 py-3">
+              <SectionHeader eyebrow="Action needed" title="Renewal Dues This Week" className="!mb-0" />
+              <StatusPill tone={upcomingRenewals.length > 0 ? "active" : "neutral"} size="sm">{upcomingRenewals.length} expiring</StatusPill>
+            </div>
+            {upcomingRenewals.length === 0 ? (
+              <p className="px-5 py-8 text-center text-sm text-(--text-secondary)">No memberships are due for renewal in the next 7 days.</p>
+            ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-border text-xs uppercase tracking-wide text-(--text-secondary)">
+                  <tr>
+                    <th className="px-5 py-3 font-medium">Member</th>
+                    <th className="px-5 py-3 font-medium">Plan</th>
+                    <th className="px-5 py-3 font-medium">Expiry Date</th>
+                    <th className="px-5 py-3 font-medium">Days Left</th>
+                    <th className="px-5 py-3 font-medium">Contact</th>
+                    <th className="px-5 py-3 font-medium">Status</th>
+                    <th className="px-5 py-3 text-right font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {upcomingRenewals.map((m) => {
+                    const phone = (m.member as { phone?: string | null } | undefined)?.phone ?? null;
+                    return (
+                      <tr key={m.id} className="cursor-pointer hover:bg-(--surface-hover)" onClick={() => navigate(`/gym-admin/members/${m.memberId}`)}>
+                        <td className="px-5 py-3">
+                          <div className="font-medium text-(--text-primary)">{m.member?.user?.name ?? "—"}</div>
+                          <div className="text-xs text-(--text-secondary)">{m.member?.user?.email}</div>
+                        </td>
+                        <td className="px-5 py-3 text-(--text-secondary)">{planName(m)}</td>
+                        <td className="px-5 py-3 text-(--text-secondary)">{fmt(m.endDate)}</td>
+                        <td className="px-5 py-3"><StatusPill tone={m.daysRemaining <= 2 ? "expired" : "active"} size="sm">{m.daysRemaining}d</StatusPill></td>
+                        <td className="px-5 py-3 text-(--text-secondary)">{phone ?? "—"}</td>
+                        <td className="px-5 py-3"><StatusPill tone={statusTone(m.effectiveStatus)} size="sm">{m.effectiveStatus}</StatusPill></td>
+                        <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex justify-end gap-1.5">
+                            <Button size="sm" variant="secondary" iconLeft={<RefreshCw className="h-3.5 w-3.5" />} loading={busyId === m.id} onClick={() => void renew(m)}>Renew</Button>
+                            {phone && <Button size="sm" variant="ghost" iconLeft={<Phone className="h-3.5 w-3.5" />} onClick={() => { window.location.href = `tel:${phone}`; }}>Call</Button>}
+                            <Button size="sm" variant="ghost" onClick={() => navigate(`/gym-admin/members/${m.memberId}`)}>View</Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            )}
+          </Card>
         )}
 
         {/* Tabs */}

@@ -80,6 +80,10 @@ export const superAdminService = {
   getDashboard: async (): Promise<PlatformDashboard> => unwrap(await api.get("/super-admin/dashboard")),
   getGyms: async (): Promise<PlatformGymRow[]> => unwrap(await api.get("/super-admin/gyms")) ?? [],
 
+  /** Reset a gym's admin login password (super-admin only). */
+  resetGymAdminPassword: async (gymId: string, password: string): Promise<{ userId: string; email: string }> =>
+    unwrap(await api.post(`/super-admin/gyms/${gymId}/reset-admin-password`, { password })),
+
   // SaaS billing
   getSubscriptions: async (): Promise<SubscriptionRow[]> => unwrap(await api.get("/super-admin/subscriptions")) ?? [],
   getBillingSummary: async (): Promise<{ mrr: number; arr: number; paid: number; pending: number; overdue: number }> =>

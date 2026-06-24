@@ -49,6 +49,9 @@ export class LicenseController {
   static async listLicenses(_req: Request, res: Response) {
     return ok(res, await LicenseService.listLicenses());
   }
+  static async billingSummary(_req: Request, res: Response) {
+    return ok(res, await LicenseService.billingSummary());
+  }
   static async getGymLicense(req: Request, res: Response) {
     return ok(res, await LicenseService.getGymLicense(req.params.gymId as string));
   }
@@ -70,6 +73,25 @@ export class LicenseController {
   }
   static async resume(req: Request, res: Response) {
     return ok(res, await LicenseService.setStatus(req.params.gymId as string, "ACTIVE", actorFrom(req)), "License reactivated");
+  }
+  static async cancel(req: Request, res: Response) {
+    return ok(res, await LicenseService.setStatus(req.params.gymId as string, "CANCELLED", actorFrom(req)), "License cancelled");
+  }
+
+  // ── Trial + renewal lifecycle ────────────────────────────────────────────
+  static async convertTrial(req: Request, res: Response) {
+    return ok(res, await LicenseService.convertTrial(req.params.gymId as string, actorFrom(req)), "Trial converted to a paid license");
+  }
+  static async extendTrial(req: Request, res: Response) {
+    const days = Number(req.body?.days ?? req.body?.extraDays);
+    return ok(res, await LicenseService.extendTrial(req.params.gymId as string, days, actorFrom(req)), `Trial extended by ${days} day(s)`);
+  }
+  static async renew(req: Request, res: Response) {
+    return ok(res, await LicenseService.renew(req.params.gymId as string, actorFrom(req)), "License renewed");
+  }
+  static async runLifecycle(req: Request, res: Response) {
+    const result = await LicenseService.runLifecycle({ ...actorFrom(req), source: "manual" });
+    return ok(res, result, "License lifecycle processed");
   }
   static async generate(req: Request, res: Response) {
     const month = (req.body?.month ?? req.query?.month) as string | undefined;

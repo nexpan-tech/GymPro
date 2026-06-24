@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus, Dumbbell, UserCheck, Users as UsersIcon, Activity, KeyRound, Trash2, Copy, Crown, CalendarDays } from "lucide-react";
+import { Plus, Dumbbell, UserCheck, Users as UsersIcon, Activity, KeyRound, Trash2, Crown, CalendarDays } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import Input from "@/components/forms/Input";
 import SearchInput from "@/components/common/SearchInput";
+import SetPasswordModal from "@/components/common/SetPasswordModal";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
   CommandHero, Highlight, MetricCard, SectionHeader, StatusPill, EmptyMomentumState,
@@ -40,8 +41,6 @@ export default function TrainersPage() {
   const [confirmToggle, setConfirmToggle] = useState<GymUser | null>(null);
 
   const [resetTarget, setResetTarget] = useState<GymUser | null>(null);
-  const [resetResult, setResetResult] = useState<string | null>(null);
-  const [resetting, setResetting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<GymUser | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -152,20 +151,6 @@ export default function TrainersPage() {
       toast.error("Failed to update trainer status.");
     } finally {
       setTogglingId(null);
-    }
-  }
-
-  async function handleReset() {
-    if (!resetTarget) return;
-    setResetting(true);
-    try {
-      const res = await userService.resetPassword(resetTarget.id);
-      setResetResult(res.temporaryPassword);
-    } catch {
-      toast.error("Failed to reset password.");
-      setResetTarget(null);
-    } finally {
-      setResetting(false);
     }
   }
 
@@ -308,7 +293,7 @@ export default function TrainersPage() {
                     >
                       {t.isActive ? "Deactivate" : "Activate"}
                     </Button>
-                    <Button size="sm" variant="ghost" iconLeft={<KeyRound className="h-3.5 w-3.5" />} onClick={() => { setResetResult(null); setResetTarget(t); }} title="Reset password">
+                    <Button size="sm" variant="ghost" iconLeft={<KeyRound className="h-3.5 w-3.5" />} onClick={() => setResetTarget(t)} title="Set password">
                       <span className="sr-only">Reset password</span>
                     </Button>
                     <Button size="sm" variant="ghost" iconLeft={<Trash2 className="h-3.5 w-3.5 text-primary" />} onClick={() => setDeleteTarget(t)} title="Delete">
@@ -367,36 +352,13 @@ export default function TrainersPage() {
         </p>
       </Modal>
 
-      {/* Reset password */}
-      <Modal
+      {/* Set new password */}
+      <SetPasswordModal
         open={!!resetTarget}
-        onClose={() => { if (!resetting) { setResetTarget(null); setResetResult(null); } }}
-        title="Reset Password"
-        size="sm"
-        description={resetResult ? undefined : `Generate a new temporary password for ${resetTarget?.name ?? "this trainer"}.`}
-        footer={
-          resetResult ? (
-            <Button onClick={() => { setResetTarget(null); setResetResult(null); }}>Done</Button>
-          ) : (
-            <div className="flex justify-end gap-3">
-              <Button variant="secondary" onClick={() => setResetTarget(null)} disabled={resetting}>Cancel</Button>
-              <Button onClick={() => void handleReset()} loading={resetting}>Generate Password</Button>
-            </div>
-          )
-        }
-      >
-        {resetResult ? (
-          <div className="space-y-3">
-            <p className="text-sm text-(--text-secondary)">Share this one-time password with the trainer. It won't be shown again.</p>
-            <div className="flex items-center justify-between rounded-lg border border-border bg-(--surface-secondary) px-4 py-3">
-              <code className="text-lg font-bold tracking-wide text-(--text-primary)">{resetResult}</code>
-              <Button size="sm" variant="secondary" iconLeft={<Copy className="h-3.5 w-3.5" />} onClick={() => { navigator.clipboard?.writeText(resetResult); toast.success("Copied"); }}>Copy</Button>
-            </div>
-          </div>
-        ) : (
-          <p className="text-sm text-(--text-secondary)">A secure temporary password will be generated and shown once.</p>
-        )}
-      </Modal>
+        onClose={() => setResetTarget(null)}
+        subjectName={resetTarget?.name ?? "this trainer"}
+        onSubmit={async (password) => { await userService.resetPassword(resetTarget!.id, password); }}
+      />
 
       {/* Delete confirmation */}
       <Modal

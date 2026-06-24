@@ -86,6 +86,19 @@ export class SuperAdminController {
     return ok(res, updated, "Billing settings updated");
   }
 
+  // ── Gym Admin password reset (role hierarchy) ────────────────────────────
+  static async resetGymAdminPassword(req: Request, res: Response) {
+    const gymId = req.params.gymId as string;
+    const { password, userId } = req.body ?? {};
+    const result = await PlatformService.resetGymAdminPassword(gymId, password, userId);
+    await createAuditLog({
+      userId: req.user?.id ?? null, action: AuditAction.UPDATE, entity: "User", entityId: result.userId,
+      newData: { event: "GYM_ADMIN_PASSWORD_RESET", gymId, adminEmail: result.email },
+      ipAddress: req.ip ?? null, userAgent: req.headers["user-agent"] ?? null,
+    });
+    return ok(res, { userId: result.userId, email: result.email }, `Password reset for ${result.email}`);
+  }
+
   // ── Operations ───────────────────────────────────────────────────────────
   static async metrics(_req: Request, res: Response) {
     return ok(res, await PlatformService.metrics());

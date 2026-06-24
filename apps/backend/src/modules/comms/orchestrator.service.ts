@@ -86,7 +86,18 @@ export class CommunicationOrchestrator {
     const result: DispatchResult = { sent: 0, skipped: 0, failed: 0, total: 0 };
     const channels = Array.from(new Set(input.channels));
 
-    for (const recipient of input.recipients) {
+    // Dedupe recipients (by userId → memberId → email) so overlapping audiences
+    // (e.g. "all members" + a segment that re-includes someone) never produce
+    // duplicate delivery logs — the root cause of duplicate "Recent deliveries".
+    const seenRecipient = new Set<string>();
+    const recipients = input.recipients.filter((r) => {
+      const key = r.userId ?? r.memberId ?? r.email ?? r.phone ?? JSON.stringify(r);
+      if (seenRecipient.has(key)) return false;
+      seenRecipient.add(key);
+      return true;
+    });
+
+    for (const recipient of recipients) {
       for (const channel of channels) {
         result.total += 1;
         const base = {

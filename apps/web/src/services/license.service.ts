@@ -95,11 +95,24 @@ export interface GymLicenseDetail {
 
 export interface GenerateResult { billingMonth: string; created: number; skipped: number; totalBilled: number; invoices: unknown[] }
 
+export interface UpcomingRenewal { gymId: string; gymName: string; planName: string; renewalDate: string; amount: number }
+export interface LicenseBillingSummary {
+  mrr: number; arr: number;
+  activeLicenses: number; trialLicenses: number; pastDueLicenses: number;
+  suspendedLicenses: number; expiredLicenses: number; cancelledLicenses: number;
+  licensedGyms: number; unlicensedGyms: number;
+  revenueThisMonth: number; paid: number; pending: number; overdue: number;
+  upcomingRenewals: UpcomingRenewal[]; upcomingRenewalCount: number;
+  planDistribution: { name: string; count: number }[];
+  licenseDistribution: { status: string; count: number }[];
+}
+
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 export const licenseService = {
   // Super-admin
   listLicenses: async (): Promise<GymLicenseRow[]> => unwrap(await api.get("/licenses")) ?? [],
+  billingSummary: async (): Promise<LicenseBillingSummary> => unwrap(await api.get("/licenses/billing/summary")),
   getGymLicense: async (gymId: string): Promise<GymLicenseDetail> => unwrap(await api.get(`/licenses/gyms/${gymId}`)),
   getAudit: async (gymId: string): Promise<Record<string, unknown>> => unwrap(await api.get(`/licenses/gyms/${gymId}/audit`)),
   getHistory: async (gymId: string): Promise<unknown[]> => unwrap(await api.get(`/licenses/gyms/${gymId}/history`)) ?? [],
@@ -114,6 +127,12 @@ export const licenseService = {
     unwrap(await api.post(`/licenses/gyms/${gymId}/assign`, data)),
   suspend: async (gymId: string): Promise<unknown> => unwrap(await api.post(`/licenses/gyms/${gymId}/suspend`, {})),
   resume: async (gymId: string): Promise<unknown> => unwrap(await api.post(`/licenses/gyms/${gymId}/resume`, {})),
+  cancel: async (gymId: string): Promise<unknown> => unwrap(await api.post(`/licenses/gyms/${gymId}/cancel`, {})),
+  renew: async (gymId: string): Promise<unknown> => unwrap(await api.post(`/licenses/gyms/${gymId}/renew`, {})),
+  convertTrial: async (gymId: string): Promise<unknown> => unwrap(await api.post(`/licenses/gyms/${gymId}/convert-trial`, {})),
+  extendTrial: async (gymId: string, days: number): Promise<unknown> => unwrap(await api.post(`/licenses/gyms/${gymId}/extend-trial`, { days })),
+  runLifecycle: async (): Promise<{ processed: number; trialExpired: number; pastDue: number; suspended: number; trialEndingSoon: number; renewalDueSoon: number }> =>
+    unwrap(await api.post("/licenses/lifecycle/run", {})),
   generate: async (month?: string): Promise<GenerateResult> => unwrap(await api.post("/licenses/generate", month ? { month } : {})),
 
   // Gym-admin (read-only self view)

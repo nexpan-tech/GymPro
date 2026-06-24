@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const { prismaMock } = vi.hoisted(() => ({
   prismaMock: {
-    featureFlag: { findMany: vi.fn(), findUnique: vi.fn(), upsert: vi.fn() },
+    featureFlag: { findMany: vi.fn(), findUnique: vi.fn(), upsert: vi.fn(), createMany: vi.fn() },
     featureFlagAssignment: { findMany: vi.fn(), findUnique: vi.fn(), upsert: vi.fn() },
     gym: { findUnique: vi.fn() },
   },

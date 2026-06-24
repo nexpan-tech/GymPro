@@ -1,5 +1,5 @@
 import { prisma } from "../../config/db";
-import { MembershipPlan, MembershipStatus } from "@prisma/client";
+import { MembershipPlan, MembershipStatus, Prisma } from "@prisma/client";
 import { GamificationEvents } from "../gamification/engagement-events.service";
 import { ReferralService } from "../referral/referral.service";
 import { AppError } from "../../utils/response";
@@ -70,6 +70,55 @@ export class MembershipService {
     return plan;
   }
 
+  /**
+   * End every currently-OPEN membership (ACTIVE or FROZEN) for a member as of
+   * `asOf` — marks them EXPIRED and cuts endDate to `asOf` so neither the
+   * persisted status nor the derived/effective status ever counts them active.
+   * The rows stay in history. Guarantees one active membership per member.
+   */
+  private static async supersedeOpenMemberships(
+    tx: Prisma.TransactionClient,
+    gymId: string,
+    memberId: string,
+    asOf: Date,
+  ) {
+    await tx.membership.updateMany({
+      where: { gymId, memberId, status: { in: ["ACTIVE", "FROZEN"] } },
+      data: { status: "EXPIRED", endDate: asOf },
+    });
+  }
+
+  /**
+   * One-time data reconciliation: collapse pre-existing DUPLICATE active
+   * memberships so each member keeps only their most-recent active one; older
+   * actives become EXPIRED (ended now). Safe to re-run (idempotent once clean).
+   * Returns how many duplicate actives were ended. No schema change.
+   */
+  static async reconcileActiveMemberships(gymId?: string) {
+    const now = new Date();
+    const where = gymId ? { gymId } : {};
+    // All memberships that are currently effective-ACTIVE (status ACTIVE/FROZEN
+    // not yet lapsed, or any row whose endDate is still in the future).
+    const open = await prisma.membership.findMany({
+      where: { ...where, status: { in: ["ACTIVE", "FROZEN"] }, endDate: { gte: now } },
+      select: { id: true, memberId: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+    });
+    const keep = new Set<string>();
+    const supersede: string[] = [];
+    for (const m of open) {
+      if (keep.has(m.memberId)) supersede.push(m.id); // older duplicate
+      else keep.add(m.memberId); // newest active for this member — keep
+    }
+    if (supersede.length > 0) {
+      await prisma.membership.updateMany({
+        where: { id: { in: supersede } },
+        data: { status: "EXPIRED", endDate: now },
+      });
+    }
+    return { membersWithActive: keep.size, duplicatesEnded: supersede.length };
+  }
+
   static async create(gymId: string, data: CreateMembershipInput) {
     const member = await prisma.member.findFirst({
       where: { id: data.memberId, gymId },
@@ -107,19 +156,25 @@ export class MembershipService {
       ? new Date(data.endDate)
       : addDays(startDate, durationDays);
 
-    const membership = await prisma.membership.create({
-      data: {
-        gymId,
-        memberId: data.memberId,
-        planId,
-        plan: planEnum,
-        startDate,
-        endDate,
-        amount,
-        paymentStatus: data.paymentStatus ?? "PENDING",
-        status: "ACTIVE",
-      },
-      include: membershipInclude,
+    // INVARIANT: a member may have only ONE active membership. Supersede any
+    // currently-open membership (ACTIVE/FROZEN) before creating the new one —
+    // the prior one is ended now and kept in history as EXPIRED. Atomic.
+    const membership = await prisma.$transaction(async (tx) => {
+      await this.supersedeOpenMemberships(tx, gymId, data.memberId, new Date());
+      return tx.membership.create({
+        data: {
+          gymId,
+          memberId: data.memberId,
+          planId,
+          plan: planEnum,
+          startDate,
+          endDate,
+          amount,
+          paymentStatus: data.paymentStatus ?? "PENDING",
+          status: "ACTIVE",
+        },
+        include: membershipInclude,
+      });
     });
 
     // Passive referral completion: a referral becomes Successful only when the
@@ -284,10 +339,9 @@ export class MembershipService {
     const endDate = addDays(startDate, durationDays);
 
     const created = await prisma.$transaction(async (tx) => {
-      await tx.membership.update({
-        where: { id: old.id },
-        data: { status: "EXPIRED" },
-      });
+      // End ALL of the member's open memberships (not just the one passed) so a
+      // renewal can never leave two active rows behind.
+      await this.supersedeOpenMemberships(tx, gymId, old.memberId, now);
 
       return tx.membership.create({
         data: {

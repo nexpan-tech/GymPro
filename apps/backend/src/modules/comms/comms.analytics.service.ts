@@ -46,14 +46,37 @@ export class CommsAnalyticsService {
     };
   }
 
-  /** Recent delivery logs for the delivery-status table. */
+  /**
+   * Recent delivery logs for the delivery-status table — de-duplicated on read.
+   *
+   * Each real delivery should appear once. A duplicate row is the SAME
+   * channel + recipient + source (refType/refId) — or, when there's no source
+   * ref, the same channel + recipient + title within the same minute. These
+   * arise from worker retries, overlapping audiences, or legacy double-inserts.
+   * We over-fetch, collapse keeping the most recent row, then return `limit`.
+   * Read-only — no rows are deleted.
+   */
   static async deliveryLogs(user: AuthUser, limit = 50) {
     if (!user.gymId) throw new AppError("Gym context missing", 403);
-    return prisma.deliveryLog.findMany({
+    const rows = await prisma.deliveryLog.findMany({
       where: { gymId: user.gymId },
       orderBy: { createdAt: "desc" },
-      take: limit,
+      take: limit * 4,
     });
+
+    const seen = new Set<string>();
+    const deduped: typeof rows = [];
+    for (const r of rows) {
+      const recipient = r.userId ?? r.memberId ?? r.recipientAddr ?? "";
+      const key = r.refId
+        ? `${r.channel}|${recipient}|${r.refType ?? ""}|${r.refId}`
+        : `${r.channel}|${recipient}|${r.title ?? ""}|${new Date(r.createdAt).toISOString().slice(0, 16)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      deduped.push(r);
+      if (deduped.length >= limit) break;
+    }
+    return deduped;
   }
 
   /**

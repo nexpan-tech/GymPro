@@ -3,7 +3,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const { prismaMock, sendEmailMock } = vi.hoisted(() => {
   const prismaMock: any = {
     member: { groupBy: vi.fn(), count: vi.fn() },
-    gym: { findMany: vi.fn() },
+    gym: { findMany: vi.fn(), count: vi.fn() },
+    gymSubscription: { findMany: vi.fn() },
     platformBillingSettings: { findFirst: vi.fn(), create: vi.fn() },
     saaSInvoice: {
       findMany: vi.fn(),
@@ -116,23 +117,24 @@ describe("SaaSBillingService.recordPayment", () => {
   });
 });
 
-describe("SaaSBillingService.revenueSummary", () => {
-  it("computes per-member MRR from active members × price (no plan tiers)", async () => {
-    prismaMock.member.groupBy.mockResolvedValue([
-      { gymId: "g1", _count: { _all: 20 } },
-      { gymId: "g2", _count: { _all: 5 } },
+describe("SaaSBillingService.revenueSummary (license-based)", () => {
+  it("computes MRR from ACTIVE license plan prices — NOT member count", async () => {
+    const future = new Date(Date.now() + 90 * 86400000);
+    prismaMock.gymSubscription.findMany.mockResolvedValue([
+      { gymId: "g1", status: "ACTIVE", startDate: new Date(), endDate: future, createdAt: new Date(), plan: { name: "Growth", price: 1999, interval: "MONTHLY" }, gym: { name: "Gym One" } },
+      { gymId: "g2", status: "ACTIVE", startDate: new Date(), endDate: future, createdAt: new Date(), plan: { name: "Professional", price: 3999, interval: "MONTHLY" }, gym: { name: "Gym Two" } },
+      { gymId: "g3", status: "TRIALING", startDate: new Date(), endDate: future, createdAt: new Date(), plan: { name: "Starter", price: 999, interval: "MONTHLY" }, gym: { name: "Gym Three" } },
     ]);
-    prismaMock.gym.findMany.mockResolvedValue([
-      { id: "g1", pricePerActiveMember: 20, gstPercent: 18 },
-      { id: "g2", pricePerActiveMember: 50, gstPercent: 18 },
-    ]);
+    prismaMock.gym.count.mockResolvedValue(3);
     prismaMock.saaSInvoice.findMany.mockResolvedValue([
       { status: "PAID", totalAmount: 472, dueDate: new Date(), paidAt: new Date() },
       { status: "PENDING", totalAmount: 200, dueDate: new Date(Date.now() + 86400000), paidAt: null },
     ]);
     const s = await SaaSBillingService.revenueSummary();
-    expect(s.mrr).toBe(20 * 20 + 5 * 50); // 650
-    expect(s.arr).toBe(650 * 12);
+    expect(s.mrr).toBe(1999 + 3999); // 5998 — trialing g3 excluded
+    expect(s.arr).toBe((1999 + 3999) * 12);
+    expect(s.activeLicenses).toBe(2);
+    expect(s.trialLicenses).toBe(1);
     expect(s.paid).toBe(472);
     expect(s.pending).toBe(200);
   });

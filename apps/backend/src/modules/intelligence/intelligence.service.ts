@@ -38,8 +38,11 @@ export class IntelligenceService {
     const totalRevenue = payments.reduce((sum, p) => sum + Number(p.amount), 0);
     const pendingDues = dues.reduce((sum, d) => sum + Number(d.balance || 0), 0);
 
-    const activeMemberships = memberships.filter((m) => m.endDate >= today).length;
-    const expiredMemberships = memberships.filter((m) => m.endDate < today).length;
+    // Active = status ACTIVE and not lapsed (one per member by invariant).
+    const activeMemberships = memberships.filter((m) => m.status === "ACTIVE" && m.endDate >= today).length;
+    const expiredMemberships = memberships.filter((m) => m.status !== "ACTIVE" || m.endDate < today).length;
+    // Active MEMBERS (people) — distinct from active memberships (contracts).
+    const activeMembers = members.filter((m) => m.status === "ACTIVE").length;
 
     const churnRiskMembers = members.filter((member) => {
       const memberAttendance = attendances
@@ -56,6 +59,7 @@ export class IntelligenceService {
 
     return {
       totalMembers: members.length,
+      activeMembers,
       totalRevenue,
       pendingDues,
       totalAttendance: attendances.length,

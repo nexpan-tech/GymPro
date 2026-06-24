@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Plus, Users as UsersIcon, UserCheck, UserX, KeyRound, Trash2, Copy,
+  Plus, Users as UsersIcon, UserCheck, UserX, KeyRound, Trash2,
   MapPin, Dumbbell, CalendarClock, ArrowRight,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -9,6 +9,7 @@ import Modal from "@/components/ui/Modal";
 import Input from "@/components/forms/Input";
 import Select from "@/components/forms/Select";
 import SearchInput from "@/components/common/SearchInput";
+import SetPasswordModal from "@/components/common/SetPasswordModal";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
   CommandHero, Highlight, MetricCard, SectionHeader, StatusPill,
@@ -85,8 +86,6 @@ export default function MembersPage() {
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const [resetTarget, setResetTarget] = useState<Member | null>(null);
-  const [resetResult, setResetResult] = useState<string | null>(null);
-  const [resetting, setResetting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Member | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -230,19 +229,6 @@ export default function MembersPage() {
     }
   }
 
-  async function handleReset() {
-    if (!resetTarget) return;
-    setResetting(true);
-    try {
-      const res = await memberService.resetPassword(resetTarget.id);
-      setResetResult(res.data?.temporaryPassword ?? null);
-    } catch (err) {
-      toast.error(errMsg(err, "Failed to reset password."));
-      setResetTarget(null);
-    } finally {
-      setResetting(false);
-    }
-  }
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -384,7 +370,7 @@ export default function MembersPage() {
                 onView={() => navigate(`/gym-admin/members/${m.id}`)}
                 onEdit={() => openEdit(m)}
                 onToggle={() => void handleToggle(m)}
-                onReset={() => { setResetResult(null); setResetTarget(m); }}
+                onReset={() => setResetTarget(m)}
                 onDelete={() => setDeleteTarget(m)}
               />
             ))}
@@ -392,35 +378,13 @@ export default function MembersPage() {
         )}
       </div>
 
-      {/* Reset password */}
-      <Modal
+      {/* Set new password (admin sets it directly — never generated/shown) */}
+      <SetPasswordModal
         open={!!resetTarget}
-        onClose={() => { if (!resetting) { setResetTarget(null); setResetResult(null); } }}
-        title="Reset Password"
-        description={resetResult ? undefined : `Generate a new temporary password for ${resetTarget?.user?.name ?? "this member"}.`}
-        footer={
-          resetResult ? (
-            <Button onClick={() => { setResetTarget(null); setResetResult(null); }}>Done</Button>
-          ) : (
-            <div className="flex justify-end gap-3">
-              <Button variant="secondary" onClick={() => setResetTarget(null)} disabled={resetting}>Cancel</Button>
-              <Button onClick={() => void handleReset()} loading={resetting}>Generate Password</Button>
-            </div>
-          )
-        }
-      >
-        {resetResult ? (
-          <div className="space-y-3">
-            <p className="text-sm text-(--text-secondary)">Share this one-time password with the member. It won't be shown again.</p>
-            <div className="flex items-center justify-between rounded-lg border border-border bg-(--surface-secondary) px-4 py-3">
-              <code className="text-lg font-bold tracking-wide text-(--text-primary)">{resetResult}</code>
-              <Button size="sm" variant="secondary" iconLeft={<Copy className="h-3.5 w-3.5" />} onClick={() => { navigator.clipboard?.writeText(resetResult); toast.success("Copied"); }}>Copy</Button>
-            </div>
-          </div>
-        ) : (
-          <p className="text-sm text-(--text-secondary)">A secure temporary password will be generated and shown once.</p>
-        )}
-      </Modal>
+        onClose={() => setResetTarget(null)}
+        subjectName={resetTarget?.user?.name ?? "this member"}
+        onSubmit={async (password) => { if (resetTarget) await memberService.resetPassword(resetTarget.id, password); }}
+      />
 
       {/* Delete confirmation */}
       <Modal

@@ -216,4 +216,29 @@ export class TrainerAnalyticsService {
       clients,
     };
   }
+
+  /**
+   * Compact stat-card payload for the logged-in trainer's own dashboard
+   * (mobile + web). Self-scoped via user.id and tenant-scoped via gymId.
+   * Non-trainer callers simply get zeroes (no assigned members/plans).
+   */
+  static async getMyStats(user: AuthUser) {
+    if (!user.gymId) throw new AppError("Gym context missing", 403);
+    const gymId = user.gymId;
+    const trainerId = user.id;
+
+    const todayStart = startOfDay();
+    const monthStart = new Date(todayStart.getFullYear(), todayStart.getMonth(), 1);
+
+    const [totalAssignedMembers, activeMembers, workoutPlansCreated, attendancesToday, sessionsThisMonth] =
+      await Promise.all([
+        prisma.member.count({ where: { gymId, trainerId } }),
+        prisma.member.count({ where: { gymId, trainerId, status: "ACTIVE" } }),
+        prisma.workoutPlan.count({ where: { gymId, trainerId } }),
+        prisma.attendance.count({ where: { gymId, date: { gte: todayStart }, member: { trainerId } } }),
+        prisma.attendance.count({ where: { gymId, date: { gte: monthStart }, member: { trainerId } } }),
+      ]);
+
+    return { totalAssignedMembers, activeMembers, workoutPlansCreated, attendancesToday, sessionsThisMonth };
+  }
 }

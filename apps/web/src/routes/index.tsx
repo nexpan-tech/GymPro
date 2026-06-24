@@ -10,10 +10,12 @@ import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/auth/LoginPage";
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import PublicRoute from "@/routes/PublicRoute";
+import DashboardLayout from "@/layouts/DashboardLayout";
 import GymAdminLayout from "@/layouts/GymAdminLayout";
 import SuperAdminLayout from "@/layouts/SuperAdminLayout";
 import TrainerLayout from "@/layouts/TrainerLayout";
 import MemberLayout from "@/layouts/MemberLayout";
+import { RELEASE_FLAGS } from "@/config/features";
 
 // Lightweight fallback while a route chunk loads.
 function PageLoader() {
@@ -71,7 +73,8 @@ const router = createBrowserRouter([
           { path: "feature-flags", element: el(() => import("@/pages/super-admin/FeatureFlagsPage")) },
           { path: "billing-settings", element: el(() => import("@/pages/super-admin/PlatformBillingSettingsPage")) },
           { path: "audit", element: el(() => import("@/pages/shared/AuditLogsPage")) },
-          { path: "settings", element: el(() => import("@/pages/super-admin/SettingsPage")) },
+          // "Settings" was a placeholder; real config is Billing Settings + Feature Flags.
+          { path: "settings", element: <Navigate to="/super-admin/billing-settings" replace /> },
         ],
       },
     ],
@@ -106,13 +109,16 @@ const router = createBrowserRouter([
           { path: "rewards", element: el(() => import("@/pages/gym-admin/RewardsPage")) },
           { path: "leaderboard", element: el(() => import("@/pages/gym-admin/LeaderboardPage")) },
           { path: "referrals", element: el(() => import("@/pages/gym-admin/ReferralsPage")) },
-          { path: "broadcast", element: el(() => import("@/pages/gym-admin/BroadcastPage")) },
+          // Broadcast hidden this release — direct URL access redirects to the
+          // dashboard. Flip RELEASE_FLAGS.broadcast to restore the page.
+          { path: "broadcast", element: RELEASE_FLAGS.broadcast ? el(() => import("@/pages/gym-admin/BroadcastPage")) : <Navigate to="/gym-admin/dashboard" replace /> },
           { path: "announcements", element: el(() => import("@/pages/gym-admin/AnnouncementsPage")) },
           { path: "communication-analytics", element: el(() => import("@/pages/gym-admin/CommunicationAnalyticsPage")) },
           { path: "chat", element: el(() => import("@/pages/gym-admin/AdminChatPage")) },
           { path: "ai-insights", element: el(() => import("@/pages/gym-admin/AIInsightsPage")) },
           { path: "reports", element: el(() => import("@/pages/gym-admin/ReportsPage")) },
           { path: "white-label", element: el(() => import("@/pages/gym-admin/WhiteLabelPage")) },
+          { path: "support", element: el(() => import("@/pages/gym-admin/SupportPage")) },
           { path: "trainers", element: el(() => import("@/pages/gym-admin/TrainersPage")) },
           { path: "workout-plans", element: el(() => import("@/pages/gym-admin/WorkoutPlansPage")) },
           { path: "diet-plans", element: el(() => import("@/pages/gym-admin/DietPlansPage")) },
@@ -179,11 +185,18 @@ const router = createBrowserRouter([
   },
 
   // ── Shared authenticated routes (any logged-in role) ──────────────────────
+  // Wrapped in DashboardLayout so Profile/Notifications render INSIDE the app
+  // shell (role-aware sidebar + header + theme), not as standalone pages.
   {
     element: <ProtectedRoute />,
     children: [
-      { path: "/profile", element: el(() => import("@/pages/shared/ProfilePage")) },
-      { path: "/notifications", element: el(() => import("@/pages/shared/NotificationsPage")) },
+      {
+        element: <DashboardLayout />,
+        children: [
+          { path: "/profile", element: el(() => import("@/pages/shared/ProfilePage")) },
+          { path: "/notifications", element: el(() => import("@/pages/shared/NotificationsPage")) },
+        ],
+      },
     ],
   },
 

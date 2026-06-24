@@ -1,17 +1,21 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { Building2, Plus, Users, Power, IndianRupee } from "lucide-react";
+import { Building2, Plus, Users, Power, BadgeCheck, KeyRound } from "lucide-react";
 import Page from "@/components/ui/Page";
 import { Card } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import Modal from "@/components/ui/Modal";
 import Input from "@/components/forms/Input";
+import Select from "@/components/forms/Select";
 import SearchInput from "@/components/common/SearchInput";
 import EmptyState from "@/components/common/EmptyState";
+import SetPasswordModal from "@/components/common/SetPasswordModal";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/hooks/useToast";
 import { gymService, type CreateGymPayload } from "@/services/gym.service";
 import { superAdminService, type PlatformGymRow } from "@/services/superAdmin.service";
+import { licenseService, type GymLicenseRow, type LicensePlan } from "@/services/license.service";
+import { planAmountLabel, planPriceLabel } from "@/lib/pricing";
 
 type StatusFilter = "ALL" | "ACTIVE" | "SUSPENDED";
 
@@ -20,18 +24,17 @@ interface FormState {
   email: string;
   phone: string;
   address: string;
-  pricePerActiveMember: string;
+  planId: string;
   adminName: string;
   adminEmail: string;
   adminPassword: string;
 }
 
 const emptyForm: FormState = {
-  name: "", email: "", phone: "", address: "", pricePerActiveMember: "",
+  name: "", email: "", phone: "", address: "", planId: "",
   adminName: "", adminEmail: "", adminPassword: "",
 };
 
-const inr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 function formatDate(value?: string) {
   if (!value) return "—";
   return new Date(value).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
@@ -41,6 +44,8 @@ export default function GymsPage() {
   const toast = useToast();
 
   const [gyms, setGyms] = useState<PlatformGymRow[]>([]);
+  const [licenses, setLicenses] = useState<Map<string, GymLicenseRow>>(new Map());
+  const [plans, setPlans] = useState<LicensePlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,12 +57,21 @@ export default function GymsPage() {
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [pwGym, setPwGym] = useState<PlatformGymRow | null>(null);
 
   const loadGyms = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      setGyms(await superAdminService.getGyms());
+      // Gyms + their license assignments + plan catalogue (for the create flow).
+      const [gymRows, licenseRows, planRows] = await Promise.all([
+        superAdminService.getGyms(),
+        licenseService.listLicenses().catch(() => [] as GymLicenseRow[]),
+        licenseService.listPlans().catch(() => [] as LicensePlan[]),
+      ]);
+      setGyms(gymRows);
+      setLicenses(new Map(licenseRows.map((l) => [l.gymId, l])));
+      setPlans(planRows.filter((p) => p.isActive));
     } catch (err) {
       console.error("Failed to load gyms:", err);
       setError("We couldn't load gyms. Please try again.");
@@ -89,7 +103,8 @@ export default function GymsPage() {
   }, [gyms]);
 
   function openCreate() {
-    setForm(emptyForm);
+    // Default to the first (cheapest) active plan so every new gym is licensed.
+    setForm({ ...emptyForm, planId: plans[0]?.id ?? "" });
     setFormErrors({});
     setCreateOpen(true);
   }
@@ -98,9 +113,8 @@ export default function GymsPage() {
     const errors: Partial<Record<keyof FormState, string>> = {};
     if (form.name.trim().length < 2) errors.name = "Gym name is required.";
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email)) errors.email = "A valid gym contact email is required.";
-    const price = Number(form.pricePerActiveMember);
-    if (form.pricePerActiveMember.trim() === "" || Number.isNaN(price) || price < 0)
-      errors.pricePerActiveMember = "Set a price per active member (₹, 0 or more).";
+    // Every gym must have a license — a subscription plan is required.
+    if (plans.length > 0 && !form.planId) errors.planId = "Select a subscription plan.";
 
     const anyAdmin = form.adminName || form.adminEmail || form.adminPassword;
     if (anyAdmin) {
@@ -119,7 +133,8 @@ export default function GymsPage() {
       const payload: CreateGymPayload = {
         name: form.name.trim(),
         email: form.email.trim(),
-        pricePerActiveMember: Number(form.pricePerActiveMember),
+        // License is assigned atomically by the backend on creation.
+        ...(form.planId ? { planId: form.planId } : {}),
         ...(form.phone.trim() ? { phone: form.phone.trim() } : {}),
         ...(form.address.trim() ? { address: form.address.trim() } : {}),
         ...(form.adminName.trim()
@@ -127,9 +142,9 @@ export default function GymsPage() {
           : {}),
       };
       const result = await gymService.create(payload);
-      toast.success(`Gym "${result.gym.name}" created.`);
+      toast.success(`Gym "${result.gym.name}" created and licensed.`);
       setCreateOpen(false);
-      await loadGyms(); // refetch so the new row carries real counts + pricing
+      await loadGyms(); // refetch so the new row carries real counts + license
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to create gym.";
       toast.error(message);
@@ -162,7 +177,7 @@ export default function GymsPage() {
     <Page
       title="Gyms"
       eyebrow="Platform"
-      description="Create and manage every gym, with real member counts and SaaS pricing."
+      description="Create and manage every gym, with real member counts and their SaaS license."
       action={<Button iconLeft={<Plus className="h-4 w-4" />} onClick={openCreate}>Create Gym</Button>}
     >
       <div className="space-y-6">
@@ -211,7 +226,7 @@ export default function GymsPage() {
                     <th className="px-5 py-3 font-medium">Branches</th>
                     <th className="px-5 py-3 font-medium">Active / Total</th>
                     <th className="px-5 py-3 font-medium">Staff</th>
-                    <th className="px-5 py-3 font-medium">₹ / Member</th>
+                    <th className="px-5 py-3 font-medium">License</th>
                     <th className="px-5 py-3 font-medium">Monthly SaaS</th>
                     <th className="px-5 py-3 font-medium">Status</th>
                     <th className="px-5 py-3 text-right font-medium">Actions</th>
@@ -233,15 +248,36 @@ export default function GymsPage() {
                       <td className="px-5 py-4 tabular-nums text-(--text-secondary)">
                         {gym.gymAdminCount} admin · {gym.trainerCount} trainer
                       </td>
-                      <td className="px-5 py-4 tabular-nums text-(--text-secondary)">{inr(gym.pricePerActiveMember)}</td>
-                      <td className="px-5 py-4 tabular-nums font-semibold text-(--text-primary)">{inr(gym.monthlyAmount)}</td>
+                      <td className="px-5 py-4">
+                        {(() => {
+                          const lic = licenses.get(gym.id);
+                          if (!lic?.licenseName) return <span className="text-xs text-(--text-muted)">No license</span>;
+                          return (
+                            <div>
+                              <div className="font-medium text-(--text-primary)">{lic.licenseName}{lic.isTrial ? " · Trial" : ""}</div>
+                              <div className="text-[11px] text-(--text-muted)">{lic.activeMembers} / {lic.capacity ?? "∞"} members</div>
+                            </div>
+                          );
+                        })()}
+                      </td>
+                      <td className="px-5 py-4 tabular-nums font-semibold text-(--text-primary)">
+                        {(() => {
+                          const lic = licenses.get(gym.id);
+                          return lic?.licenseName ? planAmountLabel(lic.monthlyPrice) : "—";
+                        })()}
+                      </td>
                       <td className="px-5 py-4">
                         <Badge variant={gym.isActive ? "success" : "danger"} dot>{gym.isActive ? "Active" : "Suspended"}</Badge>
                       </td>
                       <td className="px-5 py-4 text-right">
-                        <Button size="sm" variant={gym.isActive ? "danger" : "success"} loading={togglingId === gym.id} onClick={() => void handleToggleStatus(gym)}>
-                          {gym.isActive ? "Suspend" : "Reactivate"}
-                        </Button>
+                        <div className="flex justify-end gap-1.5">
+                          {gym.gymAdminCount > 0 && (
+                            <Button size="sm" variant="ghost" iconLeft={<KeyRound className="h-3.5 w-3.5" />} onClick={() => setPwGym(gym)} title="Reset gym admin password">Reset Admin</Button>
+                          )}
+                          <Button size="sm" variant={gym.isActive ? "danger" : "success"} loading={togglingId === gym.id} onClick={() => void handleToggleStatus(gym)}>
+                            {gym.isActive ? "Suspend" : "Reactivate"}
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -257,7 +293,7 @@ export default function GymsPage() {
         open={createOpen}
         onClose={() => !submitting && setCreateOpen(false)}
         title="Create Gym"
-        description="Set up a new gym, its SaaS price per active member, and optionally its first admin."
+        description="Set up a new gym, assign its SaaS license plan, and optionally its first admin."
         size="lg"
         footer={
           <div className="flex justify-end gap-3">
@@ -274,22 +310,31 @@ export default function GymsPage() {
             <Input label="Address (optional)" value={form.address} onChange={(e) => updateField("address", e.target.value)} placeholder="Salem, Tamil Nadu" />
           </div>
 
-          {/* SaaS pricing — per active member, per month (INR) */}
+          {/* SaaS license plan — flat per-license fee (NOT per member). Required:
+              every gym is created with exactly one license. */}
           <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
             <p className="mb-1 flex items-center gap-2 text-sm font-semibold text-(--text-primary)">
-              <IndianRupee className="h-4 w-4 text-primary" /> SaaS price per active member / month
+              <BadgeCheck className="h-4 w-4 text-primary" /> Subscription plan
             </p>
             <p className="mb-3 text-xs text-(--text-secondary)">
-              Each gym is billed <strong>active members × this price</strong> every month (plus GST). e.g. 20 members × ₹20 = ₹400/month.
+              The gym pays a <strong>flat monthly license fee</strong> for its plan's capacity (plus GST) — never per member. A license is created automatically. You can upgrade, downgrade or suspend it later in License Management.
             </p>
-            <Input
-              label="Price per active member (₹)"
-              type="number"
-              value={form.pricePerActiveMember}
-              error={formErrors.pricePerActiveMember}
-              onChange={(e) => updateField("pricePerActiveMember", e.target.value)}
-              placeholder="e.g. 20"
-            />
+            {plans.length === 0 ? (
+              <p className="rounded-lg bg-(--surface-secondary) p-3 text-xs text-(--text-secondary)">
+                No active plans yet. Create the gym now and assign a license from the Subscriptions page.
+              </p>
+            ) : (
+              <Select
+                label="Subscription plan"
+                value={form.planId}
+                error={formErrors.planId}
+                onChange={(e) => updateField("planId", e.target.value)}
+                options={plans.map((p) => ({
+                  label: `${p.name} — ${planPriceLabel(p.price, p.interval)} · up to ${p.maxMembers ?? "∞"} members`,
+                  value: p.id,
+                }))}
+              />
+            )}
           </div>
 
           <div className="rounded-xl border border-border p-4">
@@ -303,6 +348,15 @@ export default function GymsPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Reset gym admin password (super-admin) */}
+      <SetPasswordModal
+        open={!!pwGym}
+        onClose={() => setPwGym(null)}
+        title="Reset Gym Admin Password"
+        subjectName={pwGym ? `the admin of ${pwGym.name}` : undefined}
+        onSubmit={async (password) => { if (pwGym) await superAdminService.resetGymAdminPassword(pwGym.id, password); }}
+      />
     </Page>
   );
 }

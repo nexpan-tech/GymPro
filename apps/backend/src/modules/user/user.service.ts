@@ -1,5 +1,5 @@
 import { prisma } from "../../config/db";
-import { hashPassword } from "../../utils/password";
+import { hashPassword, assertStrongPassword } from "../../utils/password";
 import { AppError } from "../../utils/response";
 import { LicenseService } from "../license/license.service";
 import type { CreateUserInput, UpdateUserInput } from "./user.validation";
@@ -99,20 +99,30 @@ function generateTempPassword(): string {
 }
 
 /**
- * Reset a staff/trainer login password. Sets the supplied password or generates
- * a one-time temporary one (returned ONCE). Gym-scoped — cannot touch other gyms
- * or the SUPER_ADMIN.
+ * Reset a TRAINER / RECEPTIONIST login password (Gym-Admin action). Gym-scoped.
+ * Role hierarchy: a Gym Admin may NOT reset another Gym Admin or a Super Admin —
+ * Gym-Admin passwords are reset by a Super Admin only. Sets the supplied password
+ * or generates a one-time temporary one.
  */
 export const resetUserPassword = async (gymId: string, id: string, newPassword?: string) => {
   const user = await prisma.user.findFirst({ where: { id, gymId } });
   if (!user) throw new AppError("User not found", 404);
   if (user.role === "SUPER_ADMIN") throw new AppError("Cannot reset a super admin password here", 403);
+  if (user.role === "ADMIN") throw new AppError("Gym Admin passwords are reset by a Super Admin only", 403);
 
-  const temporaryPassword = newPassword?.trim() || generateTempPassword();
-  const passwordHash = await hashPassword(temporaryPassword);
-  await prisma.user.update({ where: { id }, data: { passwordHash } });
+  // Admin-supplied passwords must pass strength rules; blank → legacy temp path.
+  const supplied = typeof newPassword === "string" && newPassword.trim().length > 0;
+  const finalPassword = supplied ? assertStrongPassword(newPassword!.trim()) : generateTempPassword();
+  const passwordHash = await hashPassword(finalPassword);
 
-  return { userId: id, temporaryPassword, generated: !newPassword };
+  // Overwrite the single stored hash + invalidate existing sessions so the user
+  // must re-authenticate with the new password.
+  await prisma.$transaction([
+    prisma.user.update({ where: { id }, data: { passwordHash } }),
+    prisma.session.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date() } }),
+  ]);
+
+  return { userId: id, generated: !supplied, ...(supplied ? {} : { temporaryPassword: finalPassword }) };
 };
 
 export const getUserById = async (

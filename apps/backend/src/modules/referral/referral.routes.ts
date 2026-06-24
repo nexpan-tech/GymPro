@@ -2,11 +2,16 @@ import { Router } from "express";
 import * as controller from "./referral.controller";
 import { authMiddleware } from "../../middleware/auth.middleware";
 import { roleMiddleware } from "../../middleware/role.middleware";
+import { requireFeature } from "../../middleware/requireFeature";
 import { ROLES } from "../../constants/roles";
 
 const router = Router();
 
 router.use(authMiddleware);
+// Referrals are gated by the plan's "referral" feature (Growth tier and above).
+// Fail-open for unlicensed gyms; Starter-tier gyms get 403. Non-destructive —
+// existing referral records persist; the feature is unavailable until upgrade.
+router.use(requireFeature("referral"));
 
 const STAFF = [ROLES.ADMIN, ROLES.RECEPTIONIST];
 

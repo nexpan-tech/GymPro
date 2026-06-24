@@ -1,0 +1,33 @@
+# Dependencies (reinstalled inside the image)
+node_modules
+**/node_modules
+pnpm-store
+**/pnpm-store
+
+# Build output (backend runs tsx on src; web/mobile build separately)
+dist
+**/dist
+apps/web/dist
+apps/mobile/.expo
+**/.expo
+
+# VCS / editor / OS
+.git
+.gitignore
+.vscode
+**/.DS_Store
+.DS_Store
+
+# Tests / coverage / logs
+coverage
+**/coverage
+*.log
+**/*.log
+
+# Local env (real env is injected via env_file at runtime)
+.env.local
+**/.env.local
+
+# Misc large/irrelevant artifacts
+*.pdf
+node_modules.STRAY-BAK

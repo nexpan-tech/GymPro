@@ -1,12 +1,15 @@
 import { prisma } from "../../config/db";
+import { LicenseService } from "../license/license.service";
 
 /**
  * RevenueSummaryService — the SINGLE source of truth for platform revenue.
- * Every surface (Dashboard, Billing, Enterprise Analytics) must read MRR/ARR
- * and collection figures from here so the numbers can never diverge.
+ * Every surface (Dashboard, Billing, Enterprise Analytics) reads MRR/ARR and
+ * collection figures from here so the numbers can never diverge.
  *
- *   MRR = Σ(active members × gym.pricePerActiveMember)  over active gyms
- *   ARR = MRR × 12
+ * LICENSE-BASED (2026 model): MRR = Σ monthly-normalised plan price of every
+ * ACTIVE license (yearly ÷ 12). The legacy per-active-member formula is GONE —
+ * this delegates to LicenseService.billingSummary() so revenue is always the
+ * flat license fee, never member-count × price.
  */
 
 function round(n: number) {
@@ -28,27 +31,14 @@ export class RevenueSummaryService {
     return new Map(rows.map((r) => [r.gymId, r._count._all]));
   }
 
-  /** Per-active-member MRR/ARR + invoice collection breakdown. */
+  /**
+   * License-based MRR/ARR + invoice collection + license counts. Delegates to
+   * LicenseService.billingSummary() (the flat-license model). Returns the
+   * full license metric set; legacy consumers reading {mrr,arr,paid,pending,
+   * overdue} continue to work (those keys are a subset).
+   */
   static async summary() {
-    const [counts, gyms, invoices] = await Promise.all([
-      this.activeMemberCounts(),
-      prisma.gym.findMany({ where: { isActive: true }, select: { id: true, pricePerActiveMember: true } }),
-      prisma.saaSInvoice.findMany({ select: { status: true, totalAmount: true, dueDate: true } }),
-    ]);
-
-    const mrr = round(
-      gyms.reduce((s, g) => s + (counts.get(g.id) ?? 0) * (g.pricePerActiveMember ?? 0), 0),
-    );
-
-    const now = new Date();
-    let paid = 0, pending = 0, overdue = 0;
-    for (const i of invoices) {
-      if (i.status === "PAID") paid += i.totalAmount;
-      else if (i.status === "CANCELLED") continue;
-      else if (i.dueDate < now) overdue += i.totalAmount;
-      else pending += i.totalAmount;
-    }
-    return { mrr, arr: round(mrr * 12), paid: round(paid), pending: round(pending), overdue: round(overdue) };
+    return LicenseService.billingSummary();
   }
 
   /** Paid SaaS revenue per month for the last `months` months (oldest→newest). */

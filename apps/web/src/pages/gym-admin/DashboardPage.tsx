@@ -19,6 +19,8 @@ import {
   RefreshCw,
   ChevronRight,
   Activity,
+  UserCheck,
+  IdCard,
 } from "lucide-react";
 import {
   BarChart,
@@ -40,6 +42,7 @@ import {
   MetricCard,
   SectionHeader,
   StatusPill,
+  StatTile,
   ActionCard,
   EmptyMomentumState,
 } from "@/components/premium";
@@ -283,6 +286,12 @@ export default function DashboardPage() {
   const revenueThisMonth = statsData?.revenueThisMonth ?? 0;
   const attendanceToday = statsData?.attendanceToday ?? 0;
   const pendingDues = statsData?.pendingDues ?? 0;
+  // Staff + membership breakdown — members and staff are counted separately.
+  const trainerCount = statsData?.trainers ?? 0;
+  const receptionistCount = statsData?.receptionists ?? 0;
+  const staffCount = statsData?.staff ?? 0;
+  const totalMemberships = statsData?.totalMemberships ?? 0;
+  const activeMemberships = statsData?.activeMemberships ?? 0;
 
   // Compute percentage changes from statCards if backend provides them
   const memberChange = dashData?.stats?.find((s) =>
@@ -401,6 +410,18 @@ export default function DashboardPage() {
           loading={kpiLoading}
           onClick={() => navigate("/gym-admin/payments")}
         />
+      </div>
+
+      {/* ── Team & Memberships breakdown (members vs staff counted separately) ── */}
+      <div>
+        <SectionHeader eyebrow="Team & Memberships" title="Your gym at a glance" />
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+          <StatTile label="Trainers" value={kpiLoading ? "—" : trainerCount.toLocaleString("en-IN")} icon={<Dumbbell />} tone="neutral" onClick={() => navigate("/gym-admin/trainers")} />
+          <StatTile label="Receptionists" value={kpiLoading ? "—" : receptionistCount.toLocaleString("en-IN")} icon={<UserCheck />} tone="neutral" onClick={() => navigate("/gym-admin/admins")} />
+          <StatTile label="Total Staff" value={kpiLoading ? "—" : staffCount.toLocaleString("en-IN")} icon={<Users />} tone="neutral" />
+          <StatTile label="Total Memberships" value={kpiLoading ? "—" : totalMemberships.toLocaleString("en-IN")} icon={<IdCard />} tone="neutral" onClick={() => navigate("/gym-admin/memberships")} />
+          <StatTile label="Active Memberships" value={kpiLoading ? "—" : activeMemberships.toLocaleString("en-IN")} icon={<CreditCard />} tone="energy" onClick={() => navigate("/gym-admin/memberships")} />
+        </div>
       </div>
 
       {/* ── SECTION 2 — Quick Actions ─────────────────────────────────────── */}

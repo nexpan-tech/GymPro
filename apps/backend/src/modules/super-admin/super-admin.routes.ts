@@ -14,6 +14,9 @@ router.use(authMiddleware, roleMiddleware([ROLES.SUPER_ADMIN]));
 router.get("/dashboard", asyncHandler(SuperAdminController.dashboard));
 router.get("/gyms", asyncHandler(SuperAdminController.gyms));
 
+// Reset a gym's admin password (super-admin only; role hierarchy)
+router.post("/gyms/:gymId/reset-admin-password", asyncHandler(SuperAdminController.resetGymAdminPassword));
+
 // SaaS billing
 router.get("/subscriptions", asyncHandler(SuperAdminController.subscriptions));
 router.get("/billing/summary", asyncHandler(SuperAdminController.revenueSummary));

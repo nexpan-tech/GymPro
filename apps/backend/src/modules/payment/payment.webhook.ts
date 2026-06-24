@@ -11,6 +11,14 @@ import { processWebhookEvent } from "./payment.checkout.service";
 export async function razorpayWebhook(req: Request, res: Response) {
   try {
     const gateway = getPaymentGateway("RAZORPAY");
+
+    // Clear "not configured" response when gateway keys are absent — the
+    // platform is gateway-READY but no provider is wired yet. (We never fake a
+    // successful payment.)
+    if (!gateway.isConfigured) {
+      return res.status(503).json({ success: false, message: "Payment gateway not configured", configured: false });
+    }
+
     const signature = (req.headers["x-razorpay-signature"] as string) || "";
 
     // Prefer the raw body captured by express.json's verify hook; fall back to

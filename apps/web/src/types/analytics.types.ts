@@ -71,6 +71,12 @@ export interface DashboardStats {
   pendingDues: number;
   openLeads: number;
   expiringMemberships: number;
+  // Staff + membership breakdown (separate from members).
+  trainers: number;
+  receptionists: number;
+  staff: number;
+  totalMemberships: number;
+  activeMemberships: number;
 }
 
 export interface Activity {

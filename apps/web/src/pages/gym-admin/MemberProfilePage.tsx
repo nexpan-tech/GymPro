@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, CalendarPlus, RefreshCw, Snowflake, Clock } from "lucide-react";
+import { ArrowLeft, CalendarPlus, RefreshCw, Snowflake, Clock, KeyRound } from "lucide-react";
 import Page from "@/components/ui/Page";
 import { Card } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -10,6 +10,7 @@ import Input from "@/components/forms/Input";
 import Select from "@/components/forms/Select";
 import { Skeleton } from "@/components/ui/Skeleton";
 import EmptyState from "@/components/common/EmptyState";
+import SetPasswordModal from "@/components/common/SetPasswordModal";
 import { useToast } from "@/hooks/useToast";
 import { memberService } from "@/services/member.service";
 import {
@@ -57,6 +58,8 @@ export default function MemberProfilePage() {
   const [freezeOpen, setFreezeOpen] = useState(false);
   const [freezeStart, setFreezeStart] = useState("");
   const [freezeEnd, setFreezeEnd] = useState("");
+
+  const [pwOpen, setPwOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -270,6 +273,13 @@ export default function MemberProfilePage() {
           </dl>
         </Card>
 
+        {/* Security */}
+        <Card variant="solid" className="p-6">
+          <h3 className="mb-1 text-base font-semibold text-(--text-primary)">Security</h3>
+          <p className="mb-4 text-sm text-(--text-secondary)">Set a new login password for this member. The current password is never shown — only secure hashes are stored.</p>
+          <Button size="sm" variant="secondary" iconLeft={<KeyRound className="h-3.5 w-3.5" />} onClick={() => setPwOpen(true)}>Set New Password</Button>
+        </Card>
+
         {/* Membership history */}
         <Card variant="solid" className="overflow-hidden p-0">
           <div className="border-b border-border px-6 py-4">
@@ -370,6 +380,14 @@ export default function MemberProfilePage() {
           <Input label="Freeze until (optional)" type="date" value={freezeEnd} onChange={(e) => setFreezeEnd(e.target.value)} />
         </div>
       </Modal>
+
+      {/* Set new password */}
+      <SetPasswordModal
+        open={pwOpen}
+        onClose={() => setPwOpen(false)}
+        subjectName={member.user?.name ?? "this member"}
+        onSubmit={async (password) => { await memberService.resetPassword(member.id, password); }}
+      />
     </Page>
   );
 }

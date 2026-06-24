@@ -6,6 +6,51 @@ import { createAuditLog } from "../../utils/audit";
 import { PlatformSettingsService } from "../super-admin/platform-settings.service";
 import { generateSaaSInvoicePdf } from "../reports/pdf.service";
 import { sendEmail } from "../email/email.service";
+import { FEATURE_CATALOGUE } from "../feature-flag/feature-flag.service";
+import { notifyLicenseEvent } from "./license.notifications";
+
+/**
+ * Default SaaS license tiers. Auto-seeded the first time the catalogue is read
+ * so a fresh deployment never shows an empty Subscriptions page. Idempotent —
+ * keyed by name, so re-running never duplicates. Enterprise uses price 0 to mean
+ * "custom pricing" (excluded from auto-invoicing + MRR) and null caps =
+ * unlimited. No schema change — these are plain SaaSPlan rows.
+ */
+export const DEFAULT_PLANS: Array<{
+  name: string; description: string; interval: "MONTHLY" | "YEARLY"; price: number;
+  maxMembers: number | null; maxBranches: number | null; maxStaff: number | null;
+}> = [
+  { name: "Starter",      description: "For new, single-location gyms getting started.", interval: "MONTHLY", price: 999,  maxMembers: 100,  maxBranches: 1,    maxStaff: 5 },
+  { name: "Growth",       description: "For growing studios scaling membership & engagement.", interval: "MONTHLY", price: 1999, maxMembers: 300,  maxBranches: 3,    maxStaff: 15 },
+  { name: "Professional", description: "For established multi-branch fitness businesses.", interval: "MONTHLY", price: 3999, maxMembers: 700,  maxBranches: 10,   maxStaff: 50 },
+  { name: "Enterprise",   description: "Custom pricing. Unlimited members, branches & staff.", interval: "MONTHLY", price: 0,    maxMembers: null, maxBranches: null, maxStaff: null },
+];
+
+/**
+ * Which platform feature flags each default plan tier ENABLES. Drives per-gym
+ * FeatureFlagAssignment whenever a plan is assigned, so the subscription plan
+ * controls feature availability (UI hides + APIs gated via featureEnabled).
+ * Keys must exist in FEATURE_CATALOGUE. "Members/Attendance/Memberships/Payments"
+ * are core and never gated; capacity (members/branches/staff) is enforced by the
+ * numeric plan caps, not flags.
+ */
+const STARTER_FEATURES = ["billing", "progress", "goals", "workout-builder", "diet-builder", "chat", "announcements", "analytics", "reports"];
+const GROWTH_FEATURES = [...STARTER_FEATURES, "referral", "leaderboard", "gamification", "community", "crm", "automation"];
+const PROFESSIONAL_FEATURES = [...GROWTH_FEATURES, "white-label", "advanced-reports", "retention", "ai", "personal-plans"];
+export const PLAN_FEATURE_MATRIX: Record<string, string[]> = {
+  Starter: STARTER_FEATURES,
+  Growth: GROWTH_FEATURES,
+  Professional: PROFESSIONAL_FEATURES,
+  Enterprise: FEATURE_CATALOGUE.map((f) => f.key), // everything
+};
+
+/** Human-facing extras shown on plan cards (derived from tier, not stored). */
+export const PLAN_PERKS: Record<string, { storageGb: number | null; customBranding: boolean; prioritySupport: boolean }> = {
+  Starter:      { storageGb: 5,    customBranding: false, prioritySupport: false },
+  Growth:       { storageGb: 25,   customBranding: false, prioritySupport: false },
+  Professional: { storageGb: 100,  customBranding: true,  prioritySupport: true },
+  Enterprise:   { storageGb: null, customBranding: true,  prioritySupport: true },
+};
 
 /**
  * License-based SaaS billing (GymPro → Gyms).
@@ -115,11 +160,35 @@ function computeUtilization(active: number, capacity: number | null | undefined)
 export class LicenseService {
   // ── Plan (license) catalogue ─────────────────────────────────────────────
 
+  /**
+   * Idempotently create the default tiers if the catalogue is empty. Safe to
+   * call on every read — only inserts the names that don't already exist.
+   */
+  static async seedDefaultPlans() {
+    const existing = await prisma.saaSPlan.findMany({ select: { name: true } });
+    const have = new Set(existing.map((p) => p.name.toLowerCase()));
+    const missing = DEFAULT_PLANS.filter((p) => !have.has(p.name.toLowerCase()));
+    if (missing.length === 0) return prisma.saaSPlan.findMany({ orderBy: { price: "asc" } });
+    await prisma.saaSPlan.createMany({ data: missing });
+    logger.info(`[license] seeded ${missing.length} default plan(s): ${missing.map((p) => p.name).join(", ")}`);
+    return prisma.saaSPlan.findMany({ orderBy: { price: "asc" } });
+  }
+
   static async listPlans(includeInactive = false) {
-    return prisma.saaSPlan.findMany({
+    let plans = await prisma.saaSPlan.findMany({
       where: includeInactive ? {} : { isActive: true },
       orderBy: { price: "asc" },
     });
+    // A production SaaS must never present an empty plan catalogue — seed the
+    // defaults on first access so the Subscriptions page always has plans.
+    if (plans.length === 0) {
+      await this.seedDefaultPlans();
+      plans = await prisma.saaSPlan.findMany({
+        where: includeInactive ? {} : { isActive: true },
+        orderBy: { price: "asc" },
+      });
+    }
+    return plans;
   }
 
   static async createPlan(data: {
@@ -299,6 +368,99 @@ export class LicenseService {
     });
   }
 
+  // ── License-based billing summary (the SaaS billing dashboard) ───────────
+
+  /**
+   * Platform billing metrics derived entirely from licenses + SaaS invoices —
+   * NEVER from member counts. MRR sums the monthly-normalised plan price of
+   * every ACTIVE license (yearly plans ÷ 12). This is the production source of
+   * truth for MRR/ARR and the billing dashboard.
+   */
+  static async billingSummary() {
+    const now = new Date();
+    const soon = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [subscriptions, invoices, totalGyms] = await Promise.all([
+      prisma.gymSubscription.findMany({ include: { plan: true, gym: { select: { name: true } } }, orderBy: { createdAt: "desc" } }),
+      prisma.saaSInvoice.findMany({ select: { status: true, totalAmount: true, dueDate: true, paidAt: true } }),
+      prisma.gym.count(),
+    ]);
+
+    // Current (newest) subscription per gym = its single active license.
+    const current = new Map<string, (typeof subscriptions)[number]>();
+    for (const s of subscriptions) if (!current.has(s.gymId)) current.set(s.gymId, s);
+    const licenses = [...current.values()];
+
+    const monthly = (p?: { price: number; interval: string } | null) =>
+      !p ? 0 : p.interval === "YEARLY" ? p.price / 12 : p.price;
+
+    let mrr = 0;
+    const counts = { active: 0, trial: 0, pastDue: 0, suspended: 0, expired: 0, cancelled: 0 };
+    const upcoming: Array<{ gymId: string; gymName: string; planName: string; renewalDate: Date; amount: number }> = [];
+    // Plan distribution: gyms currently on each plan (excludes ended licenses).
+    const planDist = new Map<string, number>();
+
+    for (const l of licenses) {
+      switch (l.status) {
+        case "ACTIVE": counts.active++; mrr += monthly(l.plan); break;
+        case "TRIALING": counts.trial++; break;
+        case "PAST_DUE": counts.pastDue++; mrr += monthly(l.plan); break;
+        case "SUSPENDED": counts.suspended++; break;
+        case "EXPIRED": counts.expired++; break;
+        case "CANCELLED": counts.cancelled++; break;
+      }
+      if (!["CANCELLED", "EXPIRED"].includes(l.status) && l.plan?.name) {
+        planDist.set(l.plan.name, (planDist.get(l.plan.name) ?? 0) + 1);
+      }
+      if ((l.status === "ACTIVE" || l.status === "PAST_DUE") && l.endDate >= now && l.endDate <= soon) {
+        upcoming.push({ gymId: l.gymId, gymName: l.gym?.name ?? "—", planName: l.plan?.name ?? "—", renewalDate: l.endDate, amount: round(l.plan?.price ?? 0) });
+      }
+    }
+
+    let paid = 0, pending = 0, overdue = 0, revenueThisMonth = 0;
+    for (const i of invoices) {
+      if (i.status === "PAID") {
+        paid += i.totalAmount;
+        if (i.paidAt && i.paidAt >= monthStart) revenueThisMonth += i.totalAmount;
+      } else if (i.status === "CANCELLED") continue;
+      else if (i.dueDate < now) overdue += i.totalAmount;
+      else pending += i.totalAmount;
+    }
+
+    mrr = round(mrr);
+    upcoming.sort((a, b) => a.renewalDate.getTime() - b.renewalDate.getTime());
+
+    return {
+      mrr,
+      arr: round(mrr * 12),
+      activeLicenses: counts.active,
+      trialLicenses: counts.trial,
+      pastDueLicenses: counts.pastDue,
+      suspendedLicenses: counts.suspended,
+      expiredLicenses: counts.expired,
+      cancelledLicenses: counts.cancelled,
+      licensedGyms: licenses.filter((l) => !["CANCELLED", "EXPIRED"].includes(l.status)).length,
+      unlicensedGyms: Math.max(0, totalGyms - current.size),
+      revenueThisMonth: round(revenueThisMonth),
+      paid: round(paid),
+      pending: round(pending),
+      overdue: round(overdue),
+      upcomingRenewals: upcoming.slice(0, 20),
+      upcomingRenewalCount: upcoming.length,
+      // Distributions for the billing dashboard charts (real counts).
+      planDistribution: [...planDist.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
+      licenseDistribution: [
+        { status: "ACTIVE", count: counts.active },
+        { status: "TRIALING", count: counts.trial },
+        { status: "PAST_DUE", count: counts.pastDue },
+        { status: "SUSPENDED", count: counts.suspended },
+        { status: "EXPIRED", count: counts.expired },
+        { status: "CANCELLED", count: counts.cancelled },
+      ].filter((d) => d.count > 0),
+    };
+  }
+
   // ── Capacity enforcement ─────────────────────────────────────────────────
 
   /**
@@ -414,6 +576,13 @@ export class LicenseService {
       });
     });
 
+    // The subscription plan controls feature availability — sync the gym's
+    // per-gym feature flags to this tier. Non-fatal: a flag error must never
+    // block the license change (capacity + billing are the source of truth).
+    await this.applyPlanFeatures(gymId, plan.name).catch((err) =>
+      logger.warn(`[license] applyPlanFeatures failed for gym ${gymId}`, { err: String(err) }),
+    );
+
     const direction = previous?.plan
       ? plan.price > previous.plan.price ? "UPGRADE" : plan.price < previous.plan.price ? "DOWNGRADE" : "CHANGE"
       : "ASSIGN";
@@ -425,6 +594,29 @@ export class LicenseService {
       ipAddress: actor.ip ?? null, userAgent: actor.userAgent ?? null,
     });
     return result;
+  }
+
+  /**
+   * Sync a gym's per-gym FeatureFlagAssignments to its plan tier (PLAN_FEATURE_MATRIX).
+   * Enables features the tier includes, disables the rest. Only the default
+   * named tiers map; custom plans leave flags untouched (so renaming/creating a
+   * plan never silently disables features). Disabling a flag only hides UI /
+   * gates APIs — it NEVER deletes data, so downgrades are non-destructive and
+   * upgrades restore access instantly.
+   */
+  static async applyPlanFeatures(gymId: string, planName: string) {
+    const allowed = PLAN_FEATURE_MATRIX[planName];
+    if (!allowed) return; // custom/unknown plan → don't touch feature flags
+    const allowedSet = new Set(allowed);
+    await Promise.all(
+      FEATURE_CATALOGUE.map((f) =>
+        prisma.featureFlagAssignment.upsert({
+          where: { flagKey_gymId: { flagKey: f.key, gymId } },
+          update: { enabled: allowedSet.has(f.key) },
+          create: { flagKey: f.key, gymId, enabled: allowedSet.has(f.key) },
+        }),
+      ),
+    );
   }
 
   static async setStatus(gymId: string, status: "ACTIVE" | "SUSPENDED" | "CANCELLED", actor: BillingActor = {}) {
@@ -443,6 +635,115 @@ export class LicenseService {
     return prisma.gymSubscription.findMany({
       where: { gymId }, include: { plan: true }, orderBy: { createdAt: "desc" },
     });
+  }
+
+  // ── Trial management (license trials = GymSubscription.status TRIALING) ────
+
+  /** Convert a TRIALING license to a paid ACTIVE one (billing starts now). */
+  static async convertTrial(gymId: string, actor: BillingActor = {}) {
+    const sub = await this.getCurrentSubscription(gymId);
+    if (!sub) throw new AppError("This gym has no license assigned", 404);
+    if (sub.status !== "TRIALING") throw new AppError("License is not on a trial", 400);
+    const startDate = new Date();
+    const endDate = addInterval(startDate, sub.plan?.interval ?? "MONTHLY");
+    const updated = await prisma.gymSubscription.update({ where: { id: sub.id }, data: { status: "ACTIVE", startDate, endDate } });
+    await createAuditLog({
+      gymId, userId: actor.userId ?? null, action: AuditAction.UPDATE,
+      entity: "GymSubscription", entityId: sub.id, newData: { event: "LICENSE_TRIAL_CONVERTED", plan: sub.plan?.name, renewalDate: endDate },
+      ipAddress: actor.ip ?? null, userAgent: actor.userAgent ?? null,
+    });
+    return updated;
+  }
+
+  /** Extend an active trial by N days (push the trial end-date forward). */
+  static async extendTrial(gymId: string, extraDays: number, actor: BillingActor = {}) {
+    if (!Number.isFinite(extraDays) || extraDays <= 0 || extraDays > 365) throw new AppError("extraDays must be 1–365", 422);
+    const sub = await this.getCurrentSubscription(gymId);
+    if (!sub) throw new AppError("This gym has no license assigned", 404);
+    if (sub.status !== "TRIALING") throw new AppError("License is not on a trial", 400);
+    const base = Math.max(sub.endDate.getTime(), Date.now());
+    const endDate = new Date(base + extraDays * 24 * 60 * 60 * 1000);
+    const updated = await prisma.gymSubscription.update({ where: { id: sub.id }, data: { endDate } });
+    await createAuditLog({
+      gymId, userId: actor.userId ?? null, action: AuditAction.UPDATE,
+      entity: "GymSubscription", entityId: sub.id, newData: { event: "LICENSE_TRIAL_EXTENDED", extraDays, trialEndsAt: endDate },
+      ipAddress: actor.ip ?? null, userAgent: actor.userAgent ?? null,
+    });
+    return updated;
+  }
+
+  /** Renew the current license for another billing interval (ACTIVE from now). */
+  static async renew(gymId: string, actor: BillingActor = {}) {
+    const sub = await this.getCurrentSubscription(gymId);
+    if (!sub) throw new AppError("This gym has no license assigned", 404);
+    if (["CANCELLED"].includes(sub.status)) throw new AppError("A cancelled license cannot be renewed — assign a plan instead", 400);
+    const startDate = new Date();
+    const endDate = addInterval(startDate, sub.plan?.interval ?? "MONTHLY");
+    const updated = await prisma.gymSubscription.update({ where: { id: sub.id }, data: { status: "ACTIVE", startDate, endDate } });
+    await createAuditLog({
+      gymId, userId: actor.userId ?? null, action: AuditAction.UPDATE,
+      entity: "GymSubscription", entityId: sub.id, newData: { event: "LICENSE_RENEWED", plan: sub.plan?.name, renewalDate: endDate, previous: sub.status },
+      ipAddress: actor.ip ?? null, userAgent: actor.userAgent ?? null,
+    });
+    return updated;
+  }
+
+  // ── Lifecycle automation (daily cron + manual super-admin trigger) ────────
+
+  /**
+   * Advance license states by date — the renewal/expiry/grace state machine.
+   * Operates ONLY on the current license per gym. Pure status transitions +
+   * reminder emails; never deletes data, never touches unlicensed gyms.
+   *
+   *   TRIALING, ended            → EXPIRED        (+ trial-expired email)
+   *   TRIALING, ends ≤3d         → reminder only  (trial-ending-soon)
+   *   ACTIVE,   term ended       → PAST_DUE       (+ renewal-due email)
+   *   ACTIVE,   ends ≤7d         → reminder only  (renewal-due-soon)
+   *   PAST_DUE, ended >grace(7d) → SUSPENDED      (+ suspended email)
+   */
+  static async runLifecycle(actor: BillingActor = { source: "auto" }) {
+    const now = new Date();
+    const GRACE_DAYS = 7, TRIAL_SOON = 3, RENEWAL_SOON = 7;
+    const daysUntil = (d: Date) => Math.ceil((d.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+
+    const subs = await prisma.gymSubscription.findMany({ include: { plan: true }, orderBy: { createdAt: "desc" } });
+    const current = new Map<string, (typeof subs)[number]>();
+    for (const s of subs) if (!current.has(s.gymId)) current.set(s.gymId, s);
+
+    const result = { processed: current.size, trialExpired: 0, trialEndingSoon: 0, pastDue: 0, renewalDueSoon: 0, suspended: 0 };
+    const transition = async (sub: (typeof subs)[number], status: string, event: string) => {
+      await prisma.gymSubscription.update({ where: { id: sub.id }, data: { status: status as never } });
+      await createAuditLog({
+        gymId: sub.gymId, userId: actor.userId ?? null, action: AuditAction.UPDATE,
+        entity: "GymSubscription", entityId: sub.id, newData: { event, previous: sub.status, plan: sub.plan?.name, source: "auto" },
+        ipAddress: actor.ip ?? null, userAgent: actor.userAgent ?? null,
+      });
+    };
+
+    for (const sub of current.values()) {
+      const planName = sub.plan?.name ?? null;
+      const end = sub.endDate;
+      try {
+        if (sub.status === "TRIALING") {
+          if (end < now) { await transition(sub, "EXPIRED", "LICENSE_TRIAL_EXPIRED"); await notifyLicenseEvent(sub.gymId, "TRIAL_EXPIRED", { planName, date: end }); result.trialExpired++; }
+          else if (daysUntil(end) <= TRIAL_SOON) { await notifyLicenseEvent(sub.gymId, "TRIAL_ENDING_SOON", { planName, date: end }); result.trialEndingSoon++; }
+        } else if (sub.status === "ACTIVE") {
+          if (end < now) { await transition(sub, "PAST_DUE", "LICENSE_PAST_DUE"); await notifyLicenseEvent(sub.gymId, "RENEWAL_DUE", { planName, date: end }); result.pastDue++; }
+          else if (daysUntil(end) <= RENEWAL_SOON) { await notifyLicenseEvent(sub.gymId, "RENEWAL_DUE_SOON", { planName, date: end }); result.renewalDueSoon++; }
+        } else if (sub.status === "PAST_DUE") {
+          if (end.getTime() + GRACE_DAYS * 24 * 60 * 60 * 1000 < now.getTime()) { await transition(sub, "SUSPENDED", "LICENSE_SUSPENDED_AUTO"); await notifyLicenseEvent(sub.gymId, "LICENSE_SUSPENDED", { planName }); result.suspended++; }
+        }
+      } catch (err) {
+        logger.warn(`[license-lifecycle] gym ${sub.gymId} transition failed`, { err: String(err) });
+      }
+    }
+
+    await createAuditLog({
+      gymId: null, userId: actor.userId ?? null, action: AuditAction.UPDATE,
+      entity: "GymSubscription", entityId: "lifecycle", newData: { event: "LICENSE_LIFECYCLE_RUN", ...result, source: actor.source ?? "auto" },
+      ipAddress: actor.ip ?? null, userAgent: actor.userAgent ?? null,
+    });
+    return result;
   }
 
   // ── Anti-abuse audit (monitoring only — never used for billing) ───────────

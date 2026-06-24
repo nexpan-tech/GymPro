@@ -1,5 +1,6 @@
 // src/config/navigation.ts
 // Role-based navigation configuration for GymPro dashboard
+import { RELEASE_FLAGS } from "./features";
 
 export interface NavItem {
   label: string;
@@ -7,6 +8,12 @@ export interface NavItem {
   icon: string;
   badge?: number;
   group?: string;
+  /**
+   * Optional platform feature-flag key. When the gym has this feature
+   * explicitly disabled, the item is hidden from the sidebar (fail-open:
+   * unset key or unknown flag = always shown). See useFeatureFlags.
+   */
+  featureKey?: string;
 }
 
 const SUPER_ADMIN_NAV: NavItem[] = [
@@ -33,7 +40,8 @@ const SUPER_ADMIN_NAV: NavItem[] = [
   // Config
   { label: "Feature Flags",    path: "/super-admin/feature-flags", icon: "Flag",         group: "Config" },
   { label: "Billing Settings", path: "/super-admin/billing-settings", icon: "Receipt",   group: "Config" },
-  { label: "Settings",         path: "/super-admin/settings",   icon: "Settings",        group: "Config" },
+  // NOTE: a generic "Settings" entry was removed — it was a placeholder with no
+  // backend. Real platform config lives in Billing Settings + Feature Flags.
 ];
 
 const ADMIN_NAV: NavItem[] = [
@@ -47,42 +55,43 @@ const ADMIN_NAV: NavItem[] = [
   { label: "Payments",     path: "/gym-admin/payments",     icon: "Banknote",        group: "Core" },
 
   // Growth
-  { label: "Analytics",   path: "/gym-admin/analytics",    icon: "BarChart3",       group: "Growth" },
-  { label: "Reports",     path: "/gym-admin/reports",      icon: "FileText",        group: "Growth" },
-  { label: "Leads CRM",   path: "/gym-admin/leads",        icon: "Funnel",          group: "Growth" },
-  { label: "Retention",   path: "/gym-admin/retention",    icon: "HeartPulse",      group: "Growth" },
-  { label: "AI Insights", path: "/gym-admin/ai-insights",  icon: "Brain",           group: "Growth" },
-  { label: "Automation",  path: "/gym-admin/automation",   icon: "Bot",             group: "Growth" },
+  { label: "Analytics",   path: "/gym-admin/analytics",    icon: "BarChart3",       group: "Growth", featureKey: "analytics" },
+  { label: "Reports",     path: "/gym-admin/reports",      icon: "FileText",        group: "Growth", featureKey: "reports" },
+  { label: "Leads CRM",   path: "/gym-admin/leads",        icon: "Funnel",          group: "Growth", featureKey: "crm" },
+  { label: "Retention",   path: "/gym-admin/retention",    icon: "HeartPulse",      group: "Growth", featureKey: "retention" },
+  { label: "AI Insights", path: "/gym-admin/ai-insights",  icon: "Brain",           group: "Growth", featureKey: "ai" },
+  { label: "Automation",  path: "/gym-admin/automation",   icon: "Bot",             group: "Growth", featureKey: "automation" },
 
   // Communication
-  { label: "Chat",          path: "/gym-admin/chat",          icon: "MessageSquare", group: "Communication" },
+  { label: "Chat",          path: "/gym-admin/chat",          icon: "MessageSquare", group: "Communication", featureKey: "chat" },
   { label: "Notifications", path: "/gym-admin/notifications", icon: "Bell",          group: "Communication" },
-  { label: "Broadcast",     path: "/gym-admin/broadcast",     icon: "Megaphone",     group: "Communication" },
-  { label: "Announcements", path: "/gym-admin/announcements", icon: "Megaphone",     group: "Communication" },
-  { label: "Comms Analytics", path: "/gym-admin/communication-analytics", icon: "BarChart3", group: "Communication" },
+  { label: "Broadcast",     path: "/gym-admin/broadcast",     icon: "Megaphone",     group: "Communication", featureKey: "announcements" },
+  { label: "Announcements", path: "/gym-admin/announcements", icon: "Megaphone",     group: "Communication", featureKey: "announcements" },
+  { label: "Comms Analytics", path: "/gym-admin/communication-analytics", icon: "BarChart3", group: "Communication", featureKey: "analytics" },
 
   // Engagement
-  { label: "Challenges",   path: "/gym-admin/challenges",   icon: "Trophy",          group: "Engagement" },
-  { label: "Rewards",      path: "/gym-admin/rewards",      icon: "Gift",            group: "Engagement" },
-  { label: "Leaderboard",  path: "/gym-admin/leaderboard",  icon: "Medal",           group: "Engagement" },
-  { label: "Referrals",    path: "/gym-admin/referrals",    icon: "Share2",          group: "Engagement" },
+  { label: "Challenges",   path: "/gym-admin/challenges",   icon: "Trophy",          group: "Engagement", featureKey: "community" },
+  { label: "Rewards",      path: "/gym-admin/rewards",      icon: "Gift",            group: "Engagement", featureKey: "gamification" },
+  { label: "Leaderboard",  path: "/gym-admin/leaderboard",  icon: "Medal",           group: "Engagement", featureKey: "leaderboard" },
+  { label: "Referrals",    path: "/gym-admin/referrals",    icon: "Share2",          group: "Engagement", featureKey: "referral" },
 
   // Multi-branch
   { label: "Branches",    path: "/gym-admin/branches",     icon: "GitBranch",       group: "Multi-branch" },
   { label: "Billing",     path: "/gym-admin/billing",      icon: "Receipt",         group: "Multi-branch" },
 
   // Config
-  { label: "White Label", path: "/gym-admin/white-label",  icon: "Palette",         group: "Config" },
+  { label: "White Label", path: "/gym-admin/white-label",  icon: "Palette",         group: "Config", featureKey: "white-label" },
+  { label: "Support",     path: "/gym-admin/support",      icon: "LifeBuoy",        group: "Config" },
 ];
 
 const TRAINER_NAV: NavItem[] = [
   { label: "Dashboard",          path: "/trainer/dashboard",     icon: "LayoutDashboard", group: "Core" },
   { label: "My Members",         path: "/trainer/my-members",    icon: "Users",           group: "Core" },
-  { label: "Member Risk",        path: "/trainer/retention",     icon: "ShieldAlert",     group: "Core" },
-  { label: "Engagement",         path: "/trainer/engagement",    icon: "Trophy",          group: "Core" },
-  { label: "Member Chat",        path: "/trainer/chat",          icon: "MessageSquare",   group: "Core" },
-  { label: "Workout Plans",      path: "/trainer/workout-plans", icon: "Dumbbell",        group: "Programs" },
-  { label: "Diet Plans",         path: "/trainer/diet-plans",    icon: "Salad",           group: "Programs" },
+  { label: "Member Risk",        path: "/trainer/retention",     icon: "ShieldAlert",     group: "Core", featureKey: "retention" },
+  { label: "Engagement",         path: "/trainer/engagement",    icon: "Trophy",          group: "Core", featureKey: "gamification" },
+  { label: "Member Chat",        path: "/trainer/chat",          icon: "MessageSquare",   group: "Core", featureKey: "chat" },
+  { label: "Workout Plans",      path: "/trainer/workout-plans", icon: "Dumbbell",        group: "Programs", featureKey: "workout-builder" },
+  { label: "Diet Plans",         path: "/trainer/diet-plans",    icon: "Salad",           group: "Programs", featureKey: "diet-builder" },
   { label: "Attendance",         path: "/trainer/attendance",    icon: "CalendarCheck",   group: "Tracking" },
   // Single Member Progress entry (the former duplicate "Progress Tracking"/"Progress"
   // both pointed at /trainer/progress). Schedule + Notifications were removed:
@@ -96,14 +105,14 @@ const MEMBER_NAV: NavItem[] = [
   { label: "My Workout",   path: "/member/workout-plan",        icon: "Dumbbell",        group: "Fitness" },
   { label: "My Diet",      path: "/member/diet-plan",           icon: "Salad",           group: "Fitness" },
   { label: "Attendance",   path: "/member/attendance-history",  icon: "CalendarCheck",   group: "Fitness" },
-  { label: "Progress",     path: "/member/progress",            icon: "TrendingUp",      group: "Fitness" },
-  { label: "Goals",        path: "/member/goals",               icon: "Target",          group: "Fitness" },
-  { label: "Challenges",   path: "/member/challenges",          icon: "Flame",           group: "Community" },
-  { label: "Leaderboard",  path: "/member/leaderboard",         icon: "Trophy",          group: "Community" },
-  { label: "Achievements", path: "/member/achievements",        icon: "Medal",           group: "Community" },
-  { label: "Rewards",      path: "/member/rewards",             icon: "Gift",            group: "Community" },
-  { label: "Announcements", path: "/member/announcements",      icon: "Megaphone",       group: "Account" },
-  { label: "Chat",         path: "/member/chat",                icon: "MessageSquare",   group: "Account" },
+  { label: "Progress",     path: "/member/progress",            icon: "TrendingUp",      group: "Fitness", featureKey: "progress" },
+  { label: "Goals",        path: "/member/goals",               icon: "Target",          group: "Fitness", featureKey: "goals" },
+  { label: "Challenges",   path: "/member/challenges",          icon: "Flame",           group: "Community", featureKey: "community" },
+  { label: "Leaderboard",  path: "/member/leaderboard",         icon: "Trophy",          group: "Community", featureKey: "leaderboard" },
+  { label: "Achievements", path: "/member/achievements",        icon: "Medal",           group: "Community", featureKey: "gamification" },
+  { label: "Rewards",      path: "/member/rewards",             icon: "Gift",            group: "Community", featureKey: "gamification" },
+  { label: "Announcements", path: "/member/announcements",      icon: "Megaphone",       group: "Account", featureKey: "announcements" },
+  { label: "Chat",         path: "/member/chat",                icon: "MessageSquare",   group: "Account", featureKey: "chat" },
   { label: "Membership",   path: "/member/membership-details",  icon: "IdCard",          group: "Account" },
   { label: "Payments",     path: "/member/payment-history",     icon: "CreditCard",      group: "Account" },
   { label: "Invoices",     path: "/member/invoices",            icon: "Receipt",         group: "Account" },
@@ -124,7 +133,9 @@ export function getNavItems(role: string): NavItem[] {
     case "REGIONAL_MANAGER":
     case "BRANCH_MANAGER":
     case "RECEPTIONIST":
-      return ADMIN_NAV;
+      // Broadcast is hidden this release (RELEASE_FLAGS.broadcast) — drop the
+      // nav entry without deleting it.
+      return RELEASE_FLAGS.broadcast ? ADMIN_NAV : ADMIN_NAV.filter((i) => i.path !== "/gym-admin/broadcast");
 
     case "TRAINER":
       return TRAINER_NAV;

@@ -2,6 +2,8 @@ import { Role } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { hashPassword } from "../../utils/password";
 import { AppError } from "../../utils/response";
+import { logger } from "../../config/logger";
+import { LicenseService } from "../license/license.service";
 import { CreateGymInput, UpdateGymInput } from "./gym.validation";
 
 export class GymService {
@@ -59,6 +61,30 @@ export class GymService {
           createdAt: true,
         },
       });
+    }
+
+    // Every gym MUST have exactly one SaaS license. Assign the chosen plan, or
+    // default to the cheapest *paid* active plan (auto-seeded). Non-fatal: the
+    // gym is created regardless; a failed assignment can be retried from
+    // License Management. This makes EVERY creation path (UI, API, scripts)
+    // produce a licensed gym.
+    try {
+      let planId = data.planId;
+      if (!planId) {
+        const plans = await LicenseService.listPlans(); // auto-seeds + ordered by price asc
+        planId = plans.find((p) => p.price > 0)?.id ?? plans[0]?.id;
+      }
+      if (planId) {
+        await LicenseService.assignPlan(
+          gym.id,
+          { planId, trialDays: data.trialDays ?? 0 },
+          { source: "auto", userId: null },
+        );
+      } else {
+        logger.warn(`[gym] no plan available to license new gym ${gym.id}`);
+      }
+    } catch (err) {
+      logger.warn(`[gym] auto-license assignment failed for ${gym.id}`, { err: String(err) });
     }
 
     return {
@@ -153,16 +179,39 @@ export class GymService {
   }
 
   static async delete(id: string) {
-    const gym = await prisma.gym.findUnique({
-      where: { id },
-    });
-
+    const gym = await prisma.gym.findUnique({ where: { id } });
     if (!gym) {
       throw new AppError("Gym not found", 404);
     }
 
-    return prisma.gym.delete({
-      where: { id },
+    // PRODUCTION SAFETY: never hard-delete a gym that holds real tenant data —
+    // it would irreversibly destroy member, payment and invoice records (and the
+    // FK RESTRICT constraints make a raw delete 500 anyway). Direct the operator
+    // to Suspend/Deactivate instead (the action the Super Admin UI uses).
+    const [members, payments, memberInvoices] = await Promise.all([
+      prisma.member.count({ where: { gymId: id } }),
+      prisma.payment.count({ where: { gymId: id } }),
+      prisma.invoice.count({ where: { gymId: id } }),
+    ]);
+    if (members > 0 || payments > 0 || memberInvoices > 0) {
+      throw new AppError(
+        "Cannot delete a gym with members, payments or invoices. Deactivate (suspend) it instead to preserve records.",
+        400,
+        { code: "GYM_HAS_DATA", members, payments, invoices: memberInvoices },
+      );
+    }
+
+    // Empty gym (e.g. created in error / a test gym): clean the license, billing
+    // and config artifacts that hold RESTRICT foreign keys, then delete — all in
+    // ONE transaction so it's atomic (no orphan subscription/invoice/flag left).
+    return prisma.$transaction(async (tx) => {
+      await tx.saaSInvoice.deleteMany({ where: { gymId: id } });
+      await tx.gymSubscription.deleteMany({ where: { gymId: id } });
+      await tx.featureFlagAssignment.deleteMany({ where: { gymId: id } });
+      await tx.auditLog.deleteMany({ where: { gymId: id } });
+      await tx.branch.deleteMany({ where: { gymId: id } });
+      await tx.user.deleteMany({ where: { gymId: id } });
+      return tx.gym.delete({ where: { id } });
     });
   }
 }

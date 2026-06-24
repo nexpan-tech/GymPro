@@ -1,18 +1,19 @@
 import { AuditAction } from "@prisma/client";
 import { logger } from "../config/logger";
-import { SaaSBillingService } from "../modules/super-admin/saas-billing.service";
+import { LicenseService } from "../modules/license/license.service";
 import { createAuditLog } from "../utils/audit";
 
 /**
- * Automated monthly SaaS billing. Runs on the 1st at 00:05. Generates one GST
- * invoice per eligible active gym (active members > 0, price > 0), with PDFs +
- * email (3× retry). Fully idempotent: the (gymId, billingMonth) unique
- * constraint guarantees a rerun — or a parallel manual generation — never
- * duplicates. Writes a summary audit entry for the run.
+ * Automated monthly SaaS billing. Runs on the 1st at 00:05. Generates one flat
+ * LICENSE invoice (plan price + GST) per eligible active-licensed gym, with PDFs
+ * + email (3× retry). Billing is license-based — NOT per active member. Fully
+ * idempotent: the (gymId, billingMonth) unique constraint guarantees a rerun —
+ * or a parallel manual generation — never duplicates. Writes a summary audit
+ * entry for the run.
  */
 export async function processMonthlyBilling() {
   try {
-    const result = await SaaSBillingService.generateInvoices(undefined, { source: "auto" });
+    const result = await LicenseService.generateInvoices(undefined, { source: "auto" });
     logger.info("Automated monthly SaaS billing complete", result);
     await createAuditLog({
       action: AuditAction.CREATE,

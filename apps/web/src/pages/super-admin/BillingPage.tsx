@@ -9,7 +9,7 @@ import Select from "@/components/forms/Select";
 import { StatTile, SectionHeader, StatusPill, type StatusTone, EmptyMomentumState } from "@/components/premium";
 import { useToast } from "@/hooks/useToast";
 import { superAdminService, type SaaSInvoiceRow } from "@/services/superAdmin.service";
-import { licenseService, type GymLicenseRow, type LicensePlan, type DimensionUsage } from "@/services/license.service";
+import { licenseService, type GymLicenseRow, type LicensePlan, type DimensionUsage, type LicenseBillingSummary } from "@/services/license.service";
 
 function DimBar({ label, u }: { label: string; u?: DimensionUsage }) {
   const cap = u?.capacity ?? null;
@@ -28,7 +28,8 @@ function DimBar({ label, u }: { label: string; u?: DimensionUsage }) {
   );
 }
 
-const inr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+import { inr as inrFmt, planPriceLabel } from "@/lib/pricing";
+const inr = inrFmt;
 function currentMonth() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -63,6 +64,7 @@ export default function SuperAdminLicensePage() {
   const [licenses, setLicenses] = useState<GymLicenseRow[]>([]);
   const [plans, setPlans] = useState<LicensePlan[]>([]);
   const [invoices, setInvoices] = useState<SaaSInvoiceRow[]>([]);
+  const [summary, setSummary] = useState<LicenseBillingSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -82,12 +84,13 @@ export default function SuperAdminLicensePage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [lic, pl, inv] = await Promise.all([
+      const [lic, pl, inv, sum] = await Promise.all([
         licenseService.listLicenses(),
         licenseService.listPlans(true),
         superAdminService.listInvoices(),
+        licenseService.billingSummary().catch(() => null),
       ]);
-      setLicenses(lic); setPlans(pl); setInvoices(inv);
+      setLicenses(lic); setPlans(pl); setInvoices(inv); setSummary(sum);
     } catch (err) {
       console.error(err);
       toast.error("Failed to load license data.");
@@ -151,6 +154,26 @@ export default function SuperAdminLicensePage() {
     } finally { setBusyId(null); }
   }
 
+  /** Generic license action runner — keeps the per-card buttons terse. */
+  async function licenseAction(gymId: string, fn: () => Promise<unknown>, success: string, confirmMsg?: string) {
+    if (confirmMsg && !window.confirm(confirmMsg)) return;
+    setBusyId(gymId);
+    try { await fn(); toast.success(success); await load(); }
+    catch (err: unknown) { toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Action failed."); }
+    finally { setBusyId(null); }
+  }
+
+  const [runningLifecycle, setRunningLifecycle] = useState(false);
+  async function handleRunLifecycle() {
+    setRunningLifecycle(true);
+    try {
+      const r = await licenseService.runLifecycle();
+      toast.success(`Lifecycle run: ${r.trialExpired} trial-expired · ${r.pastDue} past-due · ${r.suspended} suspended (of ${r.processed}).`);
+      await load();
+    } catch { toast.error("Failed to run license lifecycle."); }
+    finally { setRunningLifecycle(false); }
+  }
+
   function openPlanCreate() { setEditingPlan(null); setPlanForm({ name: "", price: "", maxMembers: "", interval: "MONTHLY", description: "" }); setPlanModal(true); }
   function openPlanEdit(p: LicensePlan) {
     setEditingPlan(p);
@@ -200,19 +223,81 @@ export default function SuperAdminLicensePage() {
               className="h-10 rounded-xl border border-border bg-(--surface-solid) px-3 text-sm text-(--text-primary) outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15" />
           </div>
           <Button iconLeft={<FileText className="h-4 w-4" />} loading={generating} onClick={() => void handleGenerate()}>Generate invoices</Button>
+          <Button variant="secondary" loading={runningLifecycle} onClick={() => void handleRunLifecycle()}>Run lifecycle</Button>
           <Button variant="secondary" iconLeft={<RefreshCw className="h-4 w-4" />} onClick={() => void load()}>Refresh</Button>
         </div>
       }
     >
       <div className="space-y-8">
-        {/* MRR / utilization metrics */}
-        <div className="grid grid-cols-2 gap-5 lg:grid-cols-5">
-          <StatTile label="MRR (license)" value={loading ? "—" : inr(metrics.mrr)} icon={<IndianRupee />} tone="energy" />
-          <StatTile label="ARR" value={loading ? "—" : inr(metrics.arr)} icon={<CheckCircle2 />} tone="neutral" />
-          <StatTile label="Licensed gyms" value={loading ? "—" : String(metrics.licensedCount)} icon={<Crown />} tone="neutral" />
-          <StatTile label="Avg utilization" value={loading ? "—" : `${metrics.avgUtil}%`} icon={<Gauge />} tone={metrics.avgUtil >= 90 ? "energy" : "neutral"} />
+        {/* License billing dashboard — authoritative backend metrics (license-based, never per-member) */}
+        <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
+          <StatTile label="MRR (license)" value={loading ? "—" : inr(summary?.mrr ?? metrics.mrr)} icon={<IndianRupee />} tone="energy" />
+          <StatTile label="ARR" value={loading ? "—" : inr(summary?.arr ?? metrics.arr)} icon={<CheckCircle2 />} tone="neutral" />
+          <StatTile label="Revenue this month" value={loading ? "—" : inr(summary?.revenueThisMonth ?? 0)} icon={<IndianRupee />} tone="neutral" hint="paid SaaS invoices" />
+          <StatTile label="Active licenses" value={loading ? "—" : String(summary?.activeLicenses ?? metrics.licensedCount)} icon={<Crown />} tone="neutral" />
+          <StatTile label="Trial licenses" value={loading ? "—" : String(summary?.trialLicenses ?? metrics.onTrial)} icon={<Gauge />} tone={(summary?.trialLicenses ?? 0) > 0 ? "energy" : "neutral"} />
+          <StatTile label="Expired / suspended" value={loading ? "—" : String((summary?.expiredLicenses ?? 0) + (summary?.suspendedLicenses ?? 0))} icon={<ShieldAlert />} tone={((summary?.expiredLicenses ?? 0) + (summary?.suspendedLicenses ?? 0)) > 0 ? "energy" : "neutral"} />
+          <StatTile label="Upcoming renewals" value={loading ? "—" : String(summary?.upcomingRenewalCount ?? 0)} icon={<RefreshCw />} tone={(summary?.upcomingRenewalCount ?? 0) > 0 ? "energy" : "neutral"} hint="next 30 days" />
           <StatTile label="At capacity" value={loading ? "—" : String(metrics.atCapacity)} icon={<ShieldAlert />} tone={metrics.atCapacity > 0 ? "energy" : "neutral"} />
         </div>
+
+        {/* Upcoming renewals (next 30 days) */}
+        {!loading && summary && summary.upcomingRenewals.length > 0 && (
+          <div className="surface-card overflow-hidden p-0">
+            <SectionHeader eyebrow="Next 30 days" title="Upcoming renewals" className="px-5 pt-5" />
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-border bg-(--surface-secondary) text-xs uppercase tracking-wide text-(--text-muted)">
+                  <tr><th className="px-5 py-3 font-bold">Gym</th><th className="px-5 py-3 font-bold">Plan</th><th className="px-5 py-3 font-bold">Renews</th><th className="px-5 py-3 font-bold">Amount</th></tr>
+                </thead>
+                <tbody>
+                  {summary.upcomingRenewals.map((r) => (
+                    <tr key={r.gymId} className="border-b border-border last:border-0">
+                      <td className="px-5 py-3 text-(--text-primary)">{r.gymName}</td>
+                      <td className="px-5 py-3 text-(--text-secondary)">{r.planName}</td>
+                      <td className="px-5 py-3 text-(--text-secondary)">{fmtDate(r.renewalDate)}</td>
+                      <td className="px-5 py-3 font-semibold text-(--text-primary)">{r.amount > 0 ? inr(r.amount) : "Custom"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Distributions (real counts from billingSummary) */}
+        {!loading && summary && (summary.planDistribution.length > 0 || summary.licenseDistribution.length > 0) && (
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="surface-card p-5">
+              <SectionHeader eyebrow="By plan" title="Plan distribution" />
+              {summary.planDistribution.length === 0 ? (
+                <p className="text-sm text-(--text-muted)">No active licenses yet.</p>
+              ) : (
+                <div className="mt-2 space-y-2">
+                  {(() => { const max = Math.max(...summary.planDistribution.map((d) => d.count), 1); return summary.planDistribution.map((d) => (
+                    <div key={d.name}>
+                      <div className="mb-1 flex items-center justify-between text-xs"><span className="text-(--text-secondary)">{d.name}</span><span className="font-semibold text-(--text-primary)">{d.count}</span></div>
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-(--surface-secondary)"><div className="h-full rounded-full bg-primary" style={{ width: `${(d.count / max) * 100}%` }} /></div>
+                    </div>
+                  )); })()}
+                </div>
+              )}
+            </div>
+            <div className="surface-card p-5">
+              <SectionHeader eyebrow="By status" title="License distribution" />
+              {summary.licenseDistribution.length === 0 ? (
+                <p className="text-sm text-(--text-muted)">No licenses yet.</p>
+              ) : (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {summary.licenseDistribution.map((d) => (
+                    <StatusPill key={d.status} tone={statusTone(d.status)}>{d.status}: {d.count}</StatusPill>
+                  ))}
+                  {summary.unlicensedGyms > 0 && <StatusPill tone="expired">UNLICENSED: {summary.unlicensedGyms}</StatusPill>}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex gap-2">
@@ -242,7 +327,7 @@ export default function SuperAdminLicensePage() {
                     <>
                       <div className="mt-3 flex items-baseline justify-between">
                         <p className="text-sm font-semibold text-(--text-primary)">{g.licenseName}</p>
-                        <p className="text-sm font-bold text-(--text-primary)">{inr(g.monthlyPrice)}<span className="text-xs font-normal text-(--text-muted)">/{g.interval === "YEARLY" ? "yr" : "mo"}</span></p>
+                        <p className="text-sm font-bold text-(--text-primary)">{planPriceLabel(g.monthlyPrice, g.interval)}</p>
                       </div>
                       {/* Capacity progress */}
                       <div className="mt-3">
@@ -277,10 +362,22 @@ export default function SuperAdminLicensePage() {
 
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Button size="sm" iconLeft={<ArrowUpCircle className="h-4 w-4" />} onClick={() => openAssign(g)}>{g.licenseName ? "Change plan" : "Assign license"}</Button>
+                    {g.isTrial && (
+                      <>
+                        <Button size="sm" variant="secondary" loading={busyId === g.gymId} onClick={() => void licenseAction(g.gymId, () => licenseService.convertTrial(g.gymId), `${g.gymName}: trial converted to paid.`)}>Convert trial</Button>
+                        <Button size="sm" variant="ghost" loading={busyId === g.gymId} onClick={() => void licenseAction(g.gymId, () => licenseService.extendTrial(g.gymId, 7), `${g.gymName}: trial extended 7 days.`)}>Extend +7d</Button>
+                      </>
+                    )}
+                    {g.licenseName && !g.isTrial && (g.licenseStatus === "ACTIVE" || g.licenseStatus === "PAST_DUE" || g.licenseStatus === "EXPIRED") && (
+                      <Button size="sm" variant="secondary" loading={busyId === g.gymId} onClick={() => void licenseAction(g.gymId, () => licenseService.renew(g.gymId), `${g.gymName}: license renewed.`)}>Renew</Button>
+                    )}
                     {g.licenseName && (
                       <Button size="sm" variant="secondary" loading={busyId === g.gymId} onClick={() => void toggleSuspend(g)}>
                         {g.licenseStatus === "SUSPENDED" ? "Reactivate" : "Suspend"}
                       </Button>
+                    )}
+                    {g.licenseName && g.licenseStatus !== "CANCELLED" && (
+                      <Button size="sm" variant="ghost" loading={busyId === g.gymId} onClick={() => void licenseAction(g.gymId, () => licenseService.cancel(g.gymId), `${g.gymName}: license cancelled.`, `Cancel the license for ${g.gymName}? The gym keeps its data; billing stops.`)}>Cancel</Button>
                     )}
                   </div>
                 </div>
@@ -304,7 +401,7 @@ export default function SuperAdminLicensePage() {
                         <p className="font-bold text-(--text-primary)">{p.name}</p>
                         {!p.isActive && <StatusPill tone="neutral">INACTIVE</StatusPill>}
                       </div>
-                      <p className="mt-1 text-2xl font-black text-(--text-primary)">{inr(p.price)}<span className="text-sm font-normal text-(--text-muted)">/{p.interval === "YEARLY" ? "yr" : "mo"}</span></p>
+                      <p className="mt-1 text-2xl font-black text-(--text-primary)">{planPriceLabel(p.price, p.interval)}</p>
                       <p className="mt-1 text-sm text-(--text-secondary)">Up to {p.maxMembers ?? "∞"} active members</p>
                       <p className="text-xs text-(--text-muted)">{p.maxBranches ?? "∞"} branches · {p.maxStaff ?? "∞"} staff</p>
                       {p.description && <p className="mt-1 text-xs text-(--text-muted)">{p.description}</p>}
@@ -328,7 +425,7 @@ export default function SuperAdminLicensePage() {
                     </thead>
                     <tbody className="text-(--text-secondary)">
                       {([
-                        ["Price", (p: LicensePlan) => `${inr(p.price)}/${p.interval === "YEARLY" ? "yr" : "mo"}`],
+                        ["Price", (p: LicensePlan) => planPriceLabel(p.price, p.interval)],
                         ["Members", (p: LicensePlan) => p.maxMembers ?? "Unlimited"],
                         ["Branches", (p: LicensePlan) => p.maxBranches ?? "Unlimited"],
                         ["Staff", (p: LicensePlan) => p.maxStaff ?? "Unlimited"],
@@ -391,7 +488,7 @@ export default function SuperAdminLicensePage() {
         footer={<div className="flex justify-end gap-2"><Button variant="secondary" onClick={() => setAssignGym(null)} disabled={assignBusy}>Cancel</Button><Button onClick={() => void submitAssign()} loading={assignBusy}>Apply</Button></div>}>
         <div className="space-y-4">
           <Select label="License plan" value={assignPlanId} onChange={(e) => setAssignPlanId(e.target.value)}
-            options={plans.filter((p) => p.isActive).map((p) => ({ label: `${p.name} — ${inr(p.price)}/${p.interval === "YEARLY" ? "yr" : "mo"} · up to ${p.maxMembers ?? "∞"}`, value: p.id }))} />
+            options={plans.filter((p) => p.isActive).map((p) => ({ label: `${p.name} — ${planPriceLabel(p.price, p.interval)} · up to ${p.maxMembers ?? "∞"}`, value: p.id }))} />
           <Input label="Trial days (optional)" type="number" value={trialDays} onChange={(e) => setTrialDays(e.target.value)} placeholder="e.g. 30 — billing starts after trial" />
           {assignGym?.licenseName && <p className="text-xs text-(--text-muted)">Current: {assignGym.licenseName} ({assignGym.activeMembers}/{assignGym.capacity ?? "∞"}). Changing the plan updates capacity, billing and renewal immediately; the old license is kept in history.</p>}
         </div>

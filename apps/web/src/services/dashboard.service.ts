@@ -56,24 +56,32 @@ export const dashboardService = {
    * compute default to 0 — the dashboard renders them gracefully.
    */
   getStats: async (params?: DashboardParams): Promise<ApiResponse<DashboardStats>> => {
-    const res = await api.get<ApiResponse<{ totalMembers?: number; activeMemberships?: number; totalRevenue?: number }>>(
-      '/analytics/dashboard',
-      { params },
-    )
+    const res = await api.get<ApiResponse<{
+      totalMembers?: number; activeMembers?: number; trainers?: number; receptionists?: number; staff?: number;
+      totalMemberships?: number; activeMemberships?: number; totalRevenue?: number; monthlyRevenue?: number;
+      todayAttendance?: number; pendingDues?: number;
+    }>>('/analytics/dashboard', { params })
     const a = res.data.data ?? {}
     return {
       success: true,
       data: {
         totalMembers: a.totalMembers ?? 0,
-        activeMembers: a.activeMemberships ?? 0,
+        // Active MEMBERS — distinct from active memberships. The old code mapped
+        // activeMembers ← activeMemberships, conflating people with contracts.
+        activeMembers: a.activeMembers ?? 0,
         newMembersThisMonth: 0,
         totalRevenue: a.totalRevenue ?? 0,
-        revenueThisMonth: 0,
-        attendanceToday: 0,
+        revenueThisMonth: a.monthlyRevenue ?? 0,
+        attendanceToday: a.todayAttendance ?? 0,
         activeSessions: 0,
-        pendingDues: 0,
+        pendingDues: a.pendingDues ?? 0,
         openLeads: 0,
         expiringMemberships: 0,
+        trainers: a.trainers ?? 0,
+        receptionists: a.receptionists ?? 0,
+        staff: a.staff ?? 0,
+        totalMemberships: a.totalMemberships ?? 0,
+        activeMemberships: a.activeMemberships ?? 0,
       },
     }
   },

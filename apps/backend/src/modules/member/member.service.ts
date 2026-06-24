@@ -1,6 +1,6 @@
 import { prisma } from "../../config/db";
 import { Role } from "@prisma/client";
-import { hashPassword } from "../../utils/password";
+import { hashPassword, assertStrongPassword } from "../../utils/password";
 import { AppError } from "../../utils/response";
 import { requireGym } from "../../utils/tenant";
 import { computeAttendanceStreaks } from "../attendance/attendance-streak";
@@ -318,12 +318,22 @@ export class MemberService {
     const member = await prisma.member.findFirst({ where: { id, gymId } });
     if (!member) throw new AppError("Member not found", 404);
 
-    const temporaryPassword = newPassword?.trim() || generateTempPassword();
-    const passwordHash = await hashPassword(temporaryPassword);
-    await prisma.user.update({ where: { id: member.userId }, data: { passwordHash } });
+    // Admin-supplied passwords must pass strength rules; a blank request still
+    // supports the legacy "generate a temp password" path.
+    const supplied = typeof newPassword === "string" && newPassword.trim().length > 0;
+    const finalPassword = supplied ? assertStrongPassword(newPassword!.trim()) : generateTempPassword();
+    const passwordHash = await hashPassword(finalPassword);
 
-    // Returned once so the admin can hand it over; never persisted in clear text.
-    return { memberId: id, temporaryPassword, generated: !newPassword };
+    // Overwrite the single stored hash (no history kept) AND invalidate existing
+    // sessions so the member must re-authenticate with the new password.
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: member.userId }, data: { passwordHash } }),
+      prisma.session.updateMany({ where: { userId: member.userId, revokedAt: null }, data: { revokedAt: new Date() } }),
+    ]);
+
+    // Only echo the password when WE generated it (shown once); never echo an
+    // admin-chosen one back over the wire.
+    return { memberId: id, generated: !supplied, ...(supplied ? {} : { temporaryPassword: finalPassword }) };
   }
 
   /**

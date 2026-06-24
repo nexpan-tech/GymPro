@@ -38,6 +38,18 @@ export class TrainerAnalyticsController {
     });
   }
 
+  static async getMyStats(req: Request, res: Response) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+
+    const data = await TrainerAnalyticsService.getMyStats(user);
+
+    return res.json({
+      success: true,
+      data,
+    });
+  }
+
   static async getTrainerDetail(req: Request, res: Response) {
     const user = requireAuth(req, res);
     if (!user) return;

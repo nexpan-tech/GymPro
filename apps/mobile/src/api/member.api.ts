@@ -1,5 +1,5 @@
 import { api } from "./client";
-import type { MemberProfile, MemberStats, MembershipInfo } from "../types/member.types";
+import type { MemberProfile, MembershipInfo } from "../types/member.types";
 
 function unwrap<T>(res: { data: { data?: T } | T }): T {
   return ((res.data as { data?: T }).data ?? res.data) as T;
@@ -77,11 +77,6 @@ export const memberApi = {
   getMyDietPlan: async (): Promise<DietPlan | null> => {
     const res = await api.get("/diets/my");
     return unwrap<DietPlan | null>(res);
-  },
-
-  getMyStats: async (): Promise<MemberStats> => {
-    const res = await api.get("/analytics/member-dashboard");
-    return unwrap<MemberStats>(res);
   },
 
   getMyXP: async (): Promise<XPInfo> => {

@@ -15,7 +15,7 @@ import { gamificationService } from "@/services/gamification.service";
 
 const inr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
 
-interface Dashboard { totalMembers: number; totalRevenue: number; pendingDues: number; activeMemberships: number; expiredMemberships: number; churnRiskMembers: number; retentionRate: number }
+interface Dashboard { totalMembers: number; activeMembers: number; totalRevenue: number; pendingDues: number; activeMemberships: number; expiredMemberships: number; churnRiskMembers: number; retentionRate: number }
 interface Attendance { totalAttendance: number; peakHour: string | null; attendanceByDate: Record<string, number> }
 
 async function get<T>(path: string): Promise<T | null> {
@@ -112,8 +112,9 @@ export default function AnalyticsPage() {
         <div>
           <SectionHeader eyebrow="Membership" title="Who's in your gym" />
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <StatTile label="Active Members" value={String(dash?.activeMemberships ?? 0)} icon={<UserCheck />} tone="energy" />
-            <StatTile label="Expired" value={String(dash?.expiredMemberships ?? 0)} icon={<UserX />} tone="neutral" />
+            <StatTile label="Active Members" value={String(dash?.activeMembers ?? 0)} icon={<UserCheck />} tone="energy" />
+            <StatTile label="Active Memberships" value={String(dash?.activeMemberships ?? 0)} icon={<CalendarCheck />} tone="neutral" />
+            <StatTile label="Expired Memberships" value={String(dash?.expiredMemberships ?? 0)} icon={<UserX />} tone="neutral" />
             <StatTile label="Total Members" value={String(dash?.totalMembers ?? 0)} icon={<Users />} tone="neutral" />
             <StatTile label="Renewal Rate" value={`${renewalRate}%`} icon={<TrendingUp />} tone="energy" />
           </div>
